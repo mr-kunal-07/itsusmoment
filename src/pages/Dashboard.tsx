@@ -20,7 +20,7 @@ export default function Dashboard() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null | undefined>(undefined);
   const [search, setSearch] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [previewMedia, setPreviewMedia] = useState<Media | null>(null);
+  const [previewIndex, setPreviewIndex] = useState<number>(-1);
 
   const { data: media = [], isLoading } = useMedia(selectedFolderId, search || undefined);
   const { data: folders = [] } = useFolders();
@@ -80,13 +80,13 @@ export default function Dashboard() {
               {!isLoading && <p className="text-sm text-muted-foreground mt-1">{media.length} file{media.length !== 1 ? "s" : ""}</p>}
             </div>
 
-            <MediaGrid media={media} loading={isLoading} onPreview={setPreviewMedia} />
+            <MediaGrid media={media} loading={isLoading} onPreview={(m) => setPreviewIndex(media.findIndex(x => x.id === m.id))} />
           </main>
         </div>
       </div>
 
       <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} folderId={selectedFolderId} />
-      <MediaPreview media={previewMedia} open={!!previewMedia} onOpenChange={open => !open && setPreviewMedia(null)} />
+      <MediaPreview media={media} currentIndex={previewIndex} open={previewIndex >= 0} onOpenChange={open => !open && setPreviewIndex(-1)} onNavigate={setPreviewIndex} />
     </SidebarProvider>
   );
 }
