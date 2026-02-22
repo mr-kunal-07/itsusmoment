@@ -1,9 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Tables } from "@/integrations/supabase/types";
 
 export type Media = Tables<"media"> & { uploader_name?: string | null };
+
+const PAGE_SIZE = 30;
 
 export function useMedia(folderId?: string | null, search?: string) {
   const { user } = useAuth();
@@ -20,6 +22,69 @@ export function useMedia(folderId?: string | null, search?: string) {
         query = query.ilike("title", `%${search}%`);
       }
       const { data, error } = await query.order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as Media[];
+    },
+    enabled: !!user,
+  });
+}
+
+export function useInfiniteMedia(folderId?: string | null, search?: string) {
+  const { user } = useAuth();
+  return useInfiniteQuery({
+    queryKey: ["media-infinite", folderId, search],
+    queryFn: async ({ pageParam = 0 }) => {
+      let query = supabase.from("media").select("*");
+      if (folderId) {
+        query = query.eq("folder_id", folderId);
+      } else if (folderId === null) {
+        query = query.is("folder_id", null);
+      }
+      if (search) {
+        query = query.ilike("title", `%${search}%`);
+      }
+      const { data, error } = await query
+        .order("created_at", { ascending: false })
+        .range(pageParam, pageParam + PAGE_SIZE - 1);
+      if (error) throw error;
+      return data as Media[];
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.length < PAGE_SIZE) return undefined;
+      return allPages.flat().length;
+    },
+    initialPageParam: 0,
+    enabled: !!user,
+  });
+}
+
+export function useStarredMedia() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["media", "starred"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("media")
+        .select("*")
+        .eq("is_starred", true)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as Media[];
+    },
+    enabled: !!user,
+  });
+}
+
+export function useRecentMedia() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["media", "recent"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("media")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20);
       if (error) throw error;
       return data as Media[];
     },
@@ -54,7 +119,10 @@ export function useUploadMedia() {
       });
       if (dbError) throw dbError;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["media"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["media"] });
+      qc.invalidateQueries({ queryKey: ["media-infinite"] });
+    },
   });
 }
 
@@ -65,7 +133,10 @@ export function useUpdateMedia() {
       const { error } = await supabase.from("media").update({ title, description: description || null }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["media"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["media"] });
+      qc.invalidateQueries({ queryKey: ["media-infinite"] });
+    },
   });
 }
 
@@ -77,7 +148,10 @@ export function useDeleteMedia() {
       const { error } = await supabase.from("media").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["media"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["media"] });
+      qc.invalidateQueries({ queryKey: ["media-infinite"] });
+    },
   });
 }
 
@@ -88,7 +162,24 @@ export function useMoveMedia() {
       const { error } = await supabase.from("media").update({ folder_id: folderId }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["media"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["media"] });
+      qc.invalidateQueries({ queryKey: ["media-infinite"] });
+    },
+  });
+}
+
+export function useToggleStar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, starred }: { id: string; starred: boolean }) => {
+      const { error } = await supabase.from("media").update({ is_starred: starred }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["media"] });
+      qc.invalidateQueries({ queryKey: ["media-infinite"] });
+    },
   });
 }
 
