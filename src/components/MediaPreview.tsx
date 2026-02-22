@@ -21,12 +21,12 @@ function formatSize(bytes: number) {
 }
 
 export function MediaPreview({ media, currentIndex, open, onOpenChange, onNavigate }: Props) {
-  const item = media[currentIndex];
+  const item = media[currentIndex] ?? null;
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < media.length - 1;
 
-  const goPrev = useCallback(() => { if (hasPrev) onNavigate(currentIndex - 1); }, [hasPrev, currentIndex, onNavigate]);
-  const goNext = useCallback(() => { if (hasNext) onNavigate(currentIndex + 1); }, [hasNext, currentIndex, onNavigate]);
+  const goPrev = useCallback(() => { if (currentIndex > 0) onNavigate(currentIndex - 1); }, [currentIndex, onNavigate]);
+  const goNext = useCallback(() => { if (currentIndex < media.length - 1) onNavigate(currentIndex + 1); }, [currentIndex, media.length, onNavigate]);
 
   useEffect(() => {
     if (!open) return;
