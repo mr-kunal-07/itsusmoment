@@ -32,7 +32,7 @@ export default function Auth() {
         <div className="flex flex-col items-center gap-2">
           <div className="flex items-center gap-2 text-primary">
             <Upload className="h-8 w-8" />
-            <h1 className="text-2xl font-bold tracking-tight">Media Hub</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Kunal & Kalyani ❤️      </h1>
           </div>
           <p className="text-sm text-muted-foreground">Admin login</p>
         </div>
@@ -45,11 +45,11 @@ export default function Auth() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@example.com" />
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" />
+                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" />
               </div>
             </CardContent>
             <CardFooter>
@@ -58,6 +58,6 @@ export default function Auth() {
           </form>
         </Card>
       </div>
-    </div>
-  );
+    </div>);
+
 }
