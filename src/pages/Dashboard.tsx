@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { Search, Upload, LogOut, User } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Search, Upload, LogOut, Moon, Sun, LayoutGrid, List } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useMedia, Media } from "@/hooks/useMedia";
+import { Media, useMedia, useStarredMedia, useRecentMedia, useMoveMedia } from "@/hooks/useMedia";
 import { useFolders } from "@/hooks/useFolders";
+import { useTheme } from "@/hooks/useTheme";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
-import { MediaGrid } from "@/components/MediaGrid";
+import { AppSidebar, ViewType } from "@/components/AppSidebar";
+import { MediaGrid, ViewMode } from "@/components/MediaGrid";
 import { UploadDialog } from "@/components/UploadDialog";
 import { MediaPreview } from "@/components/MediaPreview";
 import { Button } from "@/components/ui/button";
@@ -14,25 +15,78 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null | undefined>(undefined);
+  const [selectedView, setSelectedView] = useState<ViewType>("all");
   const [search, setSearch] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number>(-1);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [dragOverMain, setDragOverMain] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const { toast } = useToast();
+  const moveMedia = useMoveMedia();
 
-  const { data: media = [], isLoading } = useMedia(selectedFolderId, search || undefined);
+  // Determine folder ID from view
+  const folderId = selectedView === "all" ? undefined
+    : selectedView === "unfiled" ? null
+    : selectedView === "starred" ? undefined
+    : selectedView === "recent" ? undefined
+    : selectedView;
+
+  const isSpecialView = ["all", "unfiled", "starred", "recent"].includes(selectedView);
+
+  const { data: regularMedia = [], isLoading } = useMedia(
+    isSpecialView && selectedView !== "starred" && selectedView !== "recent" ? folderId : (isSpecialView ? undefined : folderId),
+    search || undefined
+  );
+  const { data: starredMedia = [] } = useStarredMedia();
+  const { data: recentMedia = [] } = useRecentMedia();
   const { data: folders = [] } = useFolders();
 
-  const currentFolder = selectedFolderId ? folders.find(f => f.id === selectedFolderId) : null;
-  const pageTitle = selectedFolderId === undefined ? "All Files" : selectedFolderId === null ? "Unfiled" : currentFolder?.name || "Folder";
+  // Pick media based on view
+  const media = selectedView === "starred" ? starredMedia
+    : selectedView === "recent" ? recentMedia
+    : regularMedia;
+
+  const currentFolder = !isSpecialView ? folders.find(f => f.id === selectedView) : null;
+  const pageTitle = selectedView === "all" ? "All Files"
+    : selectedView === "unfiled" ? "Unfiled"
+    : selectedView === "starred" ? "Starred"
+    : selectedView === "recent" ? "Recent"
+    : currentFolder?.name || "Folder";
+
   const initials = user?.email?.slice(0, 2).toUpperCase() || "U";
+
+  // Listen for drag-drop move events from sidebar
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { mediaId, folderId } = (e as CustomEvent).detail;
+      moveMedia.mutateAsync({ id: mediaId, folderId }).then(() => {
+        toast({ title: "Moved to folder" });
+      }).catch(() => {
+        toast({ title: "Failed to move", variant: "destructive" });
+      });
+    };
+    window.addEventListener("move-media", handler);
+    return () => window.removeEventListener("move-media", handler);
+  }, [moveMedia, toast]);
+
+  // Drag & drop upload on main area
+  const handleMainDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverMain(false);
+    if (e.dataTransfer.files.length > 0) {
+      setUploadOpen(true);
+    }
+  }, []);
 
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
-        <AppSidebar selectedFolderId={selectedFolderId} onSelectFolder={setSelectedFolderId} />
+        <AppSidebar selectedView={selectedView} onSelectView={setSelectedView} />
 
         <div className="flex-1 flex flex-col">
           {/* Header */}
@@ -49,7 +103,23 @@ export default function Dashboard() {
               />
             </div>
 
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex items-center gap-1 ml-auto">
+              {/* View mode toggle */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}
+                title={viewMode === "grid" ? "Switch to list" : "Switch to grid"}
+              >
+                {viewMode === "grid" ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+              </Button>
+
+              {/* Dark mode toggle */}
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleTheme}>
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+
               <Button onClick={() => setUploadOpen(true)} size="sm">
                 <Upload className="h-4 w-4 mr-1.5" />
                 Upload
@@ -74,19 +144,35 @@ export default function Dashboard() {
           </header>
 
           {/* Content */}
-          <main className="flex-1 p-6">
+          <main
+            className={`flex-1 p-6 ${dragOverMain ? "ring-2 ring-primary ring-inset bg-primary/5" : ""}`}
+            onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setDragOverMain(true); }}
+            onDragLeave={() => setDragOverMain(false)}
+            onDrop={handleMainDrop}
+          >
             <div className="mb-6">
               <h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
               {!isLoading && <p className="text-sm text-muted-foreground mt-1">{media.length} file{media.length !== 1 ? "s" : ""}</p>}
             </div>
 
-            <MediaGrid media={media} loading={isLoading} onPreview={(m) => setPreviewIndex(media.findIndex(x => x.id === m.id))} />
+            <MediaGrid
+              media={media}
+              loading={isLoading && selectedView !== "starred" && selectedView !== "recent"}
+              onPreview={(m) => setPreviewIndex(media.findIndex(x => x.id === m.id))}
+              viewMode={viewMode}
+            />
           </main>
         </div>
       </div>
 
-      <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} folderId={selectedFolderId} />
-      <MediaPreview media={media} currentIndex={previewIndex} open={previewIndex >= 0} onOpenChange={open => !open && setPreviewIndex(-1)} onNavigate={setPreviewIndex} />
+      <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} folderId={!isSpecialView ? selectedView : undefined} />
+      <MediaPreview
+        media={media}
+        currentIndex={previewIndex}
+        open={previewIndex >= 0}
+        onOpenChange={open => !open && setPreviewIndex(-1)}
+        onNavigate={setPreviewIndex}
+      />
     </SidebarProvider>
   );
 }

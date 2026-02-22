@@ -59,6 +59,7 @@ export type Database = {
           file_type: string
           folder_id: string | null
           id: string
+          is_starred: boolean
           mime_type: string
           title: string
           updated_at: string
@@ -73,6 +74,7 @@ export type Database = {
           file_type: string
           folder_id?: string | null
           id?: string
+          is_starred?: boolean
           mime_type: string
           title: string
           updated_at?: string
@@ -87,6 +89,7 @@ export type Database = {
           file_type?: string
           folder_id?: string | null
           id?: string
+          is_starred?: boolean
           mime_type?: string
           title?: string
           updated_at?: string

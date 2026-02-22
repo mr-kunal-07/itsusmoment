@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home } from "lucide-react";
+import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon } from "lucide-react";
 import { useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, Folder } from "@/hooks/useFolders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,18 +14,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
+export type ViewType = "all" | "unfiled" | "starred" | "recent" | string;
+
 interface Props {
-  selectedFolderId: string | null | undefined;
-  onSelectFolder: (id: string | null | undefined) => void;
+  selectedView: ViewType;
+  onSelectView: (view: ViewType) => void;
 }
 
-export function AppSidebar({ selectedFolderId, onSelectFolder }: Props) {
+export function AppSidebar({ selectedView, onSelectView }: Props) {
   const { data: folders = [] } = useFolders();
   const createFolder = useCreateFolder();
   const renameFolder = useRenameFolder();
   const deleteFolder = useDeleteFolder();
 
   const [creatingFolder, setCreatingFolder] = useState(false);
+  const [creatingInParent, setCreatingInParent] = useState<string | null>(null);
   const [newFolderName, setNewFolderName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -33,11 +36,12 @@ export function AppSidebar({ selectedFolderId, onSelectFolder }: Props) {
 
   const rootFolders = folders.filter(f => !f.parent_id);
 
-  const handleCreate = async () => {
+  const handleCreate = async (parentId?: string | null) => {
     if (!newFolderName.trim()) return;
-    await createFolder.mutateAsync({ name: newFolderName.trim() });
+    await createFolder.mutateAsync({ name: newFolderName.trim(), parentId: parentId ?? null });
     setNewFolderName("");
     setCreatingFolder(false);
+    setCreatingInParent(null);
   };
 
   const handleRename = async (id: string) => {
@@ -49,9 +53,16 @@ export function AppSidebar({ selectedFolderId, onSelectFolder }: Props) {
   const handleDelete = async () => {
     if (!deletingFolder) return;
     await deleteFolder.mutateAsync(deletingFolder.id);
-    if (selectedFolderId === deletingFolder.id) onSelectFolder(undefined);
+    if (selectedView === deletingFolder.id) onSelectView("all");
     setDeletingFolder(null);
   };
+
+  const navItems = [
+    { id: "all" as const, label: "All Files", icon: Home },
+    { id: "recent" as const, label: "Recent", icon: Clock },
+    { id: "starred" as const, label: "Starred", icon: Star },
+    { id: "unfiled" as const, label: "Unfiled", icon: FileIcon },
+  ];
 
   return (
     <Sidebar className="border-r">
@@ -62,24 +73,17 @@ export function AppSidebar({ selectedFolderId, onSelectFolder }: Props) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => onSelectFolder(undefined)}
-                  className={cn(selectedFolderId === undefined && "bg-accent text-accent-foreground")}
-                >
-                  <Home className="h-4 w-4 mr-2" />
-                  <span>All Files</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => onSelectFolder(null)}
-                  className={cn(selectedFolderId === null && "bg-accent text-accent-foreground")}
-                >
-                  <FolderIcon className="h-4 w-4 mr-2" />
-                  <span>Unfiled</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {navItems.map(item => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    onClick={() => onSelectView(item.id)}
+                    className={cn(selectedView === item.id && "bg-accent text-accent-foreground")}
+                  >
+                    <item.icon className="h-4 w-4 mr-2" />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -87,12 +91,12 @@ export function AppSidebar({ selectedFolderId, onSelectFolder }: Props) {
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center justify-between">
             <span>Folders</span>
-            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setCreatingFolder(true)}>
+            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => { setCreatingFolder(true); setCreatingInParent(null); }}>
               <FolderPlus className="h-3.5 w-3.5" />
             </Button>
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            {creatingFolder && (
+            {creatingFolder && !creatingInParent && (
               <div className="px-2 pb-2">
                 <Input
                   value={newFolderName}
@@ -100,8 +104,8 @@ export function AppSidebar({ selectedFolderId, onSelectFolder }: Props) {
                   placeholder="Folder name"
                   className="h-8 text-sm"
                   autoFocus
-                  onKeyDown={e => { if (e.key === "Enter") handleCreate(); if (e.key === "Escape") setCreatingFolder(false); }}
-                  onBlur={() => { if (!newFolderName.trim()) setCreatingFolder(false); }}
+                  onKeyDown={e => { if (e.key === "Enter") handleCreate(null); if (e.key === "Escape") { setCreatingFolder(false); setNewFolderName(""); } }}
+                  onBlur={() => { if (!newFolderName.trim()) { setCreatingFolder(false); setNewFolderName(""); } }}
                 />
               </div>
             )}
@@ -111,14 +115,20 @@ export function AppSidebar({ selectedFolderId, onSelectFolder }: Props) {
                   key={folder.id}
                   folder={folder}
                   allFolders={folders}
-                  selectedFolderId={selectedFolderId}
-                  onSelectFolder={onSelectFolder}
+                  selectedView={selectedView}
+                  onSelectView={onSelectView}
                   editingId={editingId}
                   editName={editName}
                   setEditingId={setEditingId}
                   setEditName={setEditName}
                   onRename={handleRename}
                   onDelete={setDeletingFolder}
+                  creatingInParent={creatingInParent}
+                  newFolderName={newFolderName}
+                  setNewFolderName={setNewFolderName}
+                  onCreateSubfolder={(parentId) => { setCreatingInParent(parentId); setCreatingFolder(true); setNewFolderName(""); }}
+                  onSubmitCreate={handleCreate}
+                  onCancelCreate={() => { setCreatingInParent(null); setCreatingFolder(false); setNewFolderName(""); }}
                 />
               ))}
             </SidebarMenu>
@@ -145,18 +155,38 @@ export function AppSidebar({ selectedFolderId, onSelectFolder }: Props) {
 }
 
 function FolderItem({
-  folder, allFolders, selectedFolderId, onSelectFolder,
+  folder, allFolders, selectedView, onSelectView,
   editingId, editName, setEditingId, setEditName, onRename, onDelete,
+  creatingInParent, newFolderName, setNewFolderName, onCreateSubfolder, onSubmitCreate, onCancelCreate,
 }: {
   folder: Folder; allFolders: Folder[];
-  selectedFolderId: string | null | undefined;
-  onSelectFolder: (id: string | null | undefined) => void;
+  selectedView: string;
+  onSelectView: (id: string) => void;
   editingId: string | null; editName: string;
   setEditingId: (id: string | null) => void; setEditName: (name: string) => void;
   onRename: (id: string) => void; onDelete: (f: Folder) => void;
+  creatingInParent: string | null; newFolderName: string;
+  setNewFolderName: (name: string) => void;
+  onCreateSubfolder: (parentId: string) => void;
+  onSubmitCreate: (parentId: string | null) => void;
+  onCancelCreate: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const children = allFolders.filter(f => f.parent_id === folder.id);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const mediaId = e.dataTransfer.getData("media-id");
+    if (mediaId) {
+      // Will be handled by parent via custom event
+      window.dispatchEvent(new CustomEvent("move-media", { detail: { mediaId, folderId: folder.id } }));
+    }
+  };
 
   return (
     <SidebarMenuItem>
@@ -172,8 +202,10 @@ function FolderItem({
         </div>
       ) : (
         <SidebarMenuButton
-          onClick={() => onSelectFolder(folder.id)}
-          className={cn("group justify-between", selectedFolderId === folder.id && "bg-accent text-accent-foreground")}
+          onClick={() => onSelectView(folder.id)}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          className={cn("group justify-between", selectedView === folder.id && "bg-accent text-accent-foreground")}
         >
           <span className="flex items-center gap-2">
             {children.length > 0 && (
@@ -186,6 +218,9 @@ function FolderItem({
             <span className="truncate">{folder.name}</span>
           </span>
           <span className="hidden group-hover:flex items-center gap-0.5">
+            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); onCreateSubfolder(folder.id); setExpanded(true); }}>
+              <FolderPlus className="h-3 w-3" />
+            </Button>
             <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); setEditName(folder.name); setEditingId(folder.id); }}>
               <Pencil className="h-3 w-3" />
             </Button>
@@ -195,21 +230,40 @@ function FolderItem({
           </span>
         </SidebarMenuButton>
       )}
-      {expanded && children.length > 0 && (
+      {expanded && (
         <SidebarMenu className="ml-4">
+          {creatingInParent === folder.id && (
+            <div className="px-2 py-1">
+              <Input
+                value={newFolderName}
+                onChange={e => setNewFolderName(e.target.value)}
+                placeholder="Subfolder name"
+                className="h-7 text-sm"
+                autoFocus
+                onKeyDown={e => { if (e.key === "Enter") onSubmitCreate(folder.id); if (e.key === "Escape") onCancelCreate(); }}
+                onBlur={() => { if (!newFolderName.trim()) onCancelCreate(); }}
+              />
+            </div>
+          )}
           {children.map(child => (
             <FolderItem
               key={child.id}
               folder={child}
               allFolders={allFolders}
-              selectedFolderId={selectedFolderId}
-              onSelectFolder={onSelectFolder}
+              selectedView={selectedView}
+              onSelectView={onSelectView}
               editingId={editingId}
               editName={editName}
               setEditingId={setEditingId}
               setEditName={setEditName}
               onRename={onRename}
               onDelete={onDelete}
+              creatingInParent={creatingInParent}
+              newFolderName={newFolderName}
+              setNewFolderName={setNewFolderName}
+              onCreateSubfolder={onCreateSubfolder}
+              onSubmitCreate={onSubmitCreate}
+              onCancelCreate={onCancelCreate}
             />
           ))}
         </SidebarMenu>
