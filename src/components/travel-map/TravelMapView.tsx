@@ -40,13 +40,11 @@ function FloatingHearts() {
 
 // Countries visited legend for heatmap
 function HeatmapLegend({ locations }: { locations: TravelLocation[] }) {
-  const countries = Array.from(
-    new Map(
-      locations
-        .filter(l => l.country)
-        .map(l => [l.country!, locations.filter(x => x.country === l.country).length])
-    ).entries()
-  ).sort((a, b) => b[1] - a[1]);
+  const countMap: Record<string, number> = {};
+  locations.forEach(l => {
+    if (l.country) countMap[l.country] = (countMap[l.country] ?? 0) + 1;
+  });
+  const countries = Object.entries(countMap).sort((a, b) => b[1] - a[1]);
 
   if (countries.length === 0) return null;
 
