@@ -79,12 +79,15 @@ serve(async (req) => {
       const profile = profiles.find((p) => p.user_id === u.id);
       const sub = subscriptions.find((s) => s.user_id === u.id);
       const isInCouple = couples.some((c) => c.user1_id === u.id || c.user2_id === u.id);
+      const effectivePlan = getEffectivePlan(u.id);
+      const isShared = !paidPlanMap[u.id] && effectivePlan !== "single";
       return {
         id: u.id,
         email: u.email,
         display_name: profile?.display_name ?? null,
         avatar_url: profile?.avatar_url ?? null,
-        plan: sub?.plan ?? "single",
+        plan: effectivePlan,
+        is_shared_plan: isShared,
         subscription_status: sub?.status ?? null,
         period_end: sub?.current_period_end ?? null,
         storage_used: storageMap[u.id] ?? 0,
