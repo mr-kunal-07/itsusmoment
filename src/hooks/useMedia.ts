@@ -169,6 +169,37 @@ export function useMoveMedia() {
   });
 }
 
+export function useBulkDeleteMedia() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (items: { id: string; filePath: string }[]) => {
+      const filePaths = items.map(i => i.filePath);
+      const ids = items.map(i => i.id);
+      await supabase.storage.from("media").remove(filePaths);
+      const { error } = await supabase.from("media").delete().in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["media"] });
+      qc.invalidateQueries({ queryKey: ["media-infinite"] });
+    },
+  });
+}
+
+export function useBulkMoveMedia() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ids, folderId }: { ids: string[]; folderId: string | null }) => {
+      const { error } = await supabase.from("media").update({ folder_id: folderId }).in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["media"] });
+      qc.invalidateQueries({ queryKey: ["media-infinite"] });
+    },
+  });
+}
+
 export function useToggleStar() {
   const qc = useQueryClient();
   return useMutation({

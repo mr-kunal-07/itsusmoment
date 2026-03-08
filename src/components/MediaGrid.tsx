@@ -1,8 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Play, MoreVertical, Pencil, Trash2, Star, Image as ImageIcon, List, LayoutGrid } from "lucide-react";
-import { Media, getPublicUrl, useDeleteMedia, useUpdateMedia, useToggleStar } from "@/hooks/useMedia";
+import { Play, MoreVertical, Pencil, Trash2, Star, Image as ImageIcon, FolderInput, X, CheckSquare } from "lucide-react";
+import { Media, getPublicUrl, useDeleteMedia, useUpdateMedia, useToggleStar, useBulkDeleteMedia, useBulkMoveMedia } from "@/hooks/useMedia";
+import { useFolders } from "@/hooks/useFolders";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -20,6 +22,9 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 
 export type ViewMode = "grid" | "list";
 
@@ -43,12 +48,34 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
   const deleteMedia = useDeleteMedia();
   const updateMedia = useUpdateMedia();
   const toggleStar = useToggleStar();
+  const bulkDelete = useBulkDeleteMedia();
+  const bulkMove = useBulkMoveMedia();
+  const { data: folders = [] } = useFolders();
   const { toast } = useToast();
 
   const [editItem, setEditItem] = useState<Media | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [deleteItem, setDeleteItem] = useState<Media | null>(null);
+
+  // Bulk selection
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
+  const [moveFolderId, setMoveFolderId] = useState<string>("__none__");
+
+  const isSelecting = selected.size > 0;
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const selectAll = () => setSelected(new Set(media.map(m => m.id)));
+  const clearSelection = () => setSelected(new Set());
 
   // Infinite scroll
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -92,6 +119,31 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
     }
   };
 
+  const handleBulkDelete = async () => {
+    const items = media.filter(m => selected.has(m.id)).map(m => ({ id: m.id, filePath: m.file_path }));
+    try {
+      await bulkDelete.mutateAsync(items);
+      clearSelection();
+      setBulkDeleteOpen(false);
+      toast({ title: `Deleted ${items.length} file${items.length !== 1 ? "s" : ""}` });
+    } catch {
+      toast({ title: "Error deleting files", variant: "destructive" });
+    }
+  };
+
+  const handleBulkMove = async () => {
+    const ids = Array.from(selected);
+    const folderId = moveFolderId === "__none__" ? null : moveFolderId;
+    try {
+      await bulkMove.mutateAsync({ ids, folderId });
+      clearSelection();
+      setBulkMoveOpen(false);
+      toast({ title: `Moved ${ids.length} file${ids.length !== 1 ? "s" : ""}` });
+    } catch {
+      toast({ title: "Error moving files", variant: "destructive" });
+    }
+  };
+
   const handleDragStart = (e: React.DragEvent, item: Media) => {
     e.dataTransfer.setData("media-id", item.id);
     e.dataTransfer.effectAllowed = "move";
@@ -130,108 +182,184 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
 
   return (
     <>
+      {/* Bulk selection toolbar */}
+      {isSelecting && (
+        <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-primary/10 border border-primary/20">
+          <CheckSquare className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm font-medium text-primary">{selected.size} selected</span>
+          <Button variant="ghost" size="sm" className="text-xs h-7 ml-1" onClick={selectAll}>Select all {media.length}</Button>
+          <div className="flex items-center gap-1 ml-auto">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1.5"
+              onClick={() => { setMoveFolderId("__none__"); setBulkMoveOpen(true); }}
+            >
+              <FolderInput className="h-3.5 w-3.5" /> Move
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-7 text-xs gap-1.5"
+              onClick={() => setBulkDeleteOpen(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Delete
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearSelection}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {viewMode === "grid" ? (
         <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4">
-          {media.map(item => (
-            <Card
-              key={item.id}
-              className="overflow-hidden group cursor-pointer hover:shadow-md transition-shadow break-inside-avoid"
-              draggable
-              onDragStart={e => handleDragStart(e, item)}
-            >
-              <div className="relative bg-muted" onClick={() => onPreview(item)}>
-                {item.file_type === "video" ? (
-                  <>
-                    <video src={getPublicUrl(item.file_path)} className="w-full object-cover" preload="metadata" />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                      <Play className="h-10 w-10 text-white fill-white/80" />
-                    </div>
-                  </>
-                ) : (
-                  <img src={getPublicUrl(item.file_path)} alt={item.title} className="w-full object-cover" loading="lazy" />
+          {media.map(item => {
+            const isSelected = selected.has(item.id);
+            return (
+              <Card
+                key={item.id}
+                className={cn(
+                  "overflow-hidden group cursor-pointer hover:shadow-md transition-shadow break-inside-avoid",
+                  isSelected && "ring-2 ring-primary"
                 )}
-                {/* Star button */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 hover:bg-black/50"
-                  onClick={e => { e.stopPropagation(); handleToggleStar(item); }}
+                draggable={!isSelecting}
+                onDragStart={e => handleDragStart(e, item)}
+              >
+                <div
+                  className="relative bg-muted"
+                  onClick={() => isSelecting ? toggleSelect(item.id) : onPreview(item)}
                 >
-                  <Star className={cn("h-4 w-4", item.is_starred ? "fill-yellow-400 text-yellow-400" : "text-white")} />
-                </Button>
-              </div>
-              <div className="p-3 flex items-start justify-between gap-1">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{item.title}</p>
-                  <p className="text-xs text-muted-foreground">{formatSize(item.file_size)} · {format(new Date(item.created_at), "MMM d")}</p>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <MoreVertical className="h-4 w-4" />
+                  {item.file_type === "video" ? (
+                    <>
+                      <video src={getPublicUrl(item.file_path)} className="w-full object-cover" preload="metadata" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <Play className="h-10 w-10 text-white fill-white/80" />
+                      </div>
+                    </>
+                  ) : (
+                    <img src={getPublicUrl(item.file_path)} alt={item.title} className="w-full object-cover" loading="lazy" />
+                  )}
+                  {/* Checkbox */}
+                  <div
+                    className={cn(
+                      "absolute top-2 left-2 transition-opacity",
+                      isSelecting ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                    )}
+                    onClick={e => { e.stopPropagation(); toggleSelect(item.id); }}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      className="bg-background/80 border-white data-[state=checked]:bg-primary"
+                    />
+                  </div>
+                  {/* Star button */}
+                  {!isSelecting && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 hover:bg-black/50"
+                      onClick={e => { e.stopPropagation(); handleToggleStar(item); }}
+                    >
+                      <Star className={cn("h-4 w-4", item.is_starred ? "fill-yellow-400 text-yellow-400" : "text-white")} />
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => { setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
-                      <Pencil className="h-4 w-4 mr-2" /> Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleToggleStar(item)}>
-                      <Star className={cn("h-4 w-4 mr-2", item.is_starred && "fill-yellow-400 text-yellow-400")} />
-                      {item.is_starred ? "Unstar" : "Star"}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setDeleteItem(item)} className="text-destructive">
-                      <Trash2 className="h-4 w-4 mr-2" /> Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </Card>
-          ))}
+                  )}
+                </div>
+                <div className="p-3 flex items-start justify-between gap-1">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">{formatSize(item.file_size)} · {format(new Date(item.created_at), "MMM d")}</p>
+                  </div>
+                  {!isSelecting && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => { setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
+                          <Pencil className="h-4 w-4 mr-2" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleToggleStar(item)}>
+                          <Star className={cn("h-4 w-4 mr-2", item.is_starred && "fill-yellow-400 text-yellow-400")} />
+                          {item.is_starred ? "Unstar" : "Star"}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setDeleteItem(item)} className="text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <div className="space-y-1">
-          {media.map(item => (
-            <div
-              key={item.id}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer group transition-colors"
-              draggable
-              onDragStart={e => handleDragStart(e, item)}
-              onClick={() => onPreview(item)}
-            >
-              <div className="h-12 w-12 rounded-md overflow-hidden bg-muted shrink-0 relative">
-                {item.file_type === "video" ? (
+          {media.map(item => {
+            const isSelected = selected.has(item.id);
+            return (
+              <div
+                key={item.id}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer group transition-colors",
+                  isSelected && "bg-primary/10 hover:bg-primary/15"
+                )}
+                draggable={!isSelecting}
+                onDragStart={e => handleDragStart(e, item)}
+                onClick={() => isSelecting ? toggleSelect(item.id) : onPreview(item)}
+              >
+                {/* Checkbox */}
+                <div
+                  className={cn(
+                    "shrink-0 transition-opacity",
+                    isSelecting ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                  )}
+                  onClick={e => { e.stopPropagation(); toggleSelect(item.id); }}
+                >
+                  <Checkbox checked={isSelected} className="data-[state=checked]:bg-primary" />
+                </div>
+                <div className="h-12 w-12 rounded-md overflow-hidden bg-muted shrink-0 relative">
+                  {item.file_type === "video" ? (
+                    <>
+                      <video src={getPublicUrl(item.file_path)} className="w-full h-full object-cover" preload="metadata" />
+                      <Play className="absolute inset-0 m-auto h-5 w-5 text-white" />
+                    </>
+                  ) : (
+                    <img src={getPublicUrl(item.file_path)} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{item.title}</p>
+                  <p className="text-xs text-muted-foreground">{formatSize(item.file_size)} · {format(new Date(item.created_at), "MMM d, yyyy")}</p>
+                </div>
+                {!isSelecting && (
                   <>
-                    <video src={getPublicUrl(item.file_path)} className="w-full h-full object-cover" preload="metadata" />
-                    <Play className="absolute inset-0 m-auto h-5 w-5 text-white" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={e => { e.stopPropagation(); handleToggleStar(item); }}>
+                      <Star className={cn("h-4 w-4", item.is_starred ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground")} />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
+                          <Pencil className="h-4 w-4 mr-2" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteItem(item); }} className="text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </>
-                ) : (
-                  <img src={getPublicUrl(item.file_path)} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{item.title}</p>
-                <p className="text-xs text-muted-foreground">{formatSize(item.file_size)} · {format(new Date(item.created_at), "MMM d, yyyy")}</p>
-              </div>
-              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={e => { e.stopPropagation(); handleToggleStar(item); }}>
-                <Star className={cn("h-4 w-4", item.is_starred ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground")} />
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
-                    <Pencil className="h-4 w-4 mr-2" /> Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteItem(item); }} className="text-destructive">
-                    <Trash2 className="h-4 w-4 mr-2" /> Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -253,7 +381,7 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
         </DialogContent>
       </Dialog>
 
-      {/* Delete Dialog */}
+      {/* Single Delete Dialog */}
       <AlertDialog open={!!deleteItem} onOpenChange={open => !open && setDeleteItem(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -266,6 +394,45 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bulk Delete Dialog */}
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selected.size} file{selected.size !== 1 ? "s" : ""}?</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently delete the selected files. This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} disabled={bulkDelete.isPending}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Move Dialog */}
+      <Dialog open={bulkMoveOpen} onOpenChange={setBulkMoveOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Move {selected.size} file{selected.size !== 1 ? "s" : ""}</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label>Destination folder</Label>
+            <Select value={moveFolderId} onValueChange={setMoveFolderId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose folder…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">No folder (root)</SelectItem>
+                {folders.map(f => (
+                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkMoveOpen(false)}>Cancel</Button>
+            <Button onClick={handleBulkMove} disabled={bulkMove.isPending}>Move</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
