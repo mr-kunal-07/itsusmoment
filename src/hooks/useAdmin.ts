@@ -2,6 +2,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
+export interface PlanAuditEntry {
+  id: string;
+  target_user_id: string;
+  changed_by_user_id: string;
+  old_plan: string | null;
+  new_plan: string;
+  changed_at: string;
+  note: string | null;
+  target_user: { display_name: string | null; avatar_url: string | null; email: string } | null;
+  changed_by_user: { display_name: string | null; avatar_url: string | null; email: string } | null;
+}
+
 export interface AdminUser {
   id: string;
   email: string;
@@ -78,6 +90,22 @@ export function useAdminManageUser() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-audit-log"] });
     },
+  });
+}
+
+export function useAdminAuditLog() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["admin-audit-log"],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+      const result = await callAdminFn("admin-audit-log", {}, session.access_token);
+      return result.logs as PlanAuditEntry[];
+    },
+    staleTime: 30_000,
   });
 }

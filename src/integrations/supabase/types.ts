@@ -415,6 +415,36 @@ export type Database = {
           },
         ]
       }
+      plan_audit_log: {
+        Row: {
+          changed_at: string
+          changed_by_user_id: string
+          id: string
+          new_plan: string
+          note: string | null
+          old_plan: string | null
+          target_user_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by_user_id: string
+          id?: string
+          new_plan: string
+          note?: string | null
+          old_plan?: string | null
+          target_user_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by_user_id?: string
+          id?: string
+          new_plan?: string
+          note?: string | null
+          old_plan?: string | null
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

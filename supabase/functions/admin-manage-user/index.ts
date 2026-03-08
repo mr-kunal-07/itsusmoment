@@ -38,15 +38,17 @@ serve(async (req) => {
       const periodEnd = new Date(now);
       periodEnd.setMonth(periodEnd.getMonth() + 1);
 
-      // Check if subscription exists
-      const { data: existing } = await adminClient
+      // Get current plan for audit log
+      const { data: existingSub } = await adminClient
         .from("subscriptions")
-        .select("id")
+        .select("id, plan")
         .eq("user_id", target_user_id)
         .maybeSingle();
 
+      const oldPlan = existingSub?.plan ?? null;
+
       let upsertErr;
-      if (existing) {
+      if (existingSub) {
         const { error } = await adminClient
           .from("subscriptions")
           .update({
@@ -72,6 +74,15 @@ serve(async (req) => {
       }
 
       if (upsertErr) throw new Error(upsertErr.message);
+
+      // Write audit log entry
+      await adminClient.from("plan_audit_log").insert({
+        target_user_id,
+        changed_by_user_id: user.id,
+        old_plan: oldPlan,
+        new_plan: plan,
+      });
+
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -84,7 +95,6 @@ serve(async (req) => {
     if (action === "toggle_admin") {
       const { add } = body;
       if (add) {
-        // Check if role already exists before inserting
         const { data: existingRole } = await adminClient
           .from("user_roles")
           .select("id")
