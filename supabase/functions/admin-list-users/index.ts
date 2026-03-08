@@ -59,12 +59,14 @@ serve(async (req) => {
       }
     }
 
-    // Resolve effective plan: own paid plan → partner's paid plan → "single"
+    // Resolve effective plan: highest of own plan or partner's plan
+    const PLAN_RANK: Record<string, number> = { soulmate: 3, dating: 2, single: 1, free: 0 };
     function getEffectivePlan(userId: string): string {
-      if (paidPlanMap[userId]) return paidPlanMap[userId];
+      const ownPlan = paidPlanMap[userId] ?? "single";
       const partnerId = partnerMap[userId];
-      if (partnerId && paidPlanMap[partnerId]) return paidPlanMap[partnerId];
-      return "single";
+      const partnerPlan = (partnerId && paidPlanMap[partnerId]) ? paidPlanMap[partnerId] : "single";
+      const best = (PLAN_RANK[ownPlan] ?? 0) >= (PLAN_RANK[partnerPlan] ?? 0) ? ownPlan : partnerPlan;
+      return best;
     }
 
     // Compute storage per user
