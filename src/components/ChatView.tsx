@@ -548,14 +548,15 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                             <div className="relative">
                               <button
                                 onClick={e => { e.stopPropagation(); setEmojiPickerId(id => id === msg.id ? null : msg.id); }}
-                                className="p-1.5 rounded-full text-white/60 hover:text-white hover:bg-black/20 transition-colors text-sm"
+                                className="p-1.5 rounded-full hover:bg-black/10 transition-colors text-sm"
+                                style={{ color: "hsl(var(--wa-text) / 0.6)" }}
                               >
                                 <Smile className="h-4 w-4" />
                               </button>
                               {emojiPickerId === msg.id && (
                                 <div
                                   className={cn(
-                                    "absolute bottom-9 flex gap-1 rounded-2xl px-2.5 py-2 shadow-xl z-50 border border-white/10",
+                                    "absolute bottom-9 flex gap-1 rounded-2xl px-2.5 py-2 shadow-xl z-50 border border-border",
                                     isMe ? "right-0" : "left-0"
                                   )}
                                   style={{ background: "hsl(var(--wa-header))" }}
