@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useMyCouple } from "@/hooks/useCouple";
+import { encryptText, decryptText } from "@/lib/crypto";
 
 export interface LoveNote {
   id: string;
@@ -23,6 +25,9 @@ export interface MediaReaction {
 
 export function useLoveNotes(mediaId: string) {
   const { user } = useAuth();
+  const { data: couple } = useMyCouple();
+  const coupleId = couple?.status === "active" ? couple.id : null;
+
   return useQuery({
     queryKey: ["love_notes", mediaId],
     queryFn: async () => {
@@ -32,7 +37,12 @@ export function useLoveNotes(mediaId: string) {
         .eq("media_id", mediaId)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return data as LoveNote[];
+      const raw = data as LoveNote[];
+      if (!coupleId) return raw;
+      // Decrypt note content client-side
+      return Promise.all(
+        raw.map(async (n) => ({ ...n, content: await decryptText(n.content, coupleId) }))
+      );
     },
     enabled: !!user && !!mediaId,
   });
@@ -41,12 +51,18 @@ export function useLoveNotes(mediaId: string) {
 export function useAddLoveNote() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { data: couple } = useMyCouple();
+  const coupleId = couple?.status === "active" ? couple.id : null;
+
   return useMutation({
     mutationFn: async ({ mediaId, content }: { mediaId: string; content: string }) => {
+      const encryptedContent = coupleId
+        ? await encryptText(content, coupleId)
+        : content;
       const { error } = await supabase.from("love_notes").insert({
         media_id: mediaId,
         author_id: user!.id,
-        content,
+        content: encryptedContent,
       });
       if (error) throw error;
     },
@@ -93,7 +109,6 @@ export function useToggleReaction() {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async ({ mediaId, emoji }: { mediaId: string; emoji: string }) => {
-      // Check if already reacted
       const { data: existing } = await supabase
         .from("media_reactions")
         .select("id")
