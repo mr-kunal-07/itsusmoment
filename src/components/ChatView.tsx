@@ -576,14 +576,16 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                             </div>
                             <button
                               onClick={() => { setReplyTo(msg); inputRef.current?.focus(); }}
-                              className="p-1.5 rounded-full text-white/60 hover:text-white hover:bg-black/20 transition-colors"
+                              className="p-1.5 rounded-full hover:bg-black/10 transition-colors"
+                              style={{ color: "hsl(var(--wa-text) / 0.6)" }}
                             >
                               <Reply className="h-4 w-4" />
                             </button>
                             {isMe && (
                               <button
                                 onClick={() => deleteMessage.mutateAsync(msg.id)}
-                                className="p-1.5 rounded-full text-white/60 hover:text-red-400 hover:bg-black/20 transition-colors"
+                                className="p-1.5 rounded-full hover:text-red-500 hover:bg-black/10 transition-colors"
+                                style={{ color: "hsl(var(--wa-text) / 0.6)" }}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
