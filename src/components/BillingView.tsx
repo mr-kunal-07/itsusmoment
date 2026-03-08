@@ -79,11 +79,11 @@ const PLAN_META: Record<Plan, {
 }> = {
   single: {
     label: "Single", tagline: "Explore the platform.",
-    price: null,  period: "forever free", badge: null,
+    price: null,   period: "forever free", badge: null,
   },
   dating: {
     label: "Dating", tagline: "Unlock more experiences together.",
-    price: "₹9",  period: "per month",    badge: null,
+    price: "₹29", period: "per month",    badge: "Best value",
   },
   soulmate: {
     label: "Soulmate", tagline: "Everything for the perfect connection.",

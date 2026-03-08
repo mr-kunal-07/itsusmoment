@@ -83,25 +83,25 @@ export function useIsSharedPlan(): boolean {
 // ── Plan limits ─────────────────────────────────────────────
 
 export const PLAN_STORAGE: Record<Plan, number> = {
-  single:   1  * 1024 * 1024 * 1024, // 1 GB
-  dating:   5  * 1024 * 1024 * 1024, // 5 GB
-  soulmate: 50 * 1024 * 1024 * 1024, // 50 GB
+  single:   1  * 1024 * 1024 * 1024,  // 1 GB
+  dating:   10 * 1024 * 1024 * 1024,  // 10 GB
+  soulmate: 50 * 1024 * 1024 * 1024,  // 50 GB
 };
 
 export const PLAN_UPLOAD_LIMIT: Record<Plan, number | null> = {
   single:   50,
-  dating:   200,
+  dating:   null, // unlimited
   soulmate: null, // unlimited
 };
 
 export const PLAN_STORAGE_LABEL: Record<Plan, string> = {
   single:   "1 GB",
-  dating:   "5 GB",
+  dating:   "10 GB",
   soulmate: "50 GB",
 };
 
 export function canUseVoiceMessages(plan: Plan) {
-  return plan === "soulmate";
+  return plan === "dating" || plan === "soulmate";
 }
 
 export function getStorageLimit(plan: Plan) {
