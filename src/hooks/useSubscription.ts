@@ -75,7 +75,7 @@ export function useIsSharedPlan(): boolean {
     },
   });
 
-  const hasPaidOwn = subscription?.plan && subscription.plan !== "free";
+  const hasPaidOwn = subscription?.plan && (subscription.plan as string) !== "free";
   const effectiveIsPaid = effectivePlan && effectivePlan !== "free";
   return !hasPaidOwn && !!effectiveIsPaid;
 }
