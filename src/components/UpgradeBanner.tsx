@@ -37,8 +37,8 @@ export function UpgradeBanner({ onUpgrade, selectedView }: Props) {
   const [dismissed, setDismissed] = useState(false);
   const { data: usedCount = 0 } = useThisMonthUploadCount();
 
-  // Only show for Single (free) users
-  if (plan !== "single" || dismissed) return null;
+  // Only show for Single (free) users on the "all" tab
+  if (plan !== "single" || dismissed || selectedView !== "all") return null;
 
   const limit = PLAN_UPLOAD_LIMIT.single!; // 50
   const remaining = Math.max(0, limit - usedCount);
