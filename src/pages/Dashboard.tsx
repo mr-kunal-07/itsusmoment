@@ -309,6 +309,9 @@ export default function Dashboard() {
           {/* Partner invite banner */}
           <PartnerBanner />
 
+          {/* Upgrade nudge for free users */}
+          <UpgradeBanner onUpgrade={() => setSelectedView("billing")} />
+
           {/* Content */}
           <main
             className={cn(
