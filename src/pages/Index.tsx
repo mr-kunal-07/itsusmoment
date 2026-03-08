@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Heart, Image, MessageCircle, Mic, Star, Lock, Zap, Calendar,
-  ArrowRight, Check, ChevronDown, Sparkles, Camera, Gift,
-  Shield, Users, Infinity, Play, Quote, Vault, KeyRound
+  Heart, GalleryVerticalEnd, MessagesSquare, AudioWaveform, CalendarHeart,
+  ArrowRight, Check, ChevronDown, Sparkles, ImagePlay, Gift,
+  ShieldCheck, UserPlus, Infinity, PlayCircle, Quote, LockKeyhole,
+  HeartHandshake, Clapperboard, Zap, Star, Film, Gem
 } from "lucide-react";
 import heroBg from "@/assets/hero-couple.jpg";
 
