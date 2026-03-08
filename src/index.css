@@ -112,6 +112,19 @@
 
     --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.5), 0 2px 12px hsl(0 0% 0% / 0.3);
     --shadow-popover: 0 8px 32px hsl(0 0% 0% / 0.6), 0 2px 8px hsl(0 0% 0% / 0.4);
+
+    /* ── WhatsApp-style Chat tokens (dark mode) ── */
+    --wa-bg:            210 11% 10%;      /* outer chat bg #111b21 */
+    --wa-wallpaper:     210 11% 13%;      /* message area tinted bg */
+    --wa-header:        210 11% 15%;      /* header + input bar #1f2c33 */
+    --wa-bubble-out:    152 27% 26%;      /* sent bubble green #075e54 area */
+    --wa-bubble-in:     210 11% 19%;      /* received bubble dark */
+    --wa-input-bg:      210 11% 19%;      /* input pill bg */
+    --wa-online:        142 54% 48%;      /* online dot + teal accent #25d366 */
+    --wa-tick-blue:     207 90% 65%;      /* double-tick blue seen */
+    --wa-meta:          0 0% 55%;         /* timestamps, subtext */
+    --wa-system-bubble: 210 11% 18%;      /* date divider bubble */
+    --wa-avatar:        152 27% 30%;      /* default avatar bg */
   }
 
   /* ── Landing page: light pink-green couple theme ─────────────────────
