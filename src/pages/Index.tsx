@@ -262,7 +262,7 @@ export default function Index() {
               <a key={href} href={href} onClick={() => setMenu(false)}
                 className="text-sm font-medium py-3" style={{ color: T.body, borderBottom: `1px solid #f3f4f6` }}>{label}</a>
             ))}
-            <Link to="/auth" onClick={() => setMenu(false)} className="mt-3 text-sm font-bold text-white py-3.5 rounded-xl text-center" style={{ background: T.accent }}>
+            <Link to="/auth" onClick={() => setMenu(false)} className="mt-3 text-sm font-semibold text-white py-3.5 rounded-xl text-center" style={{ background: T.accent }}>
               Sign up free →
             </Link>
           </div>
