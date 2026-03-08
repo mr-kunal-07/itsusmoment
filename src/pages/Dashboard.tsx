@@ -98,7 +98,7 @@ export default function Dashboard() {
 
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <header className="sticky top-0 z-10 bg-background border-b px-4 h-14 flex items-center gap-3">
+          <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b px-4 h-14 flex items-center gap-3 shadow-sm">
             <SidebarTrigger className="shrink-0" />
 
             <div className="relative flex-1 max-w-md">
