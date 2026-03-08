@@ -2,9 +2,11 @@ import { useState } from "react";
 import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart, CalendarHeart, Play, Trophy, Link2 } from "lucide-react";
 import { useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, Folder } from "@/hooks/useFolders";
 import { useMedia } from "@/hooks/useMedia";
-import { useStorageUsage, useAllProfiles } from "@/hooks/useProfile";
+import { useStorageUsage, useAllProfiles, useProfile } from "@/hooks/useProfile";
 import { useOnThisDay } from "@/hooks/useMemories";
 import { useMyCouple } from "@/hooks/useCouple";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,15 +37,25 @@ function formatSize(bytes: number) {
 }
 
 export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Props) {
+  const { user } = useAuth();
   const { data: folders = [] } = useFolders();
   const { data: allMedia = [] } = useMedia();
   const { data: storageBytes = 0 } = useStorageUsage();
   const { data: onThisDayMedia = [] } = useOnThisDay();
   const { data: couple } = useMyCouple();
   const { data: profiles = [] } = useAllProfiles();
+  const { data: myProfile } = useProfile();
   const createFolder = useCreateFolder();
   const renameFolder = useRenameFolder();
   const deleteFolder = useDeleteFolder();
+
+  // Derive partner profile when couple is active
+  const partnerId = couple?.status === "active"
+    ? (couple.user1_id === user?.id ? couple.user2_id : couple.user1_id)
+    : null;
+  const partnerProfile = partnerId ? profiles.find(p => p.user_id === partnerId) : null;
+  const myInitials = (myProfile?.display_name ?? user?.email ?? "Me").slice(0, 2).toUpperCase();
+  const partnerInitials = (partnerProfile?.display_name ?? "?").slice(0, 2).toUpperCase();
 
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [creatingInParent, setCreatingInParent] = useState<string | null>(null);
@@ -102,8 +114,8 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
             <Heart className="h-4 w-4 text-primary-foreground fill-primary-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-bold font-heading tracking-tight gradient-text">Kunal & Kalyani</h2>
-            <p className="text-[10px] text-muted-foreground">Media Vault</p>
+            <h2 className="text-sm font-bold font-heading tracking-tight gradient-text">Our Vault</h2>
+            <p className="text-[10px] text-muted-foreground">Shared Media</p>
           </div>
           {couple?.status === "active" ? (
             <span title="Partner linked" className="h-5 w-5 flex items-center justify-center rounded-full bg-primary/15 shrink-0">
@@ -115,6 +127,41 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
             </span>
           )}
         </div>
+
+        {/* Partner connection display */}
+        {couple?.status === "active" && (
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-primary/8 border border-primary/15 px-2.5 py-2">
+            <div className="flex items-center -space-x-1.5">
+              <Avatar className="h-6 w-6 ring-2 ring-sidebar border-0">
+                <AvatarImage src={myProfile?.avatar_url ?? undefined} />
+                <AvatarFallback className="text-[9px] bg-primary text-primary-foreground">{myInitials}</AvatarFallback>
+              </Avatar>
+              <Avatar className="h-6 w-6 ring-2 ring-sidebar border-0">
+                <AvatarImage src={partnerProfile?.avatar_url ?? undefined} />
+                <AvatarFallback className="text-[9px] bg-muted text-muted-foreground">{partnerInitials}</AvatarFallback>
+              </Avatar>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-medium text-foreground truncate">
+                {myProfile?.display_name ?? "You"} &amp; {partnerProfile?.display_name ?? "Partner"}
+              </p>
+              <p className="text-[9px] text-primary">● Connected</p>
+            </div>
+          </div>
+        )}
+
+        {couple?.status !== "active" && (
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-muted/50 border border-border px-2.5 py-2">
+            <Avatar className="h-6 w-6">
+              <AvatarImage src={myProfile?.avatar_url ?? undefined} />
+              <AvatarFallback className="text-[9px] bg-primary text-primary-foreground">{myInitials}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-medium text-foreground truncate">{myProfile?.display_name ?? user?.email?.split("@")[0] ?? "You"}</p>
+              <p className="text-[9px] text-muted-foreground">No partner linked</p>
+            </div>
+          </div>
+        )}
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
