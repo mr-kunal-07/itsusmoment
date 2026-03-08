@@ -367,6 +367,8 @@ export default function Dashboard() {
                 <AnniversariesView />
               ) : selectedView === "love-story" ? (
                 <LoveStoryView />
+              ) : selectedView === "travel-map" ? (
+                <TravelMapView />
               ) : selectedView === "activity" ? (
                 <ActivityFeed />
               ) : selectedView === "billing" ? (
