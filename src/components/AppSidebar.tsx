@@ -126,7 +126,7 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
             <Heart className="h-4 w-4 text-primary-foreground fill-primary-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-bold font-heading tracking-tight gradient-text">Our Vault</h2>
+            <h2 className="text-sm font-bold font-heading tracking-tight gradient-text">OurVault</h2>
             <p className="text-[10px] text-muted-foreground">Shared Media</p>
           </div>
           {couple?.status === "active" ? (
