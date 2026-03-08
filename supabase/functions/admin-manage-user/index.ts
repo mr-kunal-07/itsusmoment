@@ -84,7 +84,16 @@ serve(async (req) => {
     if (action === "toggle_admin") {
       const { add } = body;
       if (add) {
-        await adminClient.from("user_roles").upsert({ user_id: target_user_id, role: "admin" }, { onConflict: "user_id,role" });
+        // Check if role already exists before inserting
+        const { data: existingRole } = await adminClient
+          .from("user_roles")
+          .select("id")
+          .eq("user_id", target_user_id)
+          .eq("role", "admin")
+          .maybeSingle();
+        if (!existingRole) {
+          await adminClient.from("user_roles").insert({ user_id: target_user_id, role: "admin" });
+        }
       } else {
         await adminClient.from("user_roles").delete().eq("user_id", target_user_id).eq("role", "admin");
       }
