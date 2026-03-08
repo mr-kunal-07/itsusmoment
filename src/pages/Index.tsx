@@ -248,7 +248,7 @@ export default function Index() {
         <div className="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-glow">
-              <Vault className="w-4 h-4 text-primary-foreground" strokeWidth={2} />
+              <LockKeyhole className="w-4 h-4 text-primary-foreground" strokeWidth={2} />
             </div>
             <span className="font-heading font-semibold text-lg text-foreground">OurVault</span>
           </div>
