@@ -56,7 +56,7 @@ export function SettingsView({ onNavigateBilling }: Props) {
   const [pinError, setPinError] = useState("");
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(
-    () => localStorage.getItem("ourvault_biometric") === "1"
+    () => localStorage.getItem(LOCK_KEYS.biometric) === "1"
   );
 
   // ── PWA install state ───────────────────────────────────────────────────────
