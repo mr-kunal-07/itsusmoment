@@ -291,6 +291,24 @@ export default function Dashboard() {
                   <Upload className="h-4 w-4" />
                   <span className="hidden sm:inline">Upload</span>
                 </Button>
+
+                {/* Profile chip — desktop only */}
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="hidden sm:flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-accent transition-colors shrink-0"
+                  aria-label="Go to profile"
+                >
+                  <Avatar className="h-7 w-7 ring-2 ring-border">
+                    {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt="Profile" />}
+                    <AvatarFallback className="text-[10px] font-semibold">{profileInitials}</AvatarFallback>
+                  </Avatar>
+                  <div className="hidden lg:flex flex-col items-start leading-none">
+                    <span className="text-xs font-medium text-foreground truncate max-w-[80px]">
+                      {profile?.display_name ?? user?.email?.split("@")[0] ?? "You"}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground capitalize">{plan}</span>
+                  </div>
+                </button>
               </div>
             </header>
           )}
