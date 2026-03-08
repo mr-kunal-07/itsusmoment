@@ -246,10 +246,10 @@ export default function Index() {
       <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrollY > 40 ? "bg-background/95 backdrop-blur-xl border-b border-border shadow-card" : "bg-transparent"}`}>
         <div className="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-              <Heart className="w-4 h-4 text-primary-foreground fill-primary-foreground" />
+            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-glow">
+              <Vault className="w-4 h-4 text-primary-foreground" strokeWidth={2} />
             </div>
-            <span className="font-heading font-semibold text-lg text-foreground">KunalKalyani</span>
+            <span className="font-heading font-semibold text-lg text-foreground">OurVault</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
             {(["#features","#how-it-works","#pricing","#testimonials"] as const).map((href, i) => (
