@@ -113,6 +113,7 @@ export function SettingsView({ onNavigateBilling }: Props) {
       toast({ title: "Fingerprint lock enabled 🔒" });
     } else {
       setShowPinSetup(true);
+      setShowPinChange(false);
       setPinStep("enter");
       setPinDraft("");
       setPinConfirm("");
@@ -124,10 +125,20 @@ export function SettingsView({ onNavigateBilling }: Props) {
     disableLock();
     setLockEnabled(false);
     setShowPinSetup(false);
+    setShowPinChange(false);
     toast({ title: "App lock disabled" });
   };
 
-  // ── PIN setup flow (only used when biometric unavailable) ───────────────────
+  const handleChangePinOpen = () => {
+    setShowPinChange(true);
+    setShowPinSetup(false);
+    setPinStep("enter");
+    setPinDraft("");
+    setPinConfirm("");
+    setPinError("");
+  };
+
+  // ── PIN setup/change flow ───────────────────────────────────────────────────
   const handlePinDigit = (d: string) => {
     if (pinStep === "enter") {
       if (pinDraft.length >= 4) return;
@@ -143,8 +154,9 @@ export function SettingsView({ onNavigateBilling }: Props) {
           setLockPin(next);
           setLockEnabled(true);
           setShowPinSetup(false);
+          setShowPinChange(false);
           setPinDraft(""); setPinConfirm(""); setPinStep("enter");
-          toast({ title: "PIN lock enabled 🔒" });
+          toast({ title: showPinChange ? "PIN updated 🔒" : "PIN lock enabled 🔒" });
         } else {
           setPinError("PINs don't match. Try again.");
           setPinDraft(""); setPinConfirm(""); setPinStep("enter");
@@ -152,6 +164,8 @@ export function SettingsView({ onNavigateBilling }: Props) {
       }
     }
   };
+
+  const hasSavedPin = !!getSavedPin();
 
   const handlePinDelete = () => {
     if (pinStep === "enter") setPinDraft(p => p.slice(0, -1));
