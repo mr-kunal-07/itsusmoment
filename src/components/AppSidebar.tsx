@@ -122,8 +122,8 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
     <Sidebar className="border-r">
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-            <Heart className="h-4 w-4 text-primary-foreground fill-primary-foreground" />
+          <div className="h-8 w-8 rounded-lg overflow-hidden shrink-0">
+            <img src="/pwa-icon-192.png" alt="OurVault" className="h-full w-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-sm font-bold font-heading tracking-tight gradient-text">OurVault</h2>
