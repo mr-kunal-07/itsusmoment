@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  SidebarHeader, SidebarFooter,
+  SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -43,6 +43,7 @@ function formatSize(bytes: number) {
 export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { setOpenMobile } = useSidebar();
   const { data: isAdmin } = useIsAdmin();
   const { data: folders = [] } = useFolders();
   const { data: allMedia = [] } = useMedia();
@@ -54,6 +55,12 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
   const createFolder = useCreateFolder();
   const renameFolder = useRenameFolder();
   const deleteFolder = useDeleteFolder();
+
+  // Close mobile sidebar then navigate
+  const selectView = (view: ViewType) => {
+    setOpenMobile(false);
+    onSelectView(view);
+  };
 
   // Derive partner profile when couple is active
   const partnerId = couple?.status === "active"
@@ -181,8 +188,8 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
             <SidebarMenu>
               {navItems.map(item => (
                 <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    onClick={() => onSelectView(item.id)}
+                   <SidebarMenuButton
+                    onClick={() => selectView(item.id)}
                     className={cn("justify-between", selectedView === item.id && "bg-accent text-accent-foreground")}
                   >
                     <span className="flex items-center">
@@ -208,9 +215,9 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
             <SidebarMenu>
               {specialItems.map(item => (
                 <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    onClick={() => onSelectView(item.id)}
-                    className={cn("justify-between", selectedView === item.id && "bg-accent text-accent-foreground")}
+                   <SidebarMenuButton
+                     onClick={() => selectView(item.id)}
+                     className={cn("justify-between", selectedView === item.id && "bg-accent text-accent-foreground")}
                   >
                     <span className="flex items-center">
                       <item.icon className="h-4 w-4 mr-2" />
@@ -223,9 +230,9 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
               {/* On This Day — only if we have past memories */}
               {onThisDayMedia.length > 0 && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => onSelectView("on-this-day")}
-                    className={cn("justify-between", selectedView === "on-this-day" && "bg-accent text-accent-foreground")}
+                   <SidebarMenuButton
+                     onClick={() => selectView("on-this-day")}
+                     className={cn("justify-between", selectedView === "on-this-day" && "bg-accent text-accent-foreground")}
                   >
                     <span className="flex items-center">
                       <span className="text-base mr-2">🗓️</span>
@@ -239,7 +246,7 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
               {/* Slideshow button */}
               {onStartSlideshow && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton onClick={onStartSlideshow} className="text-primary hover:text-primary">
+                  <SidebarMenuButton onClick={() => { setOpenMobile(false); onStartSlideshow?.(); }} className="text-primary hover:text-primary">
                     <Play className="h-4 w-4 mr-2 fill-primary" />
                     <span>Slideshow</span>
                   </SidebarMenuButton>
@@ -278,7 +285,7 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
                   allFolders={folders}
                   folderCounts={folderCounts}
                   selectedView={selectedView}
-                  onSelectView={onSelectView}
+                  onSelectView={selectView}
                   editingId={editingId}
                   editName={editName}
                   setEditingId={setEditingId}
@@ -322,7 +329,7 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
 
         {/* Billing shortcut */}
         <SidebarMenuButton
-          onClick={() => onSelectView("billing")}
+          onClick={() => selectView("billing")}
           className={cn(
             "w-full justify-start gap-2 text-xs",
             plan === "soulmate"
@@ -337,7 +344,7 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
 
         {isAdmin && (
           <SidebarMenuButton
-            onClick={() => navigate("/admin")}
+            onClick={() => { setOpenMobile(false); navigate("/admin"); }}
             className="w-full justify-start gap-2 text-xs text-muted-foreground hover:text-foreground"
           >
             <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
