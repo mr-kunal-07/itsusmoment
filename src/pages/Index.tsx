@@ -393,11 +393,11 @@ export default function Index() {
       <section id="features" style={{ background: T.white, padding: "96px 0" }}>
         <div style={{ maxWidth: 1120, margin: "0 auto", padding: "0 32px" }}>
           <Reveal className="max-w-2xl mb-14" style={{ maxWidth: 640, marginBottom: 56 }}>
-            <p style={{ ...mono, color: T.muted, textTransform: "uppercase", marginBottom: 14 }}>THE FULL PICTURE</p>
+            <p style={{ ...mono, color: T.muted, textTransform: "uppercase", marginBottom: 14 }}>WHAT YOU GET</p>
             <h2 style={{ ...display, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1, marginBottom: 14 }}>
-              Everything a couple needs.<br />Nothing they don't.
+              Everything you need to<br />keep your relationship close.
             </h2>
-            <p style={{ fontSize: 16, lineHeight: 1.75, color: T.body }}>Built around intimacy, privacy, and the rhythm of a real relationship.</p>
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: T.body }}>One app for your photos, your chats, your milestones — and all the little moments in between.</p>
           </Reveal>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 0, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
