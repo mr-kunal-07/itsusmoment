@@ -285,7 +285,7 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
                   allFolders={folders}
                   folderCounts={folderCounts}
                   selectedView={selectedView}
-                  onSelectView={onSelectView}
+                  onSelectView={selectView}
                   editingId={editingId}
                   editName={editName}
                   setEditingId={setEditingId}
