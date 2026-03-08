@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Media, getPublicUrl } from "@/hooks/useMedia";
-import { Play, X, ChevronLeft, ChevronRight, Pause } from "lucide-react";
+import { Play, X, ChevronLeft, ChevronRight, Pause, Music, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -10,12 +10,37 @@ interface Props {
   onClose: () => void;
 }
 
-const SLIDE_DURATION = 4000; // ms per slide
+const SLIDE_DURATION = 4000;
+
+function getMusicEmbed(url: string): { type: "youtube" | "spotify"; embedUrl: string } | null {
+  if (!url) return null;
+  // YouTube
+  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch) {
+    return {
+      type: "youtube",
+      embedUrl: `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&loop=1&playlist=${ytMatch[1]}&controls=0&modestbranding=1&rel=0`,
+    };
+  }
+  // Spotify track/playlist/album
+  const spMatch = url.match(/open\.spotify\.com\/(track|playlist|album)\/([a-zA-Z0-9]+)/);
+  if (spMatch) {
+    return {
+      type: "spotify",
+      embedUrl: `https://open.spotify.com/embed/${spMatch[1]}/${spMatch[2]}?autoplay=1`,
+    };
+  }
+  return null;
+}
 
 export function Slideshow({ media, startIndex = 0, open, onClose }: Props) {
   const [index, setIndex] = useState(startIndex);
   const [playing, setPlaying] = useState(true);
   const [fade, setFade] = useState(true);
+  const [showMusicInput, setShowMusicInput] = useState(false);
+  const [musicUrl, setMusicUrl] = useState("");
+  const [activeMusic, setActiveMusic] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const images = media.filter(m => m.file_type === "image");
 
@@ -64,6 +89,14 @@ export function Slideshow({ media, startIndex = 0, open, onClose }: Props) {
   const item = images[index];
   if (!item) return null;
 
+  const embed = activeMusic ? getMusicEmbed(activeMusic) : null;
+
+  const handleMusicSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setActiveMusic(musicUrl.trim());
+    setShowMusicInput(false);
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-background flex items-center justify-center">
       {/* Background blur */}
@@ -72,8 +105,75 @@ export function Slideshow({ media, startIndex = 0, open, onClose }: Props) {
         style={{ backgroundImage: `url(${getPublicUrl(item.file_path)})` }}
       />
 
-      {/* Controls */}
+      {/* Hidden music iframe */}
+      {embed && (
+        <iframe
+          key={embed.embedUrl}
+          src={embed.embedUrl}
+          allow="autoplay; encrypted-media"
+          className="absolute w-0 h-0 opacity-0 pointer-events-none"
+          title="background music"
+        />
+      )}
+
+      {/* Controls top-right */}
       <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        {/* Music button */}
+        <div className="relative">
+          <button
+            onClick={() => { setShowMusicInput(v => !v); setTimeout(() => inputRef.current?.focus(), 50); }}
+            className={cn(
+              "h-9 w-9 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors",
+              activeMusic
+                ? "bg-primary/30 text-primary border border-primary/40 animate-pulse"
+                : "bg-background/20 hover:bg-background/40 text-foreground"
+            )}
+            title={activeMusic ? "Music playing" : "Add background music"}
+          >
+            <Music className="h-4 w-4" />
+          </button>
+
+          {showMusicInput && (
+            <form
+              onSubmit={handleMusicSubmit}
+              className="absolute top-11 right-0 bg-background/95 backdrop-blur-md border border-border rounded-xl p-3 shadow-xl w-72 z-20"
+            >
+              <p className="text-xs font-medium mb-2">🎵 Background Music</p>
+              <p className="text-[10px] text-muted-foreground mb-2">Paste a YouTube or Spotify link</p>
+              <input
+                ref={inputRef}
+                type="url"
+                value={musicUrl}
+                onChange={e => setMusicUrl(e.target.value)}
+                placeholder="https://youtu.be/... or spotify.com/..."
+                className="w-full text-xs bg-muted rounded-lg px-3 py-2 outline-none border border-border focus:border-primary transition-colors"
+              />
+              <div className="flex gap-2 mt-2">
+                <button type="submit" className="flex-1 bg-primary text-primary-foreground text-xs rounded-lg py-1.5 font-medium hover:bg-primary/90">
+                  Play
+                </button>
+                {activeMusic && (
+                  <button
+                    type="button"
+                    onClick={() => { setActiveMusic(""); setMusicUrl(""); setShowMusicInput(false); }}
+                    className="flex-1 bg-muted text-muted-foreground text-xs rounded-lg py-1.5 font-medium hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    Stop
+                  </button>
+                )}
+                <button type="button" onClick={() => setShowMusicInput(false)} className="bg-muted text-muted-foreground text-xs rounded-lg px-3 py-1.5">
+                  ✕
+                </button>
+              </div>
+              {embed && (
+                <a href={activeMusic} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] text-primary mt-2 hover:underline">
+                  <ExternalLink className="h-3 w-3" /> Open in {embed.type === "youtube" ? "YouTube" : "Spotify"}
+                </a>
+              )}
+            </form>
+          )}
+        </div>
+
         <button
           onClick={() => setPlaying(p => !p)}
           className="h-9 w-9 rounded-full bg-background/20 hover:bg-background/40 backdrop-blur-sm flex items-center justify-center text-foreground transition-colors"
@@ -89,10 +189,15 @@ export function Slideshow({ media, startIndex = 0, open, onClose }: Props) {
       </div>
 
       {/* Counter */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2">
         <span className="text-xs font-medium bg-background/20 backdrop-blur-sm px-3 py-1.5 rounded-full text-foreground/80">
           {index + 1} / {images.length}
         </span>
+        {activeMusic && (
+          <span className="text-xs font-medium bg-primary/20 backdrop-blur-sm px-3 py-1.5 rounded-full text-primary flex items-center gap-1.5">
+            <Music className="h-3 w-3 animate-pulse" /> Music on
+          </span>
+        )}
       </div>
 
       {/* Nav arrows */}
@@ -137,9 +242,7 @@ export function Slideshow({ media, startIndex = 0, open, onClose }: Props) {
           <div
             key={item.id + "-progress"}
             className="h-full bg-primary origin-left"
-            style={{
-              animation: `slideshow-progress ${SLIDE_DURATION}ms linear forwards`,
-            }}
+            style={{ animation: `slideshow-progress ${SLIDE_DURATION}ms linear forwards` }}
           />
         </div>
       )}
