@@ -27,6 +27,7 @@ import { BillingView } from "@/components/BillingView";
 import { SettingsView } from "@/components/SettingsView";
 import { RecentlyDeletedView } from "@/components/RecentlyDeletedView";
 import { LoveStoryView } from "@/components/LoveStoryView";
+import { TravelMapView } from "@/components/travel-map/TravelMapView";
 
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
