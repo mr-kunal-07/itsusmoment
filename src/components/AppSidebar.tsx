@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart } from "lucide-react";
+import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart, CalendarHeart, BarChart3, Play } from "lucide-react";
 import { useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, Folder } from "@/hooks/useFolders";
 import { useMedia } from "@/hooks/useMedia";
 import { useStorageUsage } from "@/hooks/useProfile";
+import { useOnThisDay } from "@/hooks/useMemories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,11 +18,12 @@ import {
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
-export type ViewType = "all" | "unfiled" | "starred" | "recent" | string;
+export type ViewType = "all" | "unfiled" | "starred" | "recent" | "timeline" | "stats" | string;
 
 interface Props {
   selectedView: ViewType;
   onSelectView: (view: ViewType) => void;
+  onStartSlideshow?: () => void;
 }
 
 function formatSize(bytes: number) {
@@ -31,10 +33,11 @@ function formatSize(bytes: number) {
   return (bytes / 1073741824).toFixed(1) + " GB";
 }
 
-export function AppSidebar({ selectedView, onSelectView }: Props) {
+export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Props) {
   const { data: folders = [] } = useFolders();
   const { data: allMedia = [] } = useMedia();
   const { data: storageBytes = 0 } = useStorageUsage();
+  const { data: onThisDayMedia = [] } = useOnThisDay();
   const createFolder = useCreateFolder();
   const renameFolder = useRenameFolder();
   const deleteFolder = useDeleteFolder();
@@ -81,6 +84,11 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
     { id: "recent" as const, label: "Recent", icon: Clock, count: null },
     { id: "starred" as const, label: "Starred", icon: Star, count: allMedia.filter(m => m.is_starred).length },
     { id: "unfiled" as const, label: "Unfiled", icon: FileIcon, count: folderCounts["__unfiled__"] ?? 0 },
+  ];
+
+  const specialItems = [
+    { id: "timeline" as const, label: "Memories Timeline", icon: CalendarHeart, count: null },
+    { id: "stats" as const, label: "Our Stats", icon: BarChart3, count: null },
   ];
 
   return (
