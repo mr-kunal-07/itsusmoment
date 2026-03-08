@@ -205,6 +205,41 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          content: string
+          couple_id: string
+          created_at: string
+          id: string
+          read_at: string | null
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          couple_id: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          couple_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       milestones: {
         Row: {
           created_at: string

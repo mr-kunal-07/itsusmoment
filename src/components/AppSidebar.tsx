@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart, CalendarHeart, Play, Trophy, Link2 } from "lucide-react";
+import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart, CalendarHeart, Play, Trophy, Link2, MessageCircleHeart } from "lucide-react";
 import { DaysTogether } from "@/components/DaysTogether";
 import { useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, Folder } from "@/hooks/useFolders";
 import { useMedia } from "@/hooks/useMedia";
@@ -22,7 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
-export type ViewType = "all" | "unfiled" | "starred" | "recent" | "timeline" | "stats" | "anniversaries" | string;
+export type ViewType = "all" | "unfiled" | "starred" | "recent" | "timeline" | "stats" | "anniversaries" | "chat" | string;
 
 interface Props {
   selectedView: ViewType;
@@ -105,6 +105,7 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
   const specialItems = [
     { id: "timeline" as const, label: "Memories Timeline", icon: CalendarHeart, count: null },
     { id: "anniversaries" as const, label: "Anniversaries", icon: Trophy, count: null },
+    { id: "chat" as const, label: "Chat with Partner", icon: MessageCircleHeart, count: null },
   ];
 
   return (

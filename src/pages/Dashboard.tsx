@@ -19,6 +19,7 @@ import { AnniversariesView } from "@/components/AnniversariesView";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { Slideshow } from "@/components/Slideshow";
 import { PartnerBanner } from "@/components/PartnerBanner";
+import { ChatView } from "@/components/ChatView";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,7 +42,7 @@ function loadPref<T>(key: string, fallback: T): T {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
 }
 
-const SPECIAL_VIEWS = ["all", "unfiled", "starred", "recent", "timeline", "on-this-day", "anniversaries"];
+const SPECIAL_VIEWS = ["all", "unfiled", "starred", "recent", "timeline", "on-this-day", "anniversaries", "chat"];
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -152,6 +153,7 @@ export default function Dashboard() {
     : selectedView === "timeline" ? "Memories Timeline"
     : selectedView === "on-this-day" ? `On This Day · ${format(new Date(), "MMMM d")}`
     : selectedView === "anniversaries" ? "Anniversaries & Milestones"
+    : selectedView === "chat" ? "Chat with Partner 💬"
     : currentFolder?.name || "Folder";
 
   const avatarUrl = profile?.avatar_url ?? null;
@@ -184,7 +186,7 @@ export default function Dashboard() {
 
   const sortLabel = { created_at: "Date", title: "Name", file_size: "Size" }[sortKey] + (sortDir === "asc" ? " ↑" : " ↓");
 
-  const isGridView = selectedView !== "timeline" && selectedView !== "anniversaries";
+  const isGridView = selectedView !== "timeline" && selectedView !== "anniversaries" && selectedView !== "chat";
 
   return (
     <SidebarProvider>
@@ -332,6 +334,8 @@ export default function Dashboard() {
               }} />
             ) : selectedView === "anniversaries" ? (
               <AnniversariesView />
+            ) : selectedView === "chat" ? (
+              <ChatView />
             ) : (
               <MediaGrid
                 media={media}
