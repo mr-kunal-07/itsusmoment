@@ -160,7 +160,6 @@ export function DaysTogether() {
               >
                 <Flame className="h-4 w-4" style={{ color: "hsl(42 90% 68%)" }} />
               </div>
-              </div>
               <div>
                 <p className="text-[11px] font-semibold" style={{ color: "hsl(42 70% 60%)" }}>
                   Set your start date
