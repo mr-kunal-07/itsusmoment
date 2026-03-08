@@ -334,6 +334,8 @@ export default function Dashboard() {
               }} />
             ) : selectedView === "anniversaries" ? (
               <AnniversariesView />
+            ) : selectedView === "chat" ? (
+              <ChatView />
             ) : (
               <MediaGrid
                 media={media}
