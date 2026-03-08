@@ -110,6 +110,10 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
     { id: "chat" as const, label: "Chat with Partner", icon: MessageCircleHeart, count: null },
   ];
 
+  const plan = usePlan();
+  const storageLimit = getStorageLimit(plan);
+  const storageLabel = formatStorageLimit(plan);
+
   return (
     <Sidebar className="border-r">
       <SidebarHeader className="p-4 border-b border-sidebar-border">
