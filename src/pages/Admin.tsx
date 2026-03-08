@@ -36,7 +36,7 @@ const PLAN_CONFIG: Record<string, { label: string; Icon: React.ElementType; colo
   soulmate: { label: "Soulmate", Icon: Gem,            color: "text-primary" },
 };
 
-function PlanBadge({ plan }: { plan: string }) {
+function PlanBadge({ plan, isShared }: { plan: string; isShared?: boolean }) {
   const cfg = PLAN_CONFIG[plan] ?? PLAN_CONFIG.single;
   return (
     <Badge
@@ -45,6 +45,9 @@ function PlanBadge({ plan }: { plan: string }) {
     >
       <cfg.Icon className="h-3 w-3" strokeWidth={1.75} />
       {cfg.label}
+      {isShared && (
+        <span title="Shared from partner" className="ml-0.5 text-[9px] opacity-60">❤️</span>
+      )}
     </Badge>
   );
 }
