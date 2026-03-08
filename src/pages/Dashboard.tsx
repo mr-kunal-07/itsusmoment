@@ -70,6 +70,49 @@ export default function Dashboard() {
   useEffect(() => { localStorage.setItem(STORAGE_KEY_SORT + "_key", JSON.stringify(sortKey)); }, [sortKey]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_SORT + "_dir", JSON.stringify(sortDir)); }, [sortDir]);
 
+  // Realtime: toast when partner uploads or edits a file
+  useEffect(() => {
+    if (!user || couple?.status !== "active") return;
+
+    const partnerId = couple.user1_id === user.id ? couple.user2_id : couple.user1_id;
+    if (!partnerId) return;
+
+    const partnerProfile = profiles.find(p => p.user_id === partnerId);
+    const partnerName = partnerProfile?.display_name ?? "Your partner";
+
+    const channel = supabase
+      .channel("partner-media-activity")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "media" },
+        (payload) => {
+          const row = payload.new as { uploaded_by: string; id: string; title?: string };
+          if (row.uploaded_by !== partnerId) return;
+          if (seenMediaRef.current.has(row.id)) return;
+          seenMediaRef.current.add(row.id);
+          toast({
+            title: `${partnerName} added a new photo 💕`,
+            description: row.title || undefined,
+          });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "media" },
+        (payload) => {
+          const row = payload.new as { uploaded_by: string; id: string; title?: string };
+          if (row.uploaded_by !== partnerId) return;
+          toast({
+            title: `${partnerName} updated a memory ✏️`,
+            description: row.title || undefined,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, couple, profiles, toast]);
+
   const isSpecialView = SPECIAL_VIEWS.includes(selectedView);
 
   const folderId = selectedView === "all" ? undefined
