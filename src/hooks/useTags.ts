@@ -78,8 +78,8 @@ export function useCreateTag() {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async ({ name, color }: { name: string; color: string }) => {
-      const { data, error } = await supabase
-        .from("tags" as never)
+      const { data, error } = await (supabase as any)
+        .from("tags")
         .insert({ name: name.trim(), color, created_by: user!.id })
         .select()
         .single();
