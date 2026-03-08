@@ -251,9 +251,18 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
     >
       {/* ── WhatsApp-style Header ── */}
       <div
-        className="flex items-center gap-3 px-4 py-3 shrink-0 z-10"
+        className="flex items-center gap-2 px-3 py-3 shrink-0 z-10"
         style={{ background: "hsl(var(--wa-header))" }}
       >
+        {/* Back button — mobile only */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="sm:hidden p-1.5 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors mr-1 shrink-0"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+        )}
         <div className="relative">
           <Avatar className="h-10 w-10 ring-2 ring-white/10">
             <AvatarImage src={partnerProfile?.avatar_url ?? undefined} />
