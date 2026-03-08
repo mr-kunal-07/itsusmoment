@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Heart, Image, MessageCircle, Mic, Star, Lock, Zap, Calendar,
-  ArrowRight, Check, ChevronDown, Sparkles, Camera, Music, Gift,
-  Shield, Users, Infinity, Play, Quote
+  ArrowRight, Check, ChevronDown, Sparkles, Camera, Gift,
+  Shield, Users, Infinity, Play, Quote, Vault, KeyRound
 } from "lucide-react";
 import heroBg from "@/assets/hero-couple.jpg";
 
@@ -166,7 +166,7 @@ const STEPS: { step: string; icon: React.ElementType; title: string; desc: strin
 ];
 
 const TESTIMONIALS = [
-  { quote: "We live in different cities. KunalKalyani is the only app where we actually feel close. The voice messages make it real.", name: "Priya & Arjun", days: "Together 487 days", avatar: "💑" },
+  { quote: "We live in different cities. OurVault is the only app where we actually feel close. The voice messages make it real.", name: "Priya & Arjun", days: "Together 487 days", avatar: "💑" },
   { quote: "The memory vault is incredible. Every trip, every date, every note — all in one beautiful place just for us.", name: "Sneha & Rahul", days: "Together 1,204 days", avatar: "🌹" },
   { quote: "I uploaded our first photo on the app and added a love note. She cried. Best ₹9 I've ever spent.", name: "Rohan", days: "Dating plan", avatar: "💌" },
 ];
@@ -246,10 +246,10 @@ export default function Index() {
       <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrollY > 40 ? "bg-background/95 backdrop-blur-xl border-b border-border shadow-card" : "bg-transparent"}`}>
         <div className="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-              <Heart className="w-4 h-4 text-primary-foreground fill-primary-foreground" />
+            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-glow">
+              <Vault className="w-4 h-4 text-primary-foreground" strokeWidth={2} />
             </div>
-            <span className="font-heading font-semibold text-lg text-foreground">KunalKalyani</span>
+            <span className="font-heading font-semibold text-lg text-foreground">OurVault</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
             {(["#features","#how-it-works","#pricing","#testimonials"] as const).map((href, i) => (
@@ -569,7 +569,7 @@ export default function Index() {
               Your story deserves<br /><span className="gradient-text">a forever home.</span>
             </h2>
             <p className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto leading-relaxed">
-              Join 50,000+ couples who chose KunalKalyani to hold their most precious memories. Free to start, forever to keep.
+              Join 50,000+ couples who chose OurVault to hold their most precious memories. Free to start, forever to keep.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/auth" className="group flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-xl font-semibold text-base hover:opacity-90 hover:shadow-glow hover:scale-[1.02] transition-all active:scale-[0.98]">
@@ -589,10 +589,10 @@ export default function Index() {
       <footer className="border-t border-border bg-card/30">
         <div className="max-w-7xl mx-auto px-5 md:px-8 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
-              <Heart className="w-3.5 h-3.5 text-primary-foreground fill-primary-foreground" />
+            <div className="w-7 h-7 rounded-xl bg-primary flex items-center justify-center shadow-glow">
+              <Vault className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={2} />
             </div>
-            <span className="font-heading font-semibold text-foreground">KunalKalyani</span>
+            <span className="font-heading font-semibold text-foreground">OurVault</span>
           </div>
           <p className="text-xs text-muted-foreground text-center">
             Made with 💕 for couples everywhere · Your memories are private and secure
