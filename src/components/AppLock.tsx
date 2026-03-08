@@ -94,8 +94,7 @@ export function AppLockGate({ children }: Props) {
 
     // Step 2 — OS-level biometric via conditional mediation (Android Chrome / iOS Safari)
     try {
-      const result2 = await (navigator as Navigator & { credentials: CredentialsContainer }).credentials.get({
-        // @ts-expect-error mediation not in TS lib yet
+      const result2 = await (navigator.credentials as any).get({
         mediation: "optional",
         publicKey: {
           challenge: crypto.getRandomValues(new Uint8Array(32)),
