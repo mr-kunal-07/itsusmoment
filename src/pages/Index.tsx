@@ -293,7 +293,7 @@ export default function Index() {
         {/* Parallax bg */}
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroBg})`, transform: `translateY(${scrollY * 0.25}px)`, filter: "brightness(0.2)" }}
+          style={{ backgroundImage: `url(${heroBg})`, transform: `translateY(${scrollY * 0.25}px)`, filter: "brightness(0.35) saturate(0.6)" }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-transparent to-background" />
         <div className="absolute inset-0 bg-gradient-to-r from-background/50 via-transparent to-background/50" />
