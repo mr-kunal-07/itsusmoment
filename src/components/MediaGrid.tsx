@@ -432,6 +432,31 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Single Move Dialog */}
+      <Dialog open={!!moveItem} onOpenChange={open => !open && setMoveItem(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Move "{moveItem?.title}"</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label>Destination folder</Label>
+            <Select value={singleMoveFolderId} onValueChange={setSingleMoveFolderId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose folder…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">No folder (root)</SelectItem>
+                {folders.map(f => (
+                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMoveItem(null)}>Cancel</Button>
+            <Button onClick={handleSingleMove} disabled={moveMedia.isPending}>Move</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Bulk Move Dialog */}
       <Dialog open={bulkMoveOpen} onOpenChange={setBulkMoveOpen}>
         <DialogContent>
