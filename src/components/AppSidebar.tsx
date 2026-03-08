@@ -128,6 +128,56 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* ── Couple Features ──────────────────────────────────── */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="flex items-center gap-1.5">
+            <Heart className="h-3 w-3 text-primary fill-primary" /> For Us
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {specialItems.map(item => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    onClick={() => onSelectView(item.id)}
+                    className={cn("justify-between", selectedView === item.id && "bg-accent text-accent-foreground")}
+                  >
+                    <span className="flex items-center">
+                      <item.icon className="h-4 w-4 mr-2" />
+                      <span>{item.label}</span>
+                    </span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              {/* On This Day — only if we have past memories */}
+              {onThisDayMedia.length > 0 && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => onSelectView("on-this-day")}
+                    className={cn("justify-between", selectedView === "on-this-day" && "bg-accent text-accent-foreground")}
+                  >
+                    <span className="flex items-center">
+                      <span className="text-base mr-2">🗓️</span>
+                      <span>On This Day</span>
+                    </span>
+                    <Badge variant="secondary" className="text-xs h-5 px-1.5 font-normal animate-pulse bg-primary/15 text-primary border-0">{onThisDayMedia.length}</Badge>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
+              {/* Slideshow button */}
+              {onStartSlideshow && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={onStartSlideshow} className="text-primary hover:text-primary">
+                    <Play className="h-4 w-4 mr-2 fill-primary" />
+                    <span>Slideshow</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center justify-between">
             <span>Folders</span>
