@@ -321,7 +321,7 @@ export default function Index() {
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
             <a href="#features" className="flex items-center gap-2.5 border border-border bg-card/40 backdrop-blur-sm text-foreground px-7 py-4 rounded-xl font-medium text-base hover:bg-accent transition-colors">
-              <Play className="w-4 h-4 fill-foreground" />
+              <PlayCircle className="w-4 h-4" />
               See how it works
             </a>
           </div>
