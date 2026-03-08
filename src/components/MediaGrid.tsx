@@ -9,6 +9,9 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -234,15 +237,16 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
           {media.map(item => {
             const isSelected = selected.has(item.id);
             return (
-              <Card
-                key={item.id}
-                className={cn(
-                  "overflow-hidden group cursor-pointer hover:shadow-md transition-shadow break-inside-avoid",
-                  isSelected && "ring-2 ring-primary"
-                )}
-                draggable={!isSelecting}
-                onDragStart={e => handleDragStart(e, item)}
-              >
+              <ContextMenu key={item.id}>
+                <ContextMenuTrigger asChild>
+                <Card
+                  className={cn(
+                    "overflow-hidden group cursor-pointer hover:shadow-md transition-shadow break-inside-avoid",
+                    isSelected && "ring-2 ring-primary"
+                  )}
+                  draggable={!isSelecting}
+                  onDragStart={e => handleDragStart(e, item)}
+                >
                 <div
                   className="relative bg-muted"
                   onClick={() => isSelecting ? toggleSelect(item.id) : onPreview(item)}
@@ -312,7 +316,25 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
                     </DropdownMenu>
                   )}
                 </div>
-              </Card>
+                </Card>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem onClick={() => { setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
+                    <Pencil className="h-4 w-4 mr-2" /> Edit
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => handleToggleStar(item)}>
+                    <Star className={cn("h-4 w-4 mr-2", item.is_starred && "fill-yellow-400 text-yellow-400")} />
+                    {item.is_starred ? "Unstar" : "Star"}
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => { setSingleMoveFolderId(item.folder_id ?? "__none__"); setMoveItem(item); }}>
+                    <FolderOpen className="h-4 w-4 mr-2" /> Move to folder
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem onClick={() => setDeleteItem(item)} className="text-destructive focus:text-destructive">
+                    <Trash2 className="h-4 w-4 mr-2" /> Delete
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             );
           })}
         </div>
@@ -321,66 +343,85 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
           {media.map(item => {
             const isSelected = selected.has(item.id);
             return (
-              <div
-                key={item.id}
-                className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer group transition-colors",
-                  isSelected && "bg-primary/10 hover:bg-primary/15"
-                )}
-                draggable={!isSelecting}
-                onDragStart={e => handleDragStart(e, item)}
-                onClick={() => isSelecting ? toggleSelect(item.id) : onPreview(item)}
-              >
-                {/* Checkbox */}
-                <div
-                  className={cn(
-                    "shrink-0 transition-opacity",
-                    isSelecting ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                  )}
-                  onClick={e => { e.stopPropagation(); toggleSelect(item.id); }}
-                >
-                  <Checkbox checked={isSelected} className="data-[state=checked]:bg-primary" />
-                </div>
-                <div className="h-12 w-12 rounded-md overflow-hidden bg-muted shrink-0 relative">
-                  {item.file_type === "video" ? (
-                    <>
-                      <video src={getPublicUrl(item.file_path)} className="w-full h-full object-cover" preload="metadata" />
-                      <Play className="absolute inset-0 m-auto h-5 w-5 text-white" />
-                    </>
-                  ) : (
-                    <img src={getPublicUrl(item.file_path)} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{item.title}</p>
-                  <p className="text-xs text-muted-foreground">{formatSize(item.file_size)} · {format(new Date(item.created_at), "MMM d, yyyy")}</p>
-                </div>
-                {!isSelecting && (
-                  <>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={e => { e.stopPropagation(); handleToggleStar(item); }}>
-                      <Star className={cn("h-4 w-4", item.is_starred ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground")} />
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
-                          <MoreVertical className="h-4 w-4" />
+              <ContextMenu key={item.id}>
+                <ContextMenuTrigger asChild>
+                  <div
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer group transition-colors",
+                      isSelected && "bg-primary/10 hover:bg-primary/15"
+                    )}
+                    draggable={!isSelecting}
+                    onDragStart={e => handleDragStart(e, item)}
+                    onClick={() => isSelecting ? toggleSelect(item.id) : onPreview(item)}
+                  >
+                    {/* Checkbox */}
+                    <div
+                      className={cn(
+                        "shrink-0 transition-opacity",
+                        isSelecting ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                      )}
+                      onClick={e => { e.stopPropagation(); toggleSelect(item.id); }}
+                    >
+                      <Checkbox checked={isSelected} className="data-[state=checked]:bg-primary" />
+                    </div>
+                    <div className="h-12 w-12 rounded-md overflow-hidden bg-muted shrink-0 relative">
+                      {item.file_type === "video" ? (
+                        <>
+                          <video src={getPublicUrl(item.file_path)} className="w-full h-full object-cover" preload="metadata" />
+                          <Play className="absolute inset-0 m-auto h-5 w-5 text-white" />
+                        </>
+                      ) : (
+                        <img src={getPublicUrl(item.file_path)} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{item.title}</p>
+                      <p className="text-xs text-muted-foreground">{formatSize(item.file_size)} · {format(new Date(item.created_at), "MMM d, yyyy")}</p>
+                    </div>
+                    {!isSelecting && (
+                      <>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={e => { e.stopPropagation(); handleToggleStar(item); }}>
+                          <Star className={cn("h-4 w-4", item.is_starred ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground")} />
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
-                          <Pencil className="h-4 w-4 mr-2" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={e => { e.stopPropagation(); setSingleMoveFolderId(item.folder_id ?? "__none__"); setMoveItem(item); }}>
-                          <FolderOpen className="h-4 w-4 mr-2" /> Move to folder
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteItem(item); }} className="text-destructive">
-                          <Trash2 className="h-4 w-4 mr-2" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </>
-                )}
-              </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
+                              <Pencil className="h-4 w-4 mr-2" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setSingleMoveFolderId(item.folder_id ?? "__none__"); setMoveItem(item); }}>
+                              <FolderOpen className="h-4 w-4 mr-2" /> Move to folder
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteItem(item); }} className="text-destructive">
+                              <Trash2 className="h-4 w-4 mr-2" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </>
+                    )}
+                  </div>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem onClick={() => { setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
+                    <Pencil className="h-4 w-4 mr-2" /> Edit
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => handleToggleStar(item)}>
+                    <Star className={cn("h-4 w-4 mr-2", item.is_starred && "fill-yellow-400 text-yellow-400")} />
+                    {item.is_starred ? "Unstar" : "Star"}
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => { setSingleMoveFolderId(item.folder_id ?? "__none__"); setMoveItem(item); }}>
+                    <FolderOpen className="h-4 w-4 mr-2" /> Move to folder
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem onClick={() => setDeleteItem(item)} className="text-destructive focus:text-destructive">
+                    <Trash2 className="h-4 w-4 mr-2" /> Delete
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             );
           })}
         </div>
