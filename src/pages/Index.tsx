@@ -576,7 +576,7 @@ export default function Index() {
       <section id="pricing" className="py-24" style={{ background: T.bgWarm, borderTop: `1px solid ${T.border}` }}>
         <div className="max-w-5xl mx-auto px-6 md:px-10">
           <Reveal className="text-center mb-14 max-w-xl mx-auto">
-            <p className="text-[11px] font-extrabold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>PRICING</p>
+            <p className="text-[11px] font-semibold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>PRICING</p>
             <h2 style={{ ...displayFont, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1, color: T.dark }} className="mb-4">
               Simple, honest pricing.
             </h2>
