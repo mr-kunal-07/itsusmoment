@@ -43,6 +43,7 @@ function formatSize(bytes: number) {
 export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { setOpenMobile } = useSidebar();
   const { data: isAdmin } = useIsAdmin();
   const { data: folders = [] } = useFolders();
   const { data: allMedia = [] } = useMedia();
@@ -54,6 +55,12 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
   const createFolder = useCreateFolder();
   const renameFolder = useRenameFolder();
   const deleteFolder = useDeleteFolder();
+
+  // Close mobile sidebar then navigate
+  const selectView = (view: ViewType) => {
+    setOpenMobile(false);
+    onSelectView(view);
+  };
 
   // Derive partner profile when couple is active
   const partnerId = couple?.status === "active"
