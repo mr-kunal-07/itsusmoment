@@ -1,37 +1,33 @@
 import { useState, useEffect, useCallback } from "react";
 import { Heart, Fingerprint, Delete } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const LOCK_STORAGE_KEY = "ourvault_lock_enabled";
-const PIN_STORAGE_KEY = "ourvault_lock_pin";
-const UNLOCKED_KEY = "ourvault_unlocked_at";
-const LOCK_TIMEOUT_MS = 5 * 60 * 1000; // 5 min of inactivity re-locks
+import { LOCK_KEYS, LOCK_TIMEOUT_MS } from "@/lib/appLockKeys";
 
 export function getIsLockEnabled(): boolean {
-  return localStorage.getItem(LOCK_STORAGE_KEY) === "1";
+  return localStorage.getItem(LOCK_KEYS.enabled) === "1";
 }
 
 export function getSavedPin(): string | null {
-  return localStorage.getItem(PIN_STORAGE_KEY);
+  return localStorage.getItem(LOCK_KEYS.pin);
 }
 
 export function setLockPin(pin: string) {
-  localStorage.setItem(PIN_STORAGE_KEY, pin);
-  localStorage.setItem(LOCK_STORAGE_KEY, "1");
+  localStorage.setItem(LOCK_KEYS.pin, pin);
+  localStorage.setItem(LOCK_KEYS.enabled, "1");
 }
 
 export function disableLock() {
-  localStorage.removeItem(PIN_STORAGE_KEY);
-  localStorage.removeItem(LOCK_STORAGE_KEY);
-  localStorage.removeItem(UNLOCKED_KEY);
+  localStorage.removeItem(LOCK_KEYS.pin);
+  localStorage.removeItem(LOCK_KEYS.enabled);
+  localStorage.removeItem(LOCK_KEYS.unlockedAt);
 }
 
 export function markUnlocked() {
-  localStorage.setItem(UNLOCKED_KEY, Date.now().toString());
+  localStorage.setItem(LOCK_KEYS.unlockedAt, Date.now().toString());
 }
 
 export function isSessionUnlocked(): boolean {
-  const ts = localStorage.getItem(UNLOCKED_KEY);
+  const ts = localStorage.getItem(LOCK_KEYS.unlockedAt);
   if (!ts) return false;
   return Date.now() - parseInt(ts, 10) < LOCK_TIMEOUT_MS;
 }
