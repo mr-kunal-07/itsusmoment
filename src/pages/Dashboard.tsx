@@ -306,7 +306,7 @@ export default function Dashboard() {
           {/* Content */}
           <main
             className={cn(
-              "flex-1 p-3 sm:p-4 md:p-6 overflow-auto",
+              "flex-1 p-3 sm:p-4 md:p-6 overflow-auto pb-20 sm:pb-6",
               dragOverMain && "ring-2 ring-primary ring-inset bg-primary/5"
             )}
             onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setDragOverMain(true); }}
