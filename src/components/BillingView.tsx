@@ -172,14 +172,18 @@ export function BillingView() {
 
               {/* Plan header */}
               <div className="mb-6">
-                <div className="flex items-center gap-2.5 mb-1.5">
-                  <span className="text-xl">{meta.emoji}</span>
-                  <span className="font-bold font-heading text-base text-foreground">{meta.label}</span>
-                  {isCurrent && (
-                    <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0">Active</Badge>
-                  )}
+                <div className="flex items-center gap-3 mb-3">
+                  <PlanIcon planId={planId} active={isCurrent} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold font-heading text-base text-foreground">{meta.label}</span>
+                      {isCurrent && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Active</Badge>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{meta.tagline}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">{meta.tagline}</p>
 
                 <div className="mt-5 flex items-baseline gap-1">
                   <span className={cn(
