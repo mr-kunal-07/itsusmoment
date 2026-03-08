@@ -1,9 +1,12 @@
+import { useEffect, useRef } from "react";
 import { Home, CalendarHeart, MessageCircleHeart, Upload, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ViewType } from "@/components/AppSidebar";
-import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
+import { useMyCouple } from "@/hooks/useCouple";
 import { usePlan } from "@/hooks/useSubscription";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   selectedView: ViewType;
@@ -17,13 +20,54 @@ const PLAN_LABEL: Record<string, string> = {
   soulmate: "Soul",
 };
 
-export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props) {
+/** Lightweight hook — only counts unread, never marks as read */
+function useUnreadCount() {
   const { user } = useAuth();
-  const { data: messages = [] } = useMessages();
-  const unreadCount = messages.filter(m => m.sender_id !== user?.id && !m.read_at).length;
+  const { data: couple } = useMyCouple();
+  const coupleId = couple?.status === "active" ? couple.id : null;
+  const queryClient = useQueryClient();
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  const { data: count = 0 } = useQuery({
+    queryKey: ["unread-count", coupleId],
+    enabled: !!coupleId && !!user,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("messages" as never)
+        .select("id", { count: "exact", head: true })
+        .eq("couple_id", coupleId!)
+        .neq("sender_id", user!.id)
+        .is("read_at", null) as unknown as { count: number | null; error: unknown };
+      if (error) return 0;
+      return count ?? 0;
+    },
+    staleTime: 0,
+  });
+
+  // Realtime: refresh count on any message change
+  useEffect(() => {
+    if (!coupleId || !user) return;
+    channelRef.current = supabase
+      .channel(`unread-count:${coupleId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages", filter: `couple_id=eq.${coupleId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ["unread-count", coupleId] });
+      })
+      .subscribe();
+    return () => {
+      if (channelRef.current) { supabase.removeChannel(channelRef.current); channelRef.current = null; }
+    };
+  }, [coupleId, user, queryClient]);
+
+  return count;
+}
+
+export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props) {
+  const unreadCount = useUnreadCount();
   const plan = usePlan();
 
   const isPlanActive = selectedView === "billing";
+  // Don't show badge while user is already in chat (messages are being read)
+  const chatBadge = selectedView === "chat" ? 0 : unreadCount;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-background border-t border-border safe-area-bottom">
@@ -54,7 +98,7 @@ export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props)
           icon={MessageCircleHeart}
           selectedView={selectedView}
           onSelectView={onSelectView}
-          badge={unreadCount}
+          badge={chatBadge}
         />
 
         {/* Plan */}
