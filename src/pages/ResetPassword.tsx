@@ -77,7 +77,6 @@ export default function ResetPassword() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  disabled={!ready}
                 />
               </div>
               <div className="space-y-2">
@@ -89,7 +88,6 @@ export default function ResetPassword() {
                   onChange={(e) => setConfirm(e.target.value)}
                   required
                   placeholder="••••••••"
-                  disabled={!ready}
                 />
               </div>
             </CardContent>
