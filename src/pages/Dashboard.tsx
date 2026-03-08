@@ -274,15 +274,15 @@ export default function Dashboard() {
             {/* Render correct view */}
             {selectedView === "timeline" ? (
               <MemoriesTimeline onPreview={(mediaId) => {
-                // find index in all media
                 const allFlat = media;
                 const idx = allFlat.findIndex(m => m.id === mediaId);
-                // fetch all for timeline — use a different approach: navigate to all view first
                 setSelectedView("all");
                 setTimeout(() => setPreviewIndex(idx >= 0 ? idx : 0), 100);
               }} />
             ) : selectedView === "stats" ? (
               <RelationshipStats />
+            ) : selectedView === "anniversaries" ? (
+              <AnniversariesView />
             ) : (
               <MediaGrid
                 media={media}
