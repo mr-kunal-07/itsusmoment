@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { QK } from "@/lib/queryKeys";
 
 export interface Notification {
   id: string;
@@ -19,7 +20,7 @@ export function useNotifications() {
   const qc = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["notifications"],
+    queryKey: QK.notifications(),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("notifications")
@@ -41,9 +42,7 @@ export function useNotifications() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `recipient_id=eq.${user.id}` },
-        () => {
-          qc.invalidateQueries({ queryKey: ["notifications"] });
-        }
+        () => qc.invalidateQueries({ queryKey: QK.notifications() })
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -69,7 +68,7 @@ export function useMarkAllRead() {
         .eq("read", false);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.notifications() }),
   });
 }
 
@@ -83,7 +82,7 @@ export function useMarkRead() {
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.notifications() }),
   });
 }
 

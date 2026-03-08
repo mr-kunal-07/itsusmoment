@@ -2,13 +2,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Tables } from "@/integrations/supabase/types";
+import { QK } from "@/lib/queryKeys";
 
 export type Profile = Tables<"profiles">;
 
 export function useProfile() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["profile", user?.id],
+    queryKey: QK.profile(user?.id),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
@@ -25,7 +26,7 @@ export function useProfile() {
 export function useAllProfiles() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["profiles-all"],
+    queryKey: QK.profilesAll(),
     queryFn: async () => {
       const { data, error } = await supabase.from("profiles").select("*");
       if (error) throw error;
@@ -43,15 +44,12 @@ export function useUpdateProfile() {
       const update: Record<string, string> = {};
       if (displayName !== undefined) update.display_name = displayName;
       if (avatarUrl !== undefined) update.avatar_url = avatarUrl;
-      const { error } = await supabase
-        .from("profiles")
-        .update(update)
-        .eq("user_id", user!.id);
+      const { error } = await supabase.from("profiles").update(update).eq("user_id", user!.id);
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["profile"] });
-      qc.invalidateQueries({ queryKey: ["profiles-all"] });
+      qc.invalidateQueries({ queryKey: QK.profile() });
+      qc.invalidateQueries({ queryKey: QK.profilesAll() });
     },
   });
 }
@@ -81,16 +79,11 @@ export function useUploadAvatar() {
 export function useStorageUsage() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["storage-usage"],
+    queryKey: QK.storageUsage(),
     queryFn: async () => {
-      // RLS returns media uploaded by the user OR their partner,
-      // so this naturally gives the combined couple storage.
-      const { data, error } = await supabase
-        .from("media")
-        .select("file_size");
+      const { data, error } = await supabase.from("media").select("file_size");
       if (error) throw error;
-      const total = (data ?? []).reduce((sum, m) => sum + (m.file_size ?? 0), 0);
-      return total;
+      return (data ?? []).reduce((sum, m) => sum + (m.file_size ?? 0), 0);
     },
     enabled: !!user,
   });

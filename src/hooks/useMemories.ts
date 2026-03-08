@@ -2,28 +2,25 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Media } from "@/hooks/useMedia";
+import { QK } from "@/lib/queryKeys";
 
 /** Returns media uploaded on today's date (any year) */
 export function useOnThisDay() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["on-this-day"],
+    queryKey: QK.onThisDay(),
     queryFn: async () => {
       const now = new Date();
       const month = String(now.getMonth() + 1).padStart(2, "0");
       const day = String(now.getDate()).padStart(2, "0");
-      // Match MM-DD across all years using ilike
       const { data, error } = await supabase
         .from("media")
         .select("*")
         .like("created_at", `%-${month}-${day}%`)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      // Exclude current year
       const currentYear = now.getFullYear();
-      return (data as Media[]).filter(
-        m => new Date(m.created_at).getFullYear() < currentYear
-      );
+      return (data as Media[]).filter(m => new Date(m.created_at).getFullYear() < currentYear);
     },
     enabled: !!user,
   });
@@ -33,14 +30,13 @@ export function useOnThisDay() {
 export function useMemoriesTimeline() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["memories-timeline"],
+    queryKey: QK.memoriesTimeline(),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("media")
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      // Group by YYYY-MM-DD using taken_at when available, else created_at
       const groups: Record<string, (Media & { taken_at?: string | null })[]> = {};
       (data as (Media & { taken_at?: string | null })[]).forEach(m => {
         const dateStr = m.taken_at ?? m.created_at;
@@ -49,7 +45,6 @@ export function useMemoriesTimeline() {
         if (!groups[key]) groups[key] = [];
         groups[key].push(m);
       });
-      // Sort each group by time ascending (earliest photo first in the day)
       Object.values(groups).forEach(arr => {
         arr.sort((a, b) => {
           const da = new Date(a.taken_at ?? a.created_at).getTime();
@@ -67,7 +62,7 @@ export function useMemoriesTimeline() {
 export function useRelationshipStats() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["relationship-stats"],
+    queryKey: QK.relationshipStats(),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("media")

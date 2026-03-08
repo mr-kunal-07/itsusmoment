@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { QK } from "@/lib/queryKeys";
 
 export type Plan = "single" | "dating" | "soulmate";
 
@@ -20,9 +21,8 @@ export interface Subscription {
 /** The user's own subscription record (may be null if on free). */
 export function useSubscription() {
   const { user } = useAuth();
-
   return useQuery({
-    queryKey: ["subscription", user?.id],
+    queryKey: QK.subscription(user?.id),
     enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -33,7 +33,6 @@ export function useSubscription() {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-
       if (error) throw error;
       return data as Subscription | null;
     },
@@ -41,11 +40,10 @@ export function useSubscription() {
 }
 
 /** Effective plan via DB function — returns own plan or partner's if higher. */
-export function usePlan(): Plan {
+function useEffectivePlan() {
   const { user } = useAuth();
-
-  const { data: raw } = useQuery({
-    queryKey: ["effective-plan", user?.id],
+  return useQuery({
+    queryKey: QK.effectivePlan(user?.id),
     enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_user_plan", { _user_id: user!.id });
@@ -53,7 +51,10 @@ export function usePlan(): Plan {
       return data as string;
     },
   });
+}
 
+export function usePlan(): Plan {
+  const { data: raw } = useEffectivePlan();
   const plan: string = raw ?? "free";
   if (plan === "free") return "single";
   if (plan === "pro") return "soulmate";
@@ -62,19 +63,8 @@ export function usePlan(): Plan {
 
 /** True when the user's effective plan comes from their partner (not their own purchase). */
 export function useIsSharedPlan(): boolean {
-  const { user } = useAuth();
   const { data: subscription } = useSubscription();
-
-  const { data: effectivePlan } = useQuery({
-    queryKey: ["effective-plan", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_user_plan", { _user_id: user!.id });
-      if (error) throw error;
-      return data as string;
-    },
-  });
-
+  const { data: effectivePlan } = useEffectivePlan();
   const hasPaidOwn = subscription?.plan && (subscription.plan as string) !== "free";
   const effectiveIsPaid = effectivePlan && effectivePlan !== "free";
   return !hasPaidOwn && !!effectiveIsPaid;

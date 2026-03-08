@@ -2,13 +2,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Tables } from "@/integrations/supabase/types";
+import { QK, invalidateMedia } from "@/lib/queryKeys";
 
 export type Media = Tables<"media"> & { uploader_name?: string | null; taken_at?: string | null; deleted_at?: string | null };
 
 export function useMedia(folderId?: string | null, search?: string) {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["media", folderId, search],
+    queryKey: QK.media(folderId, search),
     queryFn: async () => {
       let query = supabase.from("media").select("*").is("deleted_at", null);
       if (folderId !== undefined) {
@@ -29,7 +30,7 @@ export function useMedia(folderId?: string | null, search?: string) {
 export function useRecentlyDeletedMedia() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["media", "recently-deleted"],
+    queryKey: QK.mediaDeleted(),
     queryFn: async () => {
       const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
       const { data, error } = await supabase
@@ -48,7 +49,7 @@ export function useRecentlyDeletedMedia() {
 export function useStarredMedia() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["media", "starred"],
+    queryKey: QK.mediaStarred(),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("media")
@@ -107,10 +108,7 @@ export function useUploadMedia() {
       if (dbError) throw dbError;
       return data;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["media"] });
-      qc.invalidateQueries({ queryKey: ["media-infinite"] });
-    },
+    onSuccess: () => invalidateMedia(qc),
   });
 }
 
@@ -121,10 +119,7 @@ export function useUpdateMedia() {
       const { error } = await supabase.from("media").update({ title, description: description || null }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["media"] });
-      qc.invalidateQueries({ queryKey: ["media-infinite"] });
-    },
+    onSuccess: () => invalidateMedia(qc),
   });
 }
 
@@ -158,8 +153,8 @@ export function useBackfillExifDates() {
     },
     onSuccess: (count) => {
       if (count > 0) {
-        qc.invalidateQueries({ queryKey: ["memories-timeline"] });
-        qc.invalidateQueries({ queryKey: ["media"] });
+        qc.invalidateQueries({ queryKey: QK.memoriesTimeline() });
+        invalidateMedia(qc);
       }
     },
   });
@@ -176,10 +171,7 @@ export function useDeleteMedia() {
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["media"] });
-      qc.invalidateQueries({ queryKey: ["media-infinite"] });
-    },
+    onSuccess: () => invalidateMedia(qc),
   });
 }
 
@@ -194,9 +186,7 @@ export function useRestoreMedia() {
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["media"] });
-    },
+    onSuccess: () => invalidateMedia(qc),
   });
 }
 
@@ -209,9 +199,7 @@ export function usePermanentDeleteMedia() {
       const { error } = await supabase.from("media").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["media"] });
-    },
+    onSuccess: () => invalidateMedia(qc),
   });
 }
 
@@ -222,10 +210,7 @@ export function useMoveMedia() {
       const { error } = await supabase.from("media").update({ folder_id: folderId }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["media"] });
-      qc.invalidateQueries({ queryKey: ["media-infinite"] });
-    },
+    onSuccess: () => invalidateMedia(qc),
   });
 }
 
@@ -240,10 +225,7 @@ export function useBulkDeleteMedia() {
         .in("id", ids);
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["media"] });
-      qc.invalidateQueries({ queryKey: ["media-infinite"] });
-    },
+    onSuccess: () => invalidateMedia(qc),
   });
 }
 
@@ -254,10 +236,7 @@ export function useBulkMoveMedia() {
       const { error } = await supabase.from("media").update({ folder_id: folderId }).in("id", ids);
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["media"] });
-      qc.invalidateQueries({ queryKey: ["media-infinite"] });
-    },
+    onSuccess: () => invalidateMedia(qc),
   });
 }
 
@@ -268,10 +247,7 @@ export function useToggleStar() {
       const { error } = await supabase.from("media").update({ is_starred: starred }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["media"] });
-      qc.invalidateQueries({ queryKey: ["media-infinite"] });
-    },
+    onSuccess: () => invalidateMedia(qc),
   });
 }
 
@@ -279,3 +255,7 @@ export function getPublicUrl(filePath: string) {
   const { data } = supabase.storage.from("media").getPublicUrl(filePath);
   return data.publicUrl;
 }
+
+// Re-export QK.memoriesTimeline for backfill hook
+const { memoriesTimeline } = QK;
+export { memoriesTimeline };

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyCouple } from "@/hooks/useCouple";
 import { encryptText, decryptText } from "@/lib/crypto";
+import { QK } from "@/lib/queryKeys";
 
 export interface LoveNote {
   id: string;
@@ -29,7 +30,7 @@ export function useLoveNotes(mediaId: string) {
   const coupleId = couple?.status === "active" ? couple.id : null;
 
   return useQuery({
-    queryKey: ["love_notes", mediaId],
+    queryKey: QK.loveNotes(mediaId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("love_notes")
@@ -39,7 +40,6 @@ export function useLoveNotes(mediaId: string) {
       if (error) throw error;
       const raw = data as LoveNote[];
       if (!coupleId) return raw;
-      // Decrypt note content client-side
       return Promise.all(
         raw.map(async (n) => ({ ...n, content: await decryptText(n.content, coupleId) }))
       );
@@ -56,9 +56,7 @@ export function useAddLoveNote() {
 
   return useMutation({
     mutationFn: async ({ mediaId, content }: { mediaId: string; content: string }) => {
-      const encryptedContent = coupleId
-        ? await encryptText(content, coupleId)
-        : content;
+      const encryptedContent = coupleId ? await encryptText(content, coupleId) : content;
       const { error } = await supabase.from("love_notes").insert({
         media_id: mediaId,
         author_id: user!.id,
@@ -66,9 +64,7 @@ export function useAddLoveNote() {
       });
       if (error) throw error;
     },
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ["love_notes", vars.mediaId] });
-    },
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: QK.loveNotes(vars.mediaId) }),
   });
 }
 
@@ -80,9 +76,7 @@ export function useDeleteLoveNote() {
       if (error) throw error;
       return mediaId;
     },
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ["love_notes", vars.mediaId] });
-    },
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: QK.loveNotes(vars.mediaId) }),
   });
 }
 
@@ -91,7 +85,7 @@ export function useDeleteLoveNote() {
 export function useMediaReactions(mediaId: string) {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["reactions", mediaId],
+    queryKey: QK.reactions(mediaId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("media_reactions")
@@ -120,16 +114,10 @@ export function useToggleReaction() {
       if (existing) {
         await supabase.from("media_reactions").delete().eq("id", existing.id);
       } else {
-        await supabase.from("media_reactions").insert({
-          media_id: mediaId,
-          user_id: user!.id,
-          emoji,
-        });
+        await supabase.from("media_reactions").insert({ media_id: mediaId, user_id: user!.id, emoji });
       }
       return mediaId;
     },
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ["reactions", vars.mediaId] });
-    },
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: QK.reactions(vars.mediaId) }),
   });
 }

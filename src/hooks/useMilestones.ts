@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { QK } from "@/lib/queryKeys";
 
 export interface Milestone {
   id: string;
@@ -17,7 +18,7 @@ export interface Milestone {
 export function useMilestones() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["milestones"],
+    queryKey: QK.milestones(),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("milestones")
@@ -35,13 +36,10 @@ export function useAddMilestone() {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async (values: { title: string; date: string; description?: string; type: "anniversary" | "milestone"; media_id?: string | null }) => {
-      const { error } = await supabase.from("milestones").insert({
-        ...values,
-        created_by: user!.id,
-      });
+      const { error } = await supabase.from("milestones").insert({ ...values, created_by: user!.id });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["milestones"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.milestones() }),
   });
 }
 
@@ -52,7 +50,7 @@ export function useUpdateMilestone() {
       const { error } = await supabase.from("milestones").update(values).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["milestones"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.milestones() }),
   });
 }
 
@@ -63,6 +61,6 @@ export function useDeleteMilestone() {
       const { error } = await supabase.from("milestones").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["milestones"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.milestones() }),
   });
 }
