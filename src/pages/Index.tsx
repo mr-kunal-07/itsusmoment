@@ -561,7 +561,7 @@ export default function Index() {
                       {t.initial}
                     </div>
                     <div>
-                      <p className="text-sm font-bold" style={{ color: T.dark }}>{t.name}</p>
+                      <p className="text-sm font-semibold" style={{ color: T.dark }}>{t.name}</p>
                       <p className="text-[12px]" style={{ color: T.muted }}>{t.days}</p>
                     </div>
                   </div>
