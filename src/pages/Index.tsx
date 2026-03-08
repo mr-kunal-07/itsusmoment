@@ -309,10 +309,6 @@ export default function Index() {
               </span>
             </h1>
           </Reveal>
-                deserves.
-              </span>
-            </h1>
-          </Reveal>
 
           {/* Sub */}
           <Reveal delay={110}>
