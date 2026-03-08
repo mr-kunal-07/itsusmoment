@@ -18,6 +18,7 @@ import {
 import { PartnerConnect } from "@/components/PartnerConnect";
 import { usePlan } from "@/hooks/useSubscription";
 import { getIsLockEnabled, setLockPin, disableLock } from "@/components/AppLock";
+import { LOCK_KEYS } from "@/lib/appLockKeys";
 import { cn } from "@/lib/utils";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -55,7 +56,7 @@ export function SettingsView({ onNavigateBilling }: Props) {
   const [pinError, setPinError] = useState("");
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(
-    () => localStorage.getItem("ourvault_biometric") === "1"
+    () => localStorage.getItem(LOCK_KEYS.biometric) === "1"
   );
 
   // ── PWA install state ───────────────────────────────────────────────────────
@@ -155,17 +156,17 @@ export function SettingsView({ onNavigateBilling }: Props) {
     disableLock();
     setLockEnabled(false);
     setBiometricEnabled(false);
-    localStorage.removeItem("ourvault_biometric");
+    localStorage.removeItem(LOCK_KEYS.biometric);
     toast({ title: "App lock disabled" });
   };
 
   const handleBiometricToggle = (enabled: boolean) => {
     setBiometricEnabled(enabled);
     if (enabled) {
-      localStorage.setItem("ourvault_biometric", "1");
+      localStorage.setItem(LOCK_KEYS.biometric, "1");
       toast({ title: "Biometric unlock enabled 👆" });
     } else {
-      localStorage.removeItem("ourvault_biometric");
+      localStorage.removeItem(LOCK_KEYS.biometric);
     }
   };
 

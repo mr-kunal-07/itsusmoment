@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { QK } from "@/lib/queryKeys";
 
 export interface Tag {
   id: string;
@@ -28,10 +29,10 @@ export const TAG_COLORS = [
 export function useTags() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["tags"],
+    queryKey: QK.tags(),
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("tags")
+      const { data, error } = await supabase
+        .from("tags" as never)
         .select("*")
         .order("name", { ascending: true });
       if (error) throw error;
@@ -44,10 +45,10 @@ export function useTags() {
 export function useMediaTags(mediaId: string | null | undefined) {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["media-tags", mediaId],
+    queryKey: QK.mediaTags(mediaId),
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("media_tags")
+      const { data, error } = await supabase
+        .from("media_tags" as never)
         .select("*, tag:tag_id(*)")
         .eq("media_id", mediaId);
       if (error) throw error;
@@ -60,10 +61,10 @@ export function useMediaTags(mediaId: string | null | undefined) {
 export function useAllMediaTags() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["media-tags-all"],
+    queryKey: QK.mediaTagsAll(),
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("media_tags")
+      const { data, error } = await supabase
+        .from("media_tags" as never)
         .select("*, tag:tag_id(*)");
       if (error) throw error;
       return data as MediaTag[];
@@ -85,7 +86,7 @@ export function useCreateTag() {
       if (error) throw error;
       return data as Tag;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tags"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.tags() }),
   });
 }
 
@@ -93,13 +94,13 @@ export function useDeleteTag() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any).from("tags").delete().eq("id", id);
+      const { error } = await supabase.from("tags" as never).delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["tags"] });
-      qc.invalidateQueries({ queryKey: ["media-tags"] });
-      qc.invalidateQueries({ queryKey: ["media-tags-all"] });
+      qc.invalidateQueries({ queryKey: QK.tags() });
+      qc.invalidateQueries({ queryKey: QK.mediaTags() });
+      qc.invalidateQueries({ queryKey: QK.mediaTagsAll() });
     },
   });
 }
@@ -115,8 +116,8 @@ export function useAddTagToMedia() {
       if (error && !error.message.includes("duplicate")) throw error;
     },
     onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ["media-tags", vars.mediaId] });
-      qc.invalidateQueries({ queryKey: ["media-tags-all"] });
+      qc.invalidateQueries({ queryKey: QK.mediaTags(vars.mediaId) });
+      qc.invalidateQueries({ queryKey: QK.mediaTagsAll() });
     },
   });
 }
@@ -125,16 +126,16 @@ export function useRemoveTagFromMedia() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ mediaId, tagId }: { mediaId: string; tagId: string }) => {
-      const { error } = await (supabase as any)
-        .from("media_tags")
+      const { error } = await supabase
+        .from("media_tags" as never)
         .delete()
         .eq("media_id", mediaId)
         .eq("tag_id", tagId);
       if (error) throw error;
     },
     onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ["media-tags", vars.mediaId] });
-      qc.invalidateQueries({ queryKey: ["media-tags-all"] });
+      qc.invalidateQueries({ queryKey: QK.mediaTags(vars.mediaId) });
+      qc.invalidateQueries({ queryKey: QK.mediaTagsAll() });
     },
   });
 }
