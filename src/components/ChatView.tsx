@@ -468,14 +468,15 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                             </div>
                           )}
 
-                          {/* Bubble */}
+                           {/* Bubble */}
                           <div
                             className={cn(
-                              "relative text-sm leading-relaxed break-words text-white shadow-sm",
+                              "relative text-sm leading-relaxed break-words shadow-sm",
                               isVoice ? "px-2 py-2" : "px-3 py-2 pb-1"
                             )}
                             style={{
                               background: isMe ? "hsl(var(--wa-bubble-out))" : "hsl(var(--wa-bubble-in))",
+                              color: "hsl(var(--wa-text))",
                               borderRadius: isMe
                                 ? `12px 4px 12px 12px`
                                 : `4px 12px 12px 12px`,
