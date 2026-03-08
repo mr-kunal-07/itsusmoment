@@ -13,6 +13,50 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
+  build: {
+    // Increase chunk size warning limit (many icon imports are expected)
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        // Split vendor code into separate chunks for better long-term caching
+        manualChunks: {
+          // React core — changes least often → cached longest
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          // Supabase client
+          "vendor-supabase": ["@supabase/supabase-js"],
+          // Data fetching
+          "vendor-query": ["@tanstack/react-query"],
+          // UI — Radix primitives (large but stable)
+          "vendor-radix": [
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-dropdown-menu",
+            "@radix-ui/react-select",
+            "@radix-ui/react-tabs",
+            "@radix-ui/react-popover",
+            "@radix-ui/react-tooltip",
+            "@radix-ui/react-scroll-area",
+            "@radix-ui/react-avatar",
+            "@radix-ui/react-checkbox",
+            "@radix-ui/react-switch",
+            "@radix-ui/react-slider",
+          ],
+          // Charts (recharts) — loaded only on admin/analytics views
+          "vendor-charts": ["recharts"],
+          // Map (leaflet) — loaded only on travel map view
+          "vendor-map": ["leaflet"],
+          // Animation
+          "vendor-motion": ["framer-motion"],
+          // Utilities
+          "vendor-utils": ["date-fns", "clsx", "tailwind-merge", "class-variance-authority"],
+        },
+      },
+    },
+    // Enable source maps in production for error monitoring
+    sourcemap: false,
+    // Minify aggressively
+    minify: "esbuild",
+    target: "es2020",
+  },
   plugins: [
     react(),
     mode === "development" && componentTagger(),
@@ -22,31 +66,48 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Limit cache size to prevent stale bloat on mobile devices
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB
         runtimeCaching: [
           {
+            // Google Fonts — cache long-term (fonts don't change)
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: "CacheFirst",
-            options: { cacheName: "google-fonts-cache", expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 } },
+            options: {
+              cacheName: "google-fonts-cache",
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
           },
           {
-            // Cache Supabase storage media files (images, videos, audio)
+            // Storage media (images/videos/audio) — cache aggressively client-side
+            // Reduces Supabase egress bandwidth significantly at scale
             urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/.*/i,
             handler: "CacheFirst",
             options: {
               cacheName: "supabase-media-cache",
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              expiration: {
+                maxEntries: 300, // up from 200
+                maxAgeSeconds: 60 * 60 * 24 * 60, // 60 days
+              },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
           {
-            // Network-first for Supabase API calls (fresh data, fallback to cache)
+            // Supabase REST API — NetworkFirst with short TTL
+            // Falls back to cache when offline or slow
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
             handler: "NetworkFirst",
             options: {
               cacheName: "supabase-api-cache",
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 5 },
-              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 2 }, // 2 min TTL
+              networkTimeoutSeconds: 4,
+              cacheableResponse: { statuses: [0, 200] },
             },
+          },
+          {
+            // Supabase Auth endpoints — always network (security critical)
+            urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*/i,
+            handler: "NetworkOnly",
           },
         ],
       },

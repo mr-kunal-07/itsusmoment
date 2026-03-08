@@ -21,6 +21,7 @@ export function useNotifications() {
 
   const query = useQuery({
     queryKey: QK.notifications(),
+    staleTime: 30_000, // 30s stale — realtime handles live updates
     queryFn: async () => {
       const { data, error } = await supabase
         .from("notifications")
@@ -34,11 +35,11 @@ export function useNotifications() {
     enabled: !!user,
   });
 
-  // Realtime subscription
+  // Realtime subscription — filtered server-side to recipient
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel("notifications-realtime")
+      .channel(`notifications:${user.id}`) // unique channel per user
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `recipient_id=eq.${user.id}` },

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,46 +26,62 @@ export interface Message {
   reactions?: MessageReaction[];
 }
 
+/** Max messages kept in memory / fetched per query — prevents unbounded growth */
+const MESSAGE_LIMIT = 150;
+
 export function useMessages() {
   const { user } = useAuth();
   const { data: couple } = useMyCouple();
   const queryClient = useQueryClient();
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const markReadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const coupleId = couple?.status === "active" ? couple.id : null;
 
   const query = useQuery({
     queryKey: ["messages", coupleId],
+    staleTime: 10_000, // messages: 10s stale (realtime handles fresh updates)
     enabled: !!coupleId && !!user,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("messages" as never)
         .select("*, reactions:message_reactions(*)")
         .eq("couple_id", coupleId!)
-        .order("created_at", { ascending: true })
-        .limit(200);
+        .order("created_at", { ascending: false })
+        .limit(MESSAGE_LIMIT);
       if (error) throw error;
-      const raw = (data ?? []) as Message[];
-      // Decrypt content client-side
+      // Return in ascending order for display
+      const raw = ((data ?? []) as Message[]).reverse();
       return decryptMessages(raw, coupleId!);
     },
   });
 
-  // Mark partner messages as read
+  // Debounced mark-as-read — batches read updates, reduces write load
+  const scheduleMarkRead = useCallback((unreadIds: string[]) => {
+    if (markReadTimerRef.current) clearTimeout(markReadTimerRef.current);
+    markReadTimerRef.current = setTimeout(() => {
+      supabase
+        .from("messages" as never)
+        .update({ read_at: new Date().toISOString() } as never)
+        .in("id", unreadIds)
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ["messages", coupleId] });
+        });
+    }, 1_000); // batch within 1 second window
+  }, [coupleId, queryClient]);
+
+  // Mark partner messages as read (debounced)
   useEffect(() => {
     if (!coupleId || !user || !query.data?.length) return;
     const unread = query.data.filter(m => m.sender_id !== user.id && !m.read_at);
     if (!unread.length) return;
-    supabase
-      .from("messages" as never)
-      .update({ read_at: new Date().toISOString() } as never)
-      .in("id", unread.map(m => m.id))
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: ["messages", coupleId] });
-      });
-  }, [query.data, coupleId, user, queryClient]);
+    scheduleMarkRead(unread.map(m => m.id));
+    return () => {
+      if (markReadTimerRef.current) clearTimeout(markReadTimerRef.current);
+    };
+  }, [query.data, coupleId, user, scheduleMarkRead]);
 
-  // Realtime subscription
+  // Realtime subscription — single channel for messages + reactions
   useEffect(() => {
     if (!coupleId || !user) return;
 

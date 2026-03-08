@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Tables } from "@/integrations/supabase/types";
 import { QK } from "@/lib/queryKeys";
+import { useMyCouple } from "@/hooks/useCouple";
 
 export type Profile = Tables<"profiles">;
 
@@ -10,6 +11,7 @@ export function useProfile() {
   const { user } = useAuth();
   return useQuery({
     queryKey: QK.profile(user?.id),
+    staleTime: 5 * 60_000, // profile changes rarely — 5 min stale
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
@@ -23,12 +25,27 @@ export function useProfile() {
   });
 }
 
+/**
+ * Only fetches profiles for users in the same couple (own + partner).
+ * This avoids a full table scan at 100K users scale.
+ */
 export function useAllProfiles() {
   const { user } = useAuth();
+  const { data: couple } = useMyCouple();
+
   return useQuery({
     queryKey: QK.profilesAll(),
+    staleTime: 5 * 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("*");
+      // Build list of relevant user IDs
+      const ids: string[] = [user!.id];
+      if (couple?.user1_id && couple.user1_id !== user!.id) ids.push(couple.user1_id);
+      if (couple?.user2_id && couple.user2_id !== user!.id) ids.push(couple.user2_id);
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("user_id", ids);
       if (error) throw error;
       return data as Profile[];
     },
@@ -80,8 +97,12 @@ export function useStorageUsage() {
   const { user } = useAuth();
   return useQuery({
     queryKey: QK.storageUsage(),
+    staleTime: 5 * 60_000, // storage doesn't change frequently
     queryFn: async () => {
-      const { data, error } = await supabase.from("media").select("file_size");
+      const { data, error } = await supabase
+        .from("media")
+        .select("file_size")
+        .is("deleted_at", null);
       if (error) throw error;
       return (data ?? []).reduce((sum, m) => sum + (m.file_size ?? 0), 0);
     },
