@@ -350,6 +350,10 @@ export default function Dashboard() {
                 <SettingsView onNavigateBilling={() => setSelectedView("billing")} />
               ) : selectedView === "recently-deleted" ? (
                 <RecentlyDeletedView />
+              ) : selectedView === "stats" ? (
+                <RelationshipStats />
+              ) : selectedView === "bucket-list" ? (
+                <BucketList />
               ) : (
                 <MediaGrid
                   media={media}
