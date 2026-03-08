@@ -190,7 +190,7 @@ export default function Dashboard() {
 
   const sortLabel = { created_at: "Date", title: "Name", file_size: "Size" }[sortKey] + (sortDir === "asc" ? " ↑" : " ↓");
 
-  const isGridView = selectedView !== "timeline" && selectedView !== "anniversaries" && selectedView !== "chat";
+  const isGridView = selectedView !== "timeline" && selectedView !== "anniversaries" && selectedView !== "chat" && selectedView !== "activity";
 
   return (
     <SidebarProvider>
