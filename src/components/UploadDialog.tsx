@@ -6,6 +6,9 @@ import { Progress } from "@/components/ui/progress";
 import { useUploadMedia } from "@/hooks/useMedia";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/hooks/useAuth";
+import { useAllProfiles } from "@/hooks/useProfile";
+import { sendNotification } from "@/hooks/useNotifications";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/quicktime", "video/webm"];
 const MAX_SIZE = 500 * 1024 * 1024;
@@ -23,6 +26,8 @@ export function UploadDialog({ open, onOpenChange, folderId }: Props) {
   const [progress, setProgress] = useState(0);
   const upload = useUploadMedia();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { data: profiles = [] } = useAllProfiles();
 
   const reset = () => {
     setFiles([]);
@@ -59,10 +64,23 @@ export function UploadDialog({ open, onOpenChange, folderId }: Props) {
     if (!files.length) return;
     setUploading(true);
     let done = 0;
+    const allUserIds = profiles.map(p => p.user_id);
+    const uploaderName = profiles.find(p => p.user_id === user?.id)?.display_name ?? "Your partner";
+
     for (const file of files) {
       const title = file.name.replace(/\.[^.]+$/, "");
       try {
-        await upload.mutateAsync({ file, title, folderId });
+        const result = await upload.mutateAsync({ file, title, folderId });
+        // Send notification to partner
+        if (user && allUserIds.length > 1) {
+          await sendNotification({
+            actorId: user.id,
+            allUserIds,
+            type: "upload",
+            mediaId: (result as any)?.id ?? null,
+            message: `${uploaderName} uploaded "${title}" to the vault 📸`,
+          });
+        }
       } catch (err: any) {
         toast({ title: `Failed: ${file.name}`, description: err.message, variant: "destructive" });
       }

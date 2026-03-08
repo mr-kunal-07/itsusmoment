@@ -14,6 +14,8 @@ import { UploadDialog } from "@/components/UploadDialog";
 import { MediaPreview } from "@/components/MediaPreview";
 import { FolderBreadcrumb } from "@/components/FolderBreadcrumb";
 import { MemoriesTimeline, RelationshipStats } from "@/components/MemoriesView";
+import { AnniversariesView } from "@/components/AnniversariesView";
+import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { Slideshow } from "@/components/Slideshow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +38,7 @@ function loadPref<T>(key: string, fallback: T): T {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
 }
 
-const SPECIAL_VIEWS = ["all", "unfiled", "starred", "recent", "timeline", "stats", "on-this-day"];
+const SPECIAL_VIEWS = ["all", "unfiled", "starred", "recent", "timeline", "stats", "on-this-day", "anniversaries"];
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -101,6 +103,7 @@ export default function Dashboard() {
     : selectedView === "timeline" ? "Memories Timeline"
     : selectedView === "stats" ? "Our Story"
     : selectedView === "on-this-day" ? `On This Day · ${format(new Date(), "MMMM d")}`
+    : selectedView === "anniversaries" ? "Anniversaries & Milestones"
     : currentFolder?.name || "Folder";
 
   const avatarUrl = profile?.avatar_url ?? null;
@@ -133,7 +136,7 @@ export default function Dashboard() {
 
   const sortLabel = { created_at: "Date", title: "Name", file_size: "Size" }[sortKey] + (sortDir === "asc" ? " ↑" : " ↓");
 
-  const isGridView = selectedView !== "timeline" && selectedView !== "stats";
+  const isGridView = selectedView !== "timeline" && selectedView !== "stats" && selectedView !== "anniversaries";
 
   return (
     <SidebarProvider>
@@ -214,6 +217,8 @@ export default function Dashboard() {
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
 
+              <NotificationsPanel />
+
               <Button onClick={() => setUploadOpen(true)} size="sm" className="gap-1.5">
                 <Upload className="h-4 w-4" /> Upload
               </Button>
@@ -269,15 +274,15 @@ export default function Dashboard() {
             {/* Render correct view */}
             {selectedView === "timeline" ? (
               <MemoriesTimeline onPreview={(mediaId) => {
-                // find index in all media
                 const allFlat = media;
                 const idx = allFlat.findIndex(m => m.id === mediaId);
-                // fetch all for timeline — use a different approach: navigate to all view first
                 setSelectedView("all");
                 setTimeout(() => setPreviewIndex(idx >= 0 ? idx : 0), 100);
               }} />
             ) : selectedView === "stats" ? (
               <RelationshipStats />
+            ) : selectedView === "anniversaries" ? (
+              <AnniversariesView />
             ) : (
               <MediaGrid
                 media={media}
