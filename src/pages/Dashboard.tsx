@@ -375,6 +375,7 @@ export default function Dashboard() {
         open={slideshowOpen}
         onClose={() => setSlideshowOpen(false)}
       />
+      <PWAInstallPrompt />
     </SidebarProvider>
   );
 }
