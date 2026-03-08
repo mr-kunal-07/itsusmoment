@@ -41,7 +41,9 @@ function formatSize(bytes: number) {
 }
 
 export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Props) {
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const { data: isAdmin } = useIsAdmin();
   const { data: folders = [] } = useFolders();
   const { data: allMedia = [] } = useMedia();
   const { data: storageBytes = 0 } = useStorageUsage();
