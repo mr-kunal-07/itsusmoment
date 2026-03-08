@@ -300,7 +300,7 @@ function MilestoneCard({ milestone, mediaMap, onDelete, canDelete }: {
   return (
     <div className="glass-card rounded-xl p-3 sm:p-4 flex gap-3 sm:gap-4 group">
       {photo ? (
-        <img src={getPublicUrl(photo.file_path)} alt={photo.title} className="w-16 h-16 rounded-lg object-cover shrink-0" />
+        <img src={getPublicUrl(photo.file_path)} alt={photo.title} className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover shrink-0" />
       ) : (
         <div className={cn("w-12 h-12 sm:w-16 sm:h-16 rounded-lg flex items-center justify-center shrink-0 text-xl sm:text-2xl", isAnniversary ? "bg-primary/10" : "bg-amber-500/10")}>
           {isAnniversary ? "💑" : "⭐"}
