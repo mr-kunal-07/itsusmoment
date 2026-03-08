@@ -23,7 +23,6 @@ serve(async (req) => {
     if (!SUPABASE_URL) throw new Error("SUPABASE_URL not configured");
     if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY not configured");
 
-    // Verify user auth
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Missing authorization" }), {
@@ -42,15 +41,15 @@ serve(async (req) => {
       });
     }
 
-    const { plan = "pro_monthly" } = await req.json();
+    const { plan = "dating" } = await req.json();
 
     // Plan pricing in paise (1 INR = 100 paise)
     const planPricing: Record<string, { amount: number; currency: string; description: string }> = {
-      pro_monthly: { amount: 49900, currency: "INR", description: "CoupleVault Pro - Monthly" },
-      pro_yearly: { amount: 399900, currency: "INR", description: "CoupleVault Pro - Yearly" },
+      dating:   { amount: 900,  currency: "INR", description: "CoupleVault Dating — ₹9/month" },
+      soulmate: { amount: 9900, currency: "INR", description: "CoupleVault Soulmate — ₹99/month" },
     };
 
-    const pricing = planPricing[plan] ?? planPricing["pro_monthly"];
+    const pricing = planPricing[plan] ?? planPricing["dating"];
 
     const credentials = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`);
     const orderRes = await fetch("https://api.razorpay.com/v1/orders", {

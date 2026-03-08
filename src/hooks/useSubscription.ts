@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-export type Plan = "free" | "pro";
+export type Plan = "single" | "dating" | "soulmate";
 
 export interface Subscription {
   id: string;
@@ -41,22 +41,40 @@ export function useSubscription() {
 
 export function usePlan(): Plan {
   const { data } = useSubscription();
-  return (data?.plan as Plan) ?? "free";
+  const raw: string = (data?.plan as string) ?? "single";
+  // Map legacy "free" → "single", "pro" → "soulmate"
+  if (raw === "free") return "single";
+  if (raw === "pro") return "soulmate";
+  return raw as Plan;
 }
 
-// Feature gating helpers
-export const FREE_STORAGE_LIMIT_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB
-export const PRO_STORAGE_LIMIT_BYTES = 50 * 1024 * 1024 * 1024; // 50 GB
-export const FREE_MONTHLY_UPLOAD_LIMIT = 50;
+// Storage limits
+export const PLAN_STORAGE: Record<Plan, number> = {
+  single:   1  * 1024 * 1024 * 1024, // 1 GB
+  dating:   5  * 1024 * 1024 * 1024, // 5 GB
+  soulmate: 50 * 1024 * 1024 * 1024, // 50 GB (unlimited-ish)
+};
+
+export const PLAN_UPLOAD_LIMIT: Record<Plan, number | null> = {
+  single:   10,   // 10 uploads / month
+  dating:   50,   // 50 uploads / month
+  soulmate: null, // unlimited
+};
+
+export const PLAN_STORAGE_LABEL: Record<Plan, string> = {
+  single:   "1 GB",
+  dating:   "5 GB",
+  soulmate: "50 GB",
+};
 
 export function canUseVoiceMessages(plan: Plan) {
-  return plan === "pro";
+  return plan === "soulmate";
 }
 
 export function getStorageLimit(plan: Plan) {
-  return plan === "pro" ? PRO_STORAGE_LIMIT_BYTES : FREE_STORAGE_LIMIT_BYTES;
+  return PLAN_STORAGE[plan];
 }
 
 export function formatStorageLimit(plan: Plan) {
-  return plan === "pro" ? "50 GB" : "5 GB";
+  return PLAN_STORAGE_LABEL[plan];
 }

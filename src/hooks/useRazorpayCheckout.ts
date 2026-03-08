@@ -33,7 +33,7 @@ interface RazorpayResponse {
   razorpay_signature: string;
 }
 
-export type BillingPlan = "pro_monthly" | "pro_yearly";
+export type BillingPlan = "dating" | "soulmate";
 
 export function useRazorpayCheckout() {
   const { user } = useAuth();
@@ -46,14 +46,11 @@ export function useRazorpayCheckout() {
     setLoading(true);
 
     try {
-      // Load Razorpay script dynamically
       await loadRazorpayScript();
 
-      // Get auth token
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
-      // Create order via edge function
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const orderRes = await fetch(
         `https://${projectId}.supabase.co/functions/v1/razorpay-create-order`,
@@ -72,7 +69,6 @@ export function useRazorpayCheckout() {
         throw new Error(orderData.error || "Failed to create order");
       }
 
-      // Open Razorpay checkout
       await new Promise<void>((resolve, reject) => {
         const rzp = new window.Razorpay({
           key: orderData.key_id,
@@ -91,7 +87,6 @@ export function useRazorpayCheckout() {
           },
           handler: async (response: RazorpayResponse) => {
             try {
-              // Verify payment via edge function
               const verifyRes = await fetch(
                 `https://${projectId}.supabase.co/functions/v1/razorpay-verify-payment`,
                 {
@@ -115,9 +110,11 @@ export function useRazorpayCheckout() {
               }
 
               await queryClient.invalidateQueries({ queryKey: ["subscription"] });
+
+              const planLabel = plan === "soulmate" ? "Soulmate" : "Dating";
               toast({
-                title: "🎉 Welcome to Pro!",
-                description: "Your subscription is now active. Enjoy unlimited uploads and voice messages!",
+                title: `💕 ${planLabel} plan activated!`,
+                description: "Your subscription is now live. Enjoy all the features!",
               });
               resolve();
             } catch (err) {
