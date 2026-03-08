@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  SidebarHeader, SidebarFooter,
+  SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
