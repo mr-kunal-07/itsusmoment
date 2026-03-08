@@ -329,6 +329,8 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
       style={{
         height: "100%",
         background: "hsl(var(--wa-bg))",
+        transformOrigin: "top left",
+        willChange: "transform, height",
       }}
     >
       {/* ── WhatsApp-style Header ── */}
