@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import {
   Heart, GalleryVerticalEnd, MessagesSquare, AudioWaveform, CalendarHeart,
   ArrowRight, Check, ChevronDown, Sparkles, ImagePlay, Gift,
-  ShieldCheck, UserPlus, Infinity, PlayCircle, Quote, LockKeyhole,
-  HeartHandshake, Clapperboard, Zap, Film, Gem,
+  ShieldCheck, Infinity, PlayCircle, Quote, LockKeyhole,
+  HeartHandshake, Clapperboard, Zap, Film,
   WandSparkles, BookHeart, PartyPopper, UserRoundCheck
 } from "lucide-react";
 import heroBg from "@/assets/hero-couple.jpg";
