@@ -77,12 +77,15 @@ const NAV = [
 ];
 
 const FEATURES = [
-  { icon: Image,         title: "Memory Vault",       desc: "A private, organised vault for every photo and video you've shared together." },
-  { icon: Lock,          title: "100% Private",        desc: "No ads, no algorithm, no strangers. Your data is yours — always and forever." },
-  { icon: MessageCircle, title: "Private Chat",        desc: "Your own dedicated chat. Send voice notes, emoji reactions, reply to threads." },
-  { icon: Calendar,      title: "Milestone Timeline",  desc: "Log every first — first date, trip, anniversary — with smart reminders." },
-  { icon: Mic,           title: "Voice Messages",      desc: "Record and send voice messages that feel warmer than any text ever could." },
-  { icon: Bell,          title: "Smart Reminders",     desc: "Never miss a special date. Automatic reminders for every milestone you set." },
+  { icon: Image,         title: "Save every photo & video",      desc: "Upload anything — a selfie, a trip, a random Tuesday — and it all lives safely in one beautiful place, just for the two of you." },
+  { icon: Lock,          title: "Only you two can see it",       desc: "No public feed, no ads, no strangers. What you share here stays here. Your most personal moments, kept completely private." },
+  { icon: MessageCircle, title: "Chat that's just for you two",  desc: "Text, react with emojis, reply to messages, send voice notes. Like WhatsApp — but a quiet space that's only yours." },
+  { icon: Calendar,      title: "Never forget a special date",   desc: "Add your first date, first trip, first anniversary. Get reminders before each one so you're always ready to celebrate." },
+  { icon: Mic,           title: "Send voice messages",           desc: "Sometimes words aren't enough. Record a voice note and let them hear your voice — not just read your words." },
+  { icon: Heart,         title: "Write love notes on photos",    desc: "Add a little message to any memory. A joke, a feeling, a 'remember when?' — right on the photo that brought it back." },
+  { icon: Star,          title: "Star your favourites",          desc: "Mark the memories you never want to lose track of. Your best moments, always one tap away." },
+  { icon: Sparkles,      title: "Watch your story grow",         desc: "A beautiful timeline that fills up as your relationship grows — from your first photo to your latest adventure." },
+  { icon: Shield,        title: "Your data is yours, forever",   desc: "We don't sell your data, show you ads, or share anything with anyone. Everything you upload belongs to you. Always." },
 ];
 
 const STEPS = [
@@ -292,14 +295,6 @@ export default function Index() {
       <section style={{ background: T.white, paddingTop: 64 }}>
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "80px 32px 64px", textAlign: "center" }}>
 
-          {/* Eyebrow */}
-          <Reveal>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: T.surface, border: `1px solid ${T.border}`, padding: "6px 14px", borderRadius: 99, fontSize: 12, fontWeight: 500, color: T.muted, marginBottom: 32 }}>
-              <Sparkles style={{ width: 13, height: 13, color: T.ink }} />
-              50,000+ couples · 2M+ memories stored
-            </div>
-          </Reveal>
-
           {/* H1 */}
           <Reveal delay={60}>
             <h1 style={{ ...display, fontSize: "clamp(42px, 7vw, 76px)", lineHeight: 1.02, marginBottom: 24, maxWidth: 700, marginLeft: "auto", marginRight: "auto" }}>
@@ -398,11 +393,11 @@ export default function Index() {
       <section id="features" style={{ background: T.white, padding: "96px 0" }}>
         <div style={{ maxWidth: 1120, margin: "0 auto", padding: "0 32px" }}>
           <Reveal className="max-w-2xl mb-14" style={{ maxWidth: 640, marginBottom: 56 }}>
-            <p style={{ ...mono, color: T.muted, textTransform: "uppercase", marginBottom: 14 }}>THE FULL PICTURE</p>
+            <p style={{ ...mono, color: T.muted, textTransform: "uppercase", marginBottom: 14 }}>WHAT YOU GET</p>
             <h2 style={{ ...display, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1, marginBottom: 14 }}>
-              Everything a couple needs.<br />Nothing they don't.
+              Everything you need to<br />keep your relationship close.
             </h2>
-            <p style={{ fontSize: 16, lineHeight: 1.75, color: T.body }}>Built around intimacy, privacy, and the rhythm of a real relationship.</p>
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: T.body }}>One app for your photos, your chats, your milestones — and all the little moments in between.</p>
           </Reveal>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 0, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -410,7 +405,7 @@ export default function Index() {
               const Icon = f.icon;
               return (
                 <Reveal key={i} delay={i * 50}>
-                  <div style={{ padding: "36px 32px", background: T.white, borderRight: (i + 1) % 3 !== 0 ? `1px solid ${T.border}` : "none", borderBottom: i < 3 ? `1px solid ${T.border}` : "none", transition: "background 0.15s" }}
+                  <div style={{ padding: "36px 32px", background: T.white, borderRight: (i + 1) % 3 !== 0 ? `1px solid ${T.border}` : "none", borderBottom: i < 6 ? `1px solid ${T.border}` : "none", transition: "background 0.15s" }}
                     onMouseEnter={e => (e.currentTarget.style.background = T.bg)}
                     onMouseLeave={e => (e.currentTarget.style.background = T.white)}>
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: T.surface, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
