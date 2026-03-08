@@ -327,7 +327,7 @@ export default function Dashboard() {
             <main
               className={cn(
                 "flex-1 overflow-auto pb-20 sm:pb-6",
-                selectedView !== "settings" && "p-3 sm:p-4 md:p-6",
+                selectedView !== "settings" && selectedView !== "travel-map" && "p-3 sm:p-4 md:p-6",
                 dragOverMain && "ring-2 ring-primary ring-inset"
               )}
               onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setDragOverMain(true); }}
@@ -335,7 +335,7 @@ export default function Dashboard() {
               onDrop={handleMainDrop}
             >
               {/* Page header */}
-              {selectedView !== "settings" && (
+              {selectedView !== "settings" && selectedView !== "travel-map" && (
                 <div className={cn(selectedView === "billing" ? "mb-0" : "mb-4 sm:mb-6", "p-3 sm:p-4 md:p-6 pt-0 pl-0 pr-0")}>
                   {!isSpecialView && (
                     <FolderBreadcrumb folderId={selectedView} folders={folders} onNavigate={setSelectedView} />
