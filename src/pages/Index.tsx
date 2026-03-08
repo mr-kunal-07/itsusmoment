@@ -77,12 +77,15 @@ const NAV = [
 ];
 
 const FEATURES = [
-  { icon: Image,         title: "Memory Vault",       desc: "A private, organised vault for every photo and video you've shared together." },
-  { icon: Lock,          title: "100% Private",        desc: "No ads, no algorithm, no strangers. Your data is yours — always and forever." },
-  { icon: MessageCircle, title: "Private Chat",        desc: "Your own dedicated chat. Send voice notes, emoji reactions, reply to threads." },
-  { icon: Calendar,      title: "Milestone Timeline",  desc: "Log every first — first date, trip, anniversary — with smart reminders." },
-  { icon: Mic,           title: "Voice Messages",      desc: "Record and send voice messages that feel warmer than any text ever could." },
-  { icon: Bell,          title: "Smart Reminders",     desc: "Never miss a special date. Automatic reminders for every milestone you set." },
+  { icon: Image,         title: "Save every photo & video",      desc: "Upload anything — a selfie, a trip, a random Tuesday — and it all lives safely in one beautiful place, just for the two of you." },
+  { icon: Lock,          title: "Only you two can see it",       desc: "No public feed, no ads, no strangers. What you share here stays here. Your most personal moments, kept completely private." },
+  { icon: MessageCircle, title: "Chat that's just for you two",  desc: "Text, react with emojis, reply to messages, send voice notes. Like WhatsApp — but a quiet space that's only yours." },
+  { icon: Calendar,      title: "Never forget a special date",   desc: "Add your first date, first trip, first anniversary. Get reminders before each one so you're always ready to celebrate." },
+  { icon: Mic,           title: "Send voice messages",           desc: "Sometimes words aren't enough. Record a voice note and let them hear your voice — not just read your words." },
+  { icon: Heart,         title: "Write love notes on photos",    desc: "Add a little message to any memory. A joke, a feeling, a 'remember when?' — right on the photo that brought it back." },
+  { icon: Star,          title: "Star your favourites",          desc: "Mark the memories you never want to lose track of. Your best moments, always one tap away." },
+  { icon: Sparkles,      title: "Watch your story grow",         desc: "A beautiful timeline that fills up as your relationship grows — from your first photo to your latest adventure." },
+  { icon: Shield,        title: "Your data is yours, forever",   desc: "We don't sell your data, show you ads, or share anything with anyone. Everything you upload belongs to you. Always." },
 ];
 
 const STEPS = [
