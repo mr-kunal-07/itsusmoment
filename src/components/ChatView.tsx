@@ -169,8 +169,11 @@ export function ChatView() {
               {partnerInitials}
             </AvatarFallback>
           </Avatar>
-          {/* Online dot */}
-          <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[hsl(var(--wa-header))]" style={{ background: "hsl(var(--wa-online))" }} />
+          {/* Dynamic online/offline dot */}
+          <span
+            className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[hsl(var(--wa-header))] transition-colors"
+            style={{ background: partnerOnline ? "hsl(var(--wa-online))" : "hsl(var(--wa-meta))" }}
+          />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -178,8 +181,12 @@ export function ChatView() {
           <p className="text-xs mt-0.5 truncate" style={{ color: "hsl(var(--wa-meta))" }}>
             {partnerTyping ? (
               <span style={{ color: "hsl(var(--wa-online))" }}>typing…</span>
+            ) : partnerOnline ? (
+              <span style={{ color: "hsl(var(--wa-online))" }}>online</span>
+            ) : partnerLastSeen ? (
+              <span>last seen {formatDistanceToNow(partnerLastSeen, { addSuffix: true })}</span>
             ) : (
-              "online"
+              <span>offline</span>
             )}
           </p>
         </div>
