@@ -84,6 +84,7 @@ export default function Admin() {
   const { user } = useAuth();
   const { data: isAdmin, isLoading: adminLoading } = useIsAdmin();
   const { data: users = [], isLoading: usersLoading, refetch } = useAdminUsers();
+  const { data: auditLogs = [], isLoading: auditLoading, refetch: refetchAudit } = useAdminAuditLog();
   const manageUser = useAdminManageUser();
   const { toast } = useToast();
 
