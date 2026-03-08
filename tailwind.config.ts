@@ -66,6 +66,13 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "calc(var(--radius) + 4px)",
+        "2xl": "calc(var(--radius) + 8px)",
+      },
+      boxShadow: {
+        card: "var(--shadow-card, 0 2px 12px rgba(0,0,0,0.4))",
+        popover: "var(--shadow-popover, 0 8px 32px rgba(0,0,0,0.5))",
+        glow: "0 0 20px hsl(var(--primary) / 0.2), 0 0 60px hsl(var(--primary) / 0.08)",
       },
       keyframes: {
         "accordion-down": {

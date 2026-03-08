@@ -3,113 +3,115 @@
 @tailwind utilities;
 
 /* ── Design System ─────────────────────────────────────────────────────
-   Inspired by kunaltech.vercel.app:
-   - Near-black background with subtle warm tint
-   - Warm white foreground
-   - Vibrant cyan/teal primary accent
-   - Glass-morphism card surfaces
-   - Smooth gradients & refined typography
+   Premium dark-mode: deep navy/charcoal backgrounds, blue-indigo accents,
+   refined glass surfaces, Space Grotesk + Inter typography
 ──────────────────────────────────────────────────────────────────────── */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    /* Light mode — clean warm-whites */
-    --background: 220 20% 97%;
-    --foreground: 220 25% 8%;
+    /* Light mode */
+    --background: 220 22% 96%;
+    --foreground: 224 30% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 8%;
+    --card-foreground: 224 30% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 8%;
+    --popover-foreground: 224 30% 10%;
 
-    /* Cyan-teal primary */
-    --primary: 185 85% 38%;
+    --primary: 230 80% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 92%;
-    --secondary-foreground: 220 25% 20%;
+    --secondary: 220 16% 92%;
+    --secondary-foreground: 224 25% 20%;
 
-    --muted: 220 14% 93%;
-    --muted-foreground: 220 12% 48%;
+    --muted: 220 16% 93%;
+    --muted-foreground: 220 14% 50%;
 
-    --accent: 220 14% 90%;
-    --accent-foreground: 220 25% 10%;
+    --accent: 220 16% 90%;
+    --accent-foreground: 224 25% 10%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 88%;
-    --input: 220 13% 88%;
-    --ring: 185 85% 38%;
+    --border: 220 14% 87%;
+    --input: 220 14% 87%;
+    --ring: 230 80% 60%;
 
-    --radius: 0.6rem;
+    --radius: 0.65rem;
 
     /* Sidebar */
-    --sidebar-background: 220 20% 98%;
-    --sidebar-foreground: 220 15% 30%;
-    --sidebar-primary: 185 85% 38%;
+    --sidebar-background: 220 22% 98%;
+    --sidebar-foreground: 220 18% 35%;
+    --sidebar-primary: 230 80% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 92%;
-    --sidebar-accent-foreground: 220 25% 12%;
-    --sidebar-border: 220 13% 90%;
-    --sidebar-ring: 185 85% 38%;
+    --sidebar-accent: 220 16% 92%;
+    --sidebar-accent-foreground: 224 25% 12%;
+    --sidebar-border: 220 14% 90%;
+    --sidebar-ring: 230 80% 60%;
 
-    /* Custom tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(185 85% 38%), hsl(200 90% 50%));
-    --gradient-text: linear-gradient(135deg, hsl(185 85% 40%), hsl(200 90% 55%));
-    --glass-bg: hsl(0 0% 100% / 0.7);
-    --glass-border: hsl(220 13% 88% / 0.8);
+    --gradient-primary: linear-gradient(135deg, hsl(230 80% 60%), hsl(260 75% 65%));
+    --gradient-text: linear-gradient(135deg, hsl(230 80% 55%), hsl(260 75% 65%));
+    --glass-bg: hsl(0 0% 100% / 0.75);
+    --glass-border: hsl(220 14% 87% / 0.8);
   }
 
   .dark {
-    /* Deep near-black with warm blue-grey tint */
-    --background: 222 20% 7%;
-    --foreground: 210 30% 92%;
+    /* ── Backgrounds: deep navy-charcoal, like the reference ── */
+    --background: 228 22% 8%;        /* #0d0f18 — main bg */
+    --foreground: 218 28% 88%;       /* #d4dae8 — primary text */
 
-    --card: 222 18% 10%;
-    --card-foreground: 210 30% 92%;
+    --card: 228 20% 11%;             /* #13161f — card surface */
+    --card-foreground: 218 28% 88%;
 
-    --popover: 222 18% 10%;
-    --popover-foreground: 210 30% 92%;
+    --popover: 228 22% 10%;
+    --popover-foreground: 218 28% 88%;
 
-    /* Vibrant cyan-teal primary */
-    --primary: 185 90% 48%;
-    --primary-foreground: 222 20% 7%;
+    /* ── Accent: refined indigo-blue (matching reference's active state) ── */
+    --primary: 232 75% 62%;          /* #5b7cf6-ish indigo */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 222 15% 16%;
-    --secondary-foreground: 210 25% 82%;
+    --secondary: 228 18% 16%;        /* #1c2031 — subtle surface */
+    --secondary-foreground: 218 22% 75%;
 
-    --muted: 222 15% 14%;
-    --muted-foreground: 215 15% 55%;
+    --muted: 228 18% 14%;            /* #171b28 */
+    --muted-foreground: 218 16% 52%; /* dimmer text */
 
-    --accent: 222 15% 16%;
-    --accent-foreground: 210 30% 90%;
+    --accent: 228 18% 16%;
+    --accent-foreground: 218 28% 85%;
 
-    --destructive: 0 70% 50%;
+    --destructive: 0 68% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 222 15% 18%;
-    --input: 222 15% 16%;
-    --ring: 185 90% 48%;
+    --border: 228 18% 17%;           /* very subtle dividers */
+    --input: 228 18% 15%;
+    --ring: 232 75% 62%;
 
-    /* Sidebar */
-    --sidebar-background: 222 20% 6%;
-    --sidebar-foreground: 215 20% 70%;
-    --sidebar-primary: 185 90% 48%;
-    --sidebar-primary-foreground: 222 20% 7%;
-    --sidebar-accent: 222 15% 13%;
-    --sidebar-accent-foreground: 210 25% 85%;
-    --sidebar-border: 222 15% 14%;
-    --sidebar-ring: 185 90% 48%;
+    /* ── Sidebar: slightly lighter than bg ── */
+    --sidebar-background: 228 22% 7%;    /* #0b0d16 — slightly darker sidebar */
+    --sidebar-foreground: 218 18% 62%;
+    --sidebar-primary: 232 75% 62%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 228 18% 13%;       /* active item bg */
+    --sidebar-accent-foreground: 218 28% 88%;
+    --sidebar-border: 228 18% 13%;
+    --sidebar-ring: 232 75% 62%;
 
-    /* Custom tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(185 90% 48%), hsl(200 90% 60%));
-    --gradient-text: linear-gradient(135deg, hsl(185 90% 55%), hsl(200 90% 65%));
-    --glass-bg: hsl(222 18% 12% / 0.8);
-    --glass-border: hsl(222 15% 20% / 0.6);
+    /* ── Custom tokens ── */
+    --gradient-primary: linear-gradient(135deg, hsl(232 75% 62%), hsl(260 70% 68%));
+    --gradient-text: linear-gradient(135deg, hsl(232 80% 68%), hsl(260 70% 72%));
+    --glass-bg: hsl(228 22% 12% / 0.85);
+    --glass-border: hsl(228 18% 22% / 0.5);
+
+    /* ── Glow tokens ── */
+    --glow-color: hsl(232 75% 62% / 0.18);
+    --glow-color-strong: hsl(232 75% 62% / 0.35);
+
+    /* ── Shadows ── */
+    --shadow-card: 0 2px 24px hsl(228 22% 4% / 0.6), 0 1px 4px hsl(228 22% 4% / 0.4);
+    --shadow-popover: 0 8px 32px hsl(228 22% 4% / 0.7);
   }
 }
 
@@ -122,11 +124,18 @@
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Space Grotesk', system-ui, sans-serif;
   }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.5); }
 }
 
 @layer utilities {
@@ -140,9 +149,17 @@
   .glass-card {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border-radius: var(--radius);
+  }
+
+  /* Premium card look matching the reference image */
+  .premium-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) + 2px);
+    box-shadow: var(--shadow-card, 0 2px 12px hsl(228 22% 4% / 0.4));
   }
 
   .gradient-border {
@@ -158,15 +175,35 @@
     background: var(--gradient-primary);
     border-radius: calc(var(--radius) + 1px);
     z-index: -1;
-    opacity: 0.6;
+    opacity: 0.5;
   }
 
   .glow-primary {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.3), 0 0 60px hsl(var(--primary) / 0.1);
+    box-shadow: 0 0 20px var(--glow-color, hsl(var(--primary) / 0.2)),
+                0 0 60px hsl(var(--primary) / 0.08);
+  }
+
+  .glow-strong {
+    box-shadow: 0 0 30px var(--glow-color-strong, hsl(var(--primary) / 0.3));
   }
 
   .bg-dots {
-    background-image: radial-gradient(hsl(var(--foreground) / 0.06) 1px, transparent 1px);
+    background-image: radial-gradient(hsl(var(--foreground) / 0.04) 1px, transparent 1px);
     background-size: 24px 24px;
+  }
+
+  /* Sidebar active indicator bar (like the reference) */
+  .sidebar-active-bar {
+    position: relative;
+  }
+  .sidebar-active-bar::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20%;
+    bottom: 20%;
+    width: 3px;
+    background: hsl(var(--primary));
+    border-radius: 0 3px 3px 0;
   }
 }
