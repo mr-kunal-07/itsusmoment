@@ -20,6 +20,8 @@ export interface Message {
   created_at: string;
   read_at: string | null;
   reply_to_id: string | null;
+  message_type?: string;
+  audio_url?: string | null;
   reactions?: MessageReaction[];
 }
 
