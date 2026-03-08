@@ -316,7 +316,25 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
                     </DropdownMenu>
                   )}
                 </div>
-              </Card>
+                </Card>
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem onClick={() => { setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
+                    <Pencil className="h-4 w-4 mr-2" /> Edit
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => handleToggleStar(item)}>
+                    <Star className={cn("h-4 w-4 mr-2", item.is_starred && "fill-yellow-400 text-yellow-400")} />
+                    {item.is_starred ? "Unstar" : "Star"}
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => { setSingleMoveFolderId(item.folder_id ?? "__none__"); setMoveItem(item); }}>
+                    <FolderOpen className="h-4 w-4 mr-2" /> Move to folder
+                  </ContextMenuItem>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem onClick={() => setDeleteItem(item)} className="text-destructive focus:text-destructive">
+                    <Trash2 className="h-4 w-4 mr-2" /> Delete
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             );
           })}
         </div>
