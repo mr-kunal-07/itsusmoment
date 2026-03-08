@@ -405,7 +405,7 @@ export default function Index() {
               const Icon = f.icon;
               return (
                 <Reveal key={i} delay={i * 50}>
-                  <div style={{ padding: "36px 32px", background: T.white, borderRight: (i + 1) % 3 !== 0 ? `1px solid ${T.border}` : "none", borderBottom: i < 3 ? `1px solid ${T.border}` : "none", transition: "background 0.15s" }}
+                  <div style={{ padding: "36px 32px", background: T.white, borderRight: (i + 1) % 3 !== 0 ? `1px solid ${T.border}` : "none", borderBottom: i < 6 ? `1px solid ${T.border}` : "none", transition: "background 0.15s" }}
                     onMouseEnter={e => (e.currentTarget.style.background = T.bg)}
                     onMouseLeave={e => (e.currentTarget.style.background = T.white)}>
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: T.surface, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
