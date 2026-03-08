@@ -217,6 +217,8 @@ export default function Dashboard() {
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
 
+              <NotificationsPanel />
+
               <Button onClick={() => setUploadOpen(true)} size="sm" className="gap-1.5">
                 <Upload className="h-4 w-4" /> Upload
               </Button>
