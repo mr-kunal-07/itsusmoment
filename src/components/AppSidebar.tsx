@@ -111,6 +111,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
     { id: "timeline" as const, label: "Memories Timeline", icon: CalendarHeart },
     { id: "anniversaries" as const, label: "Anniversaries", icon: Trophy },
     { id: "love-story" as const, label: "Love Story Card", icon: Sparkles },
+    { id: "travel-map" as const, label: "Travel Map", icon: Globe },
     { id: "activity" as const, label: "Activity Feed", icon: Activity },
     { id: "recently-deleted" as const, label: "Recently Deleted", icon: Trash2, badge: 0 },
   ];
