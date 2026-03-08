@@ -9,6 +9,7 @@ import { AppSidebar, ViewType } from "@/components/AppSidebar";
 import { MediaGrid, ViewMode } from "@/components/MediaGrid";
 import { UploadDialog } from "@/components/UploadDialog";
 import { MediaPreview } from "@/components/MediaPreview";
+import { FolderBreadcrumb } from "@/components/FolderBreadcrumb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
