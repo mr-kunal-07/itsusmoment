@@ -26,6 +26,7 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { BillingView } from "@/components/BillingView";
 import { SettingsView } from "@/components/SettingsView";
 import { RecentlyDeletedView } from "@/components/RecentlyDeletedView";
+import { LoveStoryView } from "@/components/LoveStoryView";
 
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
