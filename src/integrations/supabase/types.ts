@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      bucket_list: {
+        Row: {
+          added_by: string
+          couple_id: string
+          created_at: string
+          done: boolean
+          id: string
+          text: string
+        }
+        Insert: {
+          added_by: string
+          couple_id: string
+          created_at?: string
+          done?: boolean
+          id?: string
+          text: string
+        }
+        Update: {
+          added_by?: string
+          couple_id?: string
+          created_at?: string
+          done?: boolean
+          id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bucket_list_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       couples: {
         Row: {
           created_at: string
