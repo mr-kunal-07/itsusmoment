@@ -390,7 +390,7 @@ export default function Index() {
       </section>
 
       {/* ══ HOW IT WORKS ══ */}
-      <section id="how-it-works" className="bg-card/25 border-y border-border py-28">
+      <section id="how-it-works" className="bg-secondary/40 border-y border-border py-28">
         <div className="max-w-5xl mx-auto px-5 md:px-8">
           <FadeIn className="text-center mb-16">
             <h2 className="font-heading text-4xl md:text-5xl font-bold mb-4">
