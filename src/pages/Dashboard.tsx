@@ -350,8 +350,8 @@ export default function Dashboard() {
               ) : (
                 <MediaGrid
                   media={media}
-                  isLoading={isLoading}
-                  onPreview={(index) => setPreviewIndex(index)}
+                  loading={isLoading}
+                  onPreview={(item) => setPreviewIndex(media.findIndex(m => m.id === item.id))}
                   viewMode={viewMode}
                   folders={folders}
                 />
