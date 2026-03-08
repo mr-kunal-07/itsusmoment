@@ -402,8 +402,115 @@ export default function Admin() {
               </div>
             </div>
           </TabsContent>
+          {/* ── Audit Log ── */}
+          <TabsContent value="audit" className="mt-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Every plan change made by admins is recorded here.
+              </p>
+              <Button
+                variant="ghost" size="sm"
+                className="h-8 gap-1.5 text-xs"
+                onClick={() => { refetch(); refetchAudit(); }}
+              >
+                <RefreshCw className={cn("h-3 w-3", (usersLoading || auditLoading) && "animate-spin")} />
+                Refresh
+              </Button>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+              {/* Header */}
+              <div className="grid grid-cols-[2fr_1fr_1fr_2fr_1.5fr] gap-4 px-5 py-3 border-b border-border bg-muted/30">
+                {["User", "From", "To", "Changed by", "When"].map((h, i) => (
+                  <p key={i} className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{h}</p>
+                ))}
+              </div>
+
+              {auditLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : auditLogs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                  <History className="h-8 w-8 opacity-40" />
+                  <p className="text-sm">No plan changes yet</p>
+                  <p className="text-xs opacity-60">Changes will appear here when an admin updates a user's plan.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {auditLogs.map((entry) => {
+                    const target = entry.target_user;
+                    const changer = entry.changed_by_user;
+                    const targetName = target?.display_name ?? target?.email ?? entry.target_user_id.slice(0, 8);
+                    const changerName = changer?.display_name ?? changer?.email ?? entry.changed_by_user_id.slice(0, 8);
+                    return (
+                      <div
+                        key={entry.id}
+                        className="grid grid-cols-[2fr_1fr_1fr_2fr_1.5fr] gap-4 px-5 py-3.5 items-center hover:bg-muted/20 transition-colors"
+                      >
+                        {/* Target user */}
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Avatar className="h-6 w-6 shrink-0">
+                            {target?.avatar_url && <AvatarImage src={target.avatar_url} />}
+                            <AvatarFallback className="text-[9px]">
+                              {targetName.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <p className="text-xs font-medium text-foreground truncate">{targetName}</p>
+                        </div>
+
+                        {/* Old plan */}
+                        <div>
+                          {entry.old_plan ? (
+                            <PlanBadge plan={entry.old_plan} />
+                          ) : (
+                            <span className="text-[11px] text-muted-foreground italic">none</span>
+                          )}
+                        </div>
+
+                        {/* Arrow + new plan */}
+                        <div className="flex items-center gap-1.5">
+                          <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <PlanBadge plan={entry.new_plan} />
+                        </div>
+
+                        {/* Changed by */}
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Avatar className="h-5 w-5 shrink-0">
+                            {changer?.avatar_url && <AvatarImage src={changer.avatar_url} />}
+                            <AvatarFallback className="text-[8px]">
+                              {changerName.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <p className="text-xs text-muted-foreground truncate">{changerName}</p>
+                        </div>
+
+                        {/* When */}
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(entry.changed_at), { addSuffix: true })}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground/60">
+                            {format(new Date(entry.changed_at), "MMM d, HH:mm")}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Footer */}
+              {auditLogs.length > 0 && (
+                <div className="px-5 py-3 border-t border-border bg-muted/10">
+                  <p className="text-[11px] text-muted-foreground">
+                    Showing {auditLogs.length} most recent changes
+                  </p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
         </Tabs>
-      </div>
 
       {/* Delete confirm dialog */}
       <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
