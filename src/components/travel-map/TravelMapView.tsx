@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Map, List, Share2, Download, Loader2, Heart, Globe2 } from "lucide-react";
+import { Plus, Map, List, Share2, Download, Loader2, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTravelLocations, TravelLocation } from "@/hooks/useTravelLocations";
 import { useMedia } from "@/hooks/useMedia";
@@ -16,7 +16,7 @@ import { toPng } from "html-to-image";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-type ViewMode = "map" | "heatmap" | "timeline";
+type ViewMode = "map" | "timeline";
 
 // Subtle floating hearts — only on desktop
 function FloatingHearts() {
@@ -38,43 +38,9 @@ function FloatingHearts() {
   );
 }
 
-// Heatmap legend — themed to app
-function HeatmapLegend({ locations }: { locations: TravelLocation[] }) {
-  const countMap: Record<string, number> = {};
-  locations.forEach(l => {
-    if (l.country) countMap[l.country] = (countMap[l.country] ?? 0) + 1;
-  });
-  const countries = Object.entries(countMap).sort((a, b) => b[1] - a[1]);
-  if (countries.length === 0) return null;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 16 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="absolute top-3 right-3 z-10 bg-card/90 border border-border rounded-xl p-3 backdrop-blur-md max-w-[160px] shadow-card"
-    >
-      <div className="text-[10px] font-bold text-foreground mb-2 flex items-center gap-1">
-        <Globe2 className="h-3 w-3 text-pink-500" /> Countries
-      </div>
-      <div className="space-y-1 max-h-32 overflow-y-auto">
-        {countries.map(([country, count]) => (
-          <div key={country} className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5">
-              <div className="h-2 w-2 rounded-full bg-pink-500 shrink-0" />
-              <span className="text-[10px] text-foreground/80 truncate">{country}</span>
-            </div>
-            <span className="text-[10px] text-pink-500 font-semibold shrink-0">{count}</span>
-          </div>
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
 const VIEW_TABS: { id: ViewMode; label: string; icon: typeof Map }[] = [
-  { id: "map",      label: "Map",      icon: Map   },
-  { id: "heatmap",  label: "Heatmap",  icon: Globe2 },
-  { id: "timeline", label: "Timeline", icon: List  },
+  { id: "map",      label: "Map",      icon: Map  },
+  { id: "timeline", label: "Timeline", icon: List },
 ];
 
 export function TravelMapView() {
@@ -104,10 +70,9 @@ export function TravelMapView() {
   ].join(" ❤️ ");
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
-    if (mode === "heatmap") return;
     setClickedCoords({ lat, lng });
     setAddOpen(true);
-  }, [mode]);
+  }, []);
 
   const handleTimelineSelect = (loc: TravelLocation) => {
     setFocusLocation(loc);
@@ -162,8 +127,6 @@ export function TravelMapView() {
       </div>
     );
   }
-
-  const isMapView = mode === "map" || mode === "heatmap";
 
   return (
     <div className="relative min-h-screen bg-background overflow-hidden">
@@ -230,7 +193,7 @@ export function TravelMapView() {
       {/* ── Main content ── */}
       <div ref={exportRef} className="relative px-2 sm:px-3 pb-4">
         <AnimatePresence mode="wait">
-          {isMapView ? (
+          {mode === "map" ? (
             <motion.div
               key="map-container"
               initial={{ opacity: 0 }}
@@ -238,21 +201,6 @@ export function TravelMapView() {
               exit={{ opacity: 0 }}
               className="relative"
             >
-              {/* Heatmap info strip */}
-              {mode === "heatmap" && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-2 px-3 py-1.5 rounded-xl bg-card border border-border flex items-center gap-2"
-                >
-                  <Globe2 className="h-3.5 w-3.5 text-pink-500 shrink-0" />
-                  <p className="text-[11px] text-muted-foreground">
-                    Visited countries are highlighted in pink
-                    {locations.filter(l => l.country).length === 0 && " — add a country to see it highlighted"}
-                  </p>
-                </motion.div>
-              )}
-
               {/* Map */}
               <div
                 className="relative rounded-2xl overflow-hidden border border-border shadow-card"
@@ -267,18 +215,13 @@ export function TravelMapView() {
                     locations={locations}
                     onMapClick={handleMapClick}
                     onPinClick={loc => {
-                      if (mode !== "heatmap") {
-                        setSelectedLocation(loc);
-                        setFocusLocation(loc);
-                      }
+                      setSelectedLocation(loc);
+                      setFocusLocation(loc);
                     }}
                     focusLocation={focusLocation}
-                    showHeatmap={mode === "heatmap"}
+                    showHeatmap={false}
                   />
                 )}
-
-                {/* Heatmap legend */}
-                {mode === "heatmap" && !isLoading && <HeatmapLegend locations={locations} />}
 
                 {/* Couple name watermark */}
                 <div className="absolute bottom-3 left-3 pointer-events-none z-10">
@@ -304,18 +247,15 @@ export function TravelMapView() {
               </div>
 
               {/* FAB — Add Memory */}
-              {mode === "map" && (
-                <motion.button
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
-                  onClick={() => { setClickedCoords(null); setAddOpen(true); }}
-                  className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-20 flex items-center gap-2 pl-4 pr-5 py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-semibold text-sm shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-shadow"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden xs:inline">Add Memory</span>
-                  <span className="xs:hidden">Add</span>
-                </motion.button>
-              )}
+              <motion.button
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => { setClickedCoords(null); setAddOpen(true); }}
+                className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-20 flex items-center gap-2 pl-4 pr-5 py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-semibold text-sm shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-shadow"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Memory</span>
+              </motion.button>
             </motion.div>
           ) : (
             <motion.div
