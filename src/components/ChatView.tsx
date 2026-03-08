@@ -310,6 +310,8 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
       className="flex flex-col h-full"
       style={{
         background: "hsl(var(--wa-bg))",
+        paddingBottom: kbOffset > 0 ? `${kbOffset}px` : undefined,
+        transition: "padding-bottom 0.15s ease",
       }}
     >
       {/* ── WhatsApp-style Header ── */}

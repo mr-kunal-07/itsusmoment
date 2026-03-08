@@ -47,8 +47,9 @@ export function SettingsView({ onNavigateBilling }: Props) {
   // ── App Lock state ──────────────────────────────────────────────────────────
   const [lockEnabled, setLockEnabled] = useState(getIsLockEnabled);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
-  // PIN setup (shown when biometric unavailable)
+  // PIN setup/change modes
   const [showPinSetup, setShowPinSetup] = useState(false);
+  const [showPinChange, setShowPinChange] = useState(false);
   const [pinStep, setPinStep] = useState<"enter" | "confirm">("enter");
   const [pinDraft, setPinDraft] = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
