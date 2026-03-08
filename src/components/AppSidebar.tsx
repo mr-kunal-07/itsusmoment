@@ -182,7 +182,7 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map(item => (
-                <SidebarMenuItem key={item.id}>
+                <SidebarMenuItem key={item.id} className={cn(item.id === "all" && "sm:flex hidden")}>
                   <SidebarMenuButton
                     onClick={() => selectView(item.id)}
                     className={cn("justify-between", selectedView === item.id && "bg-accent text-accent-foreground")}
