@@ -301,9 +301,25 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
 
     const { latitude: lat, longitude: lng, location_name, city, country } = focusLocation;
 
+    // Draw a bounding-box rectangle as fallback (styled same as geofence)
+    const applyBboxRect = (bbox: [number, number, number, number]) => {
+      if (!mapInstanceRef.current) return;
+      if (geofenceLayerRef.current) geofenceLayerRef.current.remove();
+      // bbox = [minLon, minLat, maxLon, maxLat]
+      const bounds: L.LatLngBoundsExpression = [[bbox[1], bbox[0]], [bbox[3], bbox[2]]];
+      const rect = L.rectangle(bounds, { ...GEOFENCE_STYLE });
+      rect.on("mouseover", function () { rect.setStyle({ ...GEOFENCE_STYLE, ...GEOFENCE_HOVER }); });
+      rect.on("mouseout", function () { rect.setStyle({ ...GEOFENCE_STYLE }); });
+      rect.addTo(mapInstanceRef.current);
+      geofenceLayerRef.current = rect as unknown as L.GeoJSON;
+      const lb = L.latLngBounds(bounds as L.LatLngBoundsLiteral);
+      if (lb.isValid()) {
+        mapInstanceRef.current.fitBounds(lb, { padding: [52, 52], maxZoom: 15 });
+      }
+    };
+
     const fetchBoundary = async () => {
       // ── Step 1: Search by name — tries to find the actual named place boundary
-      // Build queries from most specific to least specific
       const searchQueries = [
         location_name && city && country ? `${location_name}, ${city}, ${country}` : null,
         location_name && country        ? `${location_name}, ${country}` : null,
@@ -311,6 +327,8 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
         city                            ? city : null,
         country                         ? country : null,
       ].filter(Boolean) as string[];
+
+      let bestBbox: [number, number, number, number] | null = null;
 
       for (const q of searchQueries) {
         try {
@@ -325,11 +343,18 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
           if (!res.ok) continue;
 
           const fc = (await res.json()) as GeoJSON.FeatureCollection;
-          // Pick the first result that carries a real polygon boundary
+
+          // Prefer a real polygon boundary
           const match = fc.features?.find(f => isPolygon(f.geometry?.type));
           if (match && mapInstanceRef.current) {
             applyLayer(match);
             return;
+          }
+
+          // Save bbox from first result as fallback
+          if (!bestBbox && fc.features?.[0]?.bbox) {
+            const b = fc.features[0].bbox as number[];
+            if (b.length >= 4) bestBbox = [b[0], b[1], b[2], b[3]];
           }
         } catch { /* try next query */ }
       }
@@ -352,11 +377,24 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
             applyLayer(feature);
             return;
           }
+          // Save bbox if available
+          if (!bestBbox && feature?.bbox) {
+            const b = feature.bbox as number[];
+            if (b.length >= 4) bestBbox = [b[0], b[1], b[2], b[3]];
+          }
         } catch { /* try next zoom */ }
       }
 
-      // ── No polygon boundary found — just fly to the pin without any geofence
-      map.flyTo([lat, lng], 13, { duration: 1.2 });
+      // ── Step 3: Use saved bounding box as a styled rectangle
+      if (bestBbox && mapInstanceRef.current) {
+        applyBboxRect(bestBbox);
+        return;
+      }
+
+      // ── No data at all — just fly to pin
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.flyTo([lat, lng], 14, { duration: 1.2 });
+      }
     };
 
     fetchBoundary();
