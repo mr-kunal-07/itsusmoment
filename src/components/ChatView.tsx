@@ -649,8 +649,11 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
 
       {/* ── Input Bar ── */}
       <div
-        className="px-3 py-2.5 flex items-end gap-2 shrink-0 border-t border-border"
-        style={{ background: "hsl(var(--wa-bg))" }}
+        className="px-3 pt-2 pb-3 flex items-end gap-2 shrink-0 border-t border-border"
+        style={{
+          background: "hsl(var(--wa-bg))",
+          paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
+        }}
       >
         {voiceMode ? (
           <div className="flex-1">
