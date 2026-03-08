@@ -17,26 +17,41 @@ export type Database = {
       bucket_list: {
         Row: {
           added_by: string
+          category: string | null
+          completed_at: string | null
+          completed_photo_url: string | null
           couple_id: string
           created_at: string
           done: boolean
+          due_date: string | null
           id: string
+          note: string | null
           text: string
         }
         Insert: {
           added_by: string
+          category?: string | null
+          completed_at?: string | null
+          completed_photo_url?: string | null
           couple_id: string
           created_at?: string
           done?: boolean
+          due_date?: string | null
           id?: string
+          note?: string | null
           text: string
         }
         Update: {
           added_by?: string
+          category?: string | null
+          completed_at?: string | null
+          completed_photo_url?: string | null
           couple_id?: string
           created_at?: string
           done?: boolean
+          due_date?: string | null
           id?: string
+          note?: string | null
           text?: string
         }
         Relationships: [
@@ -45,6 +60,38 @@ export type Database = {
             columns: ["couple_id"]
             isOneToOne: false
             referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bucket_list_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          item_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          item_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bucket_list_reactions_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "bucket_list"
             referencedColumns: ["id"]
           },
         ]
