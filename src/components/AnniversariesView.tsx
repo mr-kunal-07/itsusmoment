@@ -302,7 +302,7 @@ function MilestoneCard({ milestone, mediaMap, onDelete, canDelete }: {
       {photo ? (
         <img src={getPublicUrl(photo.file_path)} alt={photo.title} className="w-16 h-16 rounded-lg object-cover shrink-0" />
       ) : (
-        <div className={cn("w-16 h-16 rounded-lg flex items-center justify-center shrink-0 text-2xl", isAnniversary ? "bg-primary/10" : "bg-amber-500/10")}>
+        <div className={cn("w-12 h-12 sm:w-16 sm:h-16 rounded-lg flex items-center justify-center shrink-0 text-xl sm:text-2xl", isAnniversary ? "bg-primary/10" : "bg-amber-500/10")}>
           {isAnniversary ? "💑" : "⭐"}
         </div>
       )}
