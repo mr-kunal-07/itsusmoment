@@ -177,7 +177,7 @@ export function BucketList() {
                 "text-[10px] rounded-full px-1 leading-none",
                 category === cat.id ? "bg-primary-foreground/20" : "bg-muted"
               )}>
-                {items.filter(i => (i as any).category === cat.id || cat.id === "all").length}
+                {items.filter(i => (i as any).category === cat.id).length}
               </span>
             )}
           </button>
