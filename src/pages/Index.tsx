@@ -394,40 +394,69 @@ export default function Index() {
       </Reveal>
 
       {/* ══ FEATURES ═════════════════════════════════════════ */}
-      <section id="features" style={{ background: T.white, padding: "72px 0 80px" }}>
+      <section id="features" style={{ background: T.white, padding: "80px 0 88px" }}>
         <div style={{ maxWidth: 1120, margin: "0 auto", padding: "0 20px" }}>
-          <Reveal style={{ maxWidth: 640, marginBottom: 48 }}>
-            <p style={{ ...mono, color: T.muted, textTransform: "uppercase", marginBottom: 14 }}>WHAT YOU GET</p>
-            <h2 style={{ ...display, fontSize: "clamp(26px, 3.5vw, 44px)", lineHeight: 1.1, marginBottom: 14 }}>
-              Everything you need to<br />keep your relationship close.
-            </h2>
-            <p style={{ fontSize: 16, lineHeight: 1.75, color: T.body }}>One app for your photos, your chats, your milestones — and all the little moments in between.</p>
+
+          {/* Top label */}
+          <Reveal>
+            <p style={{ ...mono, color: T.muted, textTransform: "uppercase", marginBottom: 0, textAlign: "center" }}>WHAT YOU GET</p>
           </Reveal>
 
+          {/* Hero split — headline left, memories card right */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 items-center" style={{ marginTop: 32, marginBottom: 64 }}>
+            <Reveal delay={40}>
+              <h2 style={{ ...display, fontSize: "clamp(28px, 4vw, 52px)", lineHeight: 1.08, marginBottom: 20 }}>
+                Every photo. Every memory.<br />In one private place.
+              </h2>
+              <p style={{ fontSize: 16, lineHeight: 1.8, color: T.body, marginBottom: 28, maxWidth: 460 }}>
+                Build a beautiful private album that grows with your relationship. Add love notes, star favourites, and relive every moment together.
+              </p>
+              <ul style={{ listStyle: "none", padding: 0, margin: "0 0 32px", display: "flex", flexDirection: "column", gap: 10 }}>
+                {["Private folders & albums", "Love notes on every photo", "Star your all-time favourites", "Shared access, always"].map((b, j) =>
+                  <li key={j} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 600, color: T.ink }}>
+                    <div style={{ width: 18, height: 18, borderRadius: "50%", background: T.surface, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Check style={{ width: 10, height: 10, color: T.ink }} />
+                    </div>
+                    {b}
+                  </li>
+                )}
+              </ul>
+              <Link to="/auth" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 14, fontWeight: 600, color: T.ink, textDecoration: "none", borderBottom: `1.5px solid ${T.ink}`, paddingBottom: 2 }}>
+                Get started free <ChevronRight style={{ width: 15, height: 15 }} />
+              </Link>
+            </Reveal>
+
+            <Reveal delay={120} className="flex justify-center lg:justify-end">
+              <div style={{ width: "100%", maxWidth: 400 }}>
+                <MemoriesCard />
+              </div>
+            </Reveal>
+          </div>
+
+          {/* 6-feature grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style={{ border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
-            {FEATURES.map((f, i) => {
+            {FEATURES.slice(2).map((f, i) => {
               const Icon = f.icon;
-              const col = 3;
-              const row = Math.floor(i / col);
-              const totalRows = Math.ceil(FEATURES.length / col);
-              const isLastRow = row === totalRows - 1;
-              const isLastInRow = (i + 1) % col === 0;
+              const cols = 3;
+              const total = FEATURES.slice(2).length;
+              const isLastRow = i >= total - (total % cols || cols);
+              const isLastInRow = (i + 1) % cols === 0;
               return (
                 <Reveal key={i} delay={i * 40}>
                   <div
                     className={[
-                      "p-7 md:p-8 transition-colors duration-150",
+                      "p-6 md:p-7 transition-colors duration-150",
                       !isLastInRow ? "sm:border-r" : "",
                       !isLastRow ? "border-b" : ""
                     ].join(" ")}
                     style={{ background: T.white, borderColor: T.border }}
                     onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.background = T.bg}
                     onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.background = T.white}>
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: T.surface, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-                      <Icon style={{ width: 18, height: 18, color: T.ink }} strokeWidth={1.75} />
+                    <div style={{ width: 38, height: 38, borderRadius: 10, background: T.surface, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+                      <Icon style={{ width: 17, height: 17, color: T.ink }} strokeWidth={1.75} />
                     </div>
-                    <h3 style={{ fontSize: 15, fontWeight: 600, color: T.ink, marginBottom: 8 }}>{f.title}</h3>
-                    <p style={{ fontSize: 14, lineHeight: 1.7, color: T.body }}>{f.desc}</p>
+                    <h3 style={{ fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 6 }}>{f.title}</h3>
+                    <p style={{ fontSize: 13, lineHeight: 1.7, color: T.body }}>{f.desc}</p>
                   </div>
                 </Reveal>
               );
