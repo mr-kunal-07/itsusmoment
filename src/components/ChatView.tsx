@@ -246,11 +246,12 @@ export function ChatView() {
 
   return (
     <div
-      className="flex flex-col rounded-xl overflow-hidden border border-border/40 shadow-2xl"
+      className="flex flex-col overflow-hidden"
       style={{
         height: "calc(100dvh - 7.5rem)",
         maxHeight: 900,
         background: "hsl(var(--wa-bg))",
+        margin: "-0.75rem -0.75rem -0.75rem",
       }}
     >
       {/* ── WhatsApp-style Header ── */}
