@@ -73,11 +73,18 @@ export function useUploadAvatar() {
   });
 }
 
+/**
+ * Combined storage usage for the couple (both partners' media summed).
+ * The media RLS already returns files from both users when linked,
+ * so a single aggregate query covers the shared pool.
+ */
 export function useStorageUsage() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ["storage-usage"],
     queryFn: async () => {
+      // RLS returns media uploaded by the user OR their partner,
+      // so this naturally gives the combined couple storage.
       const { data, error } = await supabase
         .from("media")
         .select("file_size");
