@@ -29,18 +29,43 @@ serve(async (req) => {
     // Fetch all auth users
     const { data: { users: authUsers } } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
 
-    // Fetch profiles, subscriptions, media stats in parallel
+    // Fetch profiles, subscriptions, media stats, couples in parallel
     const [profilesRes, subsRes, mediaRes, couplesRes] = await Promise.all([
       adminClient.from("profiles").select("*"),
       adminClient.from("subscriptions").select("*").eq("status", "active"),
       adminClient.from("media").select("uploaded_by, file_size"),
-      adminClient.from("couples").select("*"),
+      adminClient.from("couples").select("*").eq("status", "active"),
     ]);
 
     const profiles = profilesRes.data ?? [];
     const subscriptions = subsRes.data ?? [];
     const mediaItems = mediaRes.data ?? [];
     const couples = couplesRes.data ?? [];
+
+    // Build a partner map: userId → partnerId
+    const partnerMap: Record<string, string> = {};
+    for (const c of couples) {
+      if (c.user1_id && c.user2_id) {
+        partnerMap[c.user1_id] = c.user2_id;
+        partnerMap[c.user2_id] = c.user1_id;
+      }
+    }
+
+    // Build a paid-plan map: userId → plan (only non-free/single plans)
+    const paidPlanMap: Record<string, string> = {};
+    for (const s of subscriptions) {
+      if (s.plan && s.plan !== "free" && s.plan !== "single") {
+        paidPlanMap[s.user_id] = s.plan;
+      }
+    }
+
+    // Resolve effective plan: own paid plan → partner's paid plan → "single"
+    function getEffectivePlan(userId: string): string {
+      if (paidPlanMap[userId]) return paidPlanMap[userId];
+      const partnerId = partnerMap[userId];
+      if (partnerId && paidPlanMap[partnerId]) return paidPlanMap[partnerId];
+      return "single";
+    }
 
     // Compute storage per user
     const storageMap: Record<string, number> = {};
@@ -54,12 +79,15 @@ serve(async (req) => {
       const profile = profiles.find((p) => p.user_id === u.id);
       const sub = subscriptions.find((s) => s.user_id === u.id);
       const isInCouple = couples.some((c) => c.user1_id === u.id || c.user2_id === u.id);
+      const effectivePlan = getEffectivePlan(u.id);
+      const isShared = !paidPlanMap[u.id] && effectivePlan !== "single";
       return {
         id: u.id,
         email: u.email,
         display_name: profile?.display_name ?? null,
         avatar_url: profile?.avatar_url ?? null,
-        plan: sub?.plan ?? "single",
+        plan: effectivePlan,
+        is_shared_plan: isShared,
         subscription_status: sub?.status ?? null,
         period_end: sub?.current_period_end ?? null,
         storage_used: storageMap[u.id] ?? 0,

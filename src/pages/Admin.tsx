@@ -36,7 +36,7 @@ const PLAN_CONFIG: Record<string, { label: string; Icon: React.ElementType; colo
   soulmate: { label: "Soulmate", Icon: Gem,            color: "text-primary" },
 };
 
-function PlanBadge({ plan }: { plan: string }) {
+function PlanBadge({ plan, isShared }: { plan: string; isShared?: boolean }) {
   const cfg = PLAN_CONFIG[plan] ?? PLAN_CONFIG.single;
   return (
     <Badge
@@ -45,6 +45,9 @@ function PlanBadge({ plan }: { plan: string }) {
     >
       <cfg.Icon className="h-3 w-3" strokeWidth={1.75} />
       {cfg.label}
+      {isShared && (
+        <span title="Shared from partner" className="ml-0.5 text-[9px] opacity-60">❤️</span>
+      )}
     </Badge>
   );
 }
@@ -239,7 +242,7 @@ export default function Admin() {
                         <p className="text-xs font-medium text-foreground truncate">{u.display_name ?? u.email}</p>
                         <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(u.created_at), { addSuffix: true })}</p>
                       </div>
-                      <PlanBadge plan={u.plan} />
+                      <PlanBadge plan={u.plan} isShared={u.is_shared_plan} />
                     </div>
                   ))}
               </div>
@@ -320,7 +323,7 @@ export default function Admin() {
                       </div>
 
                       {/* Plan */}
-                      <div><PlanBadge plan={u.plan} /></div>
+                      <div><PlanBadge plan={u.plan} isShared={u.is_shared_plan} /></div>
 
                       {/* Storage */}
                       <p className="text-xs text-muted-foreground">{formatBytes(u.storage_used)}</p>
