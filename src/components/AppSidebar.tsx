@@ -24,6 +24,15 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn, formatSize } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+
+export type ViewType = "all" | "starred" | "recently-deleted" | "timeline" | "stats" | "on-this-day" | "anniversaries" | "chat" | "activity" | "billing" | "settings" | "bucket-list" | string;
+
+interface Props {
+  selectedView: ViewType;
+  onSelectView: (view: ViewType) => void;
+  onStartSlideshow?: () => void;
+}
 
 export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Props) {
   const navigate = useNavigate();
