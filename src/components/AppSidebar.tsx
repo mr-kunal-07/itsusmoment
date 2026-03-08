@@ -329,7 +329,7 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
 
         {/* Billing shortcut */}
         <SidebarMenuButton
-          onClick={() => onSelectView("billing")}
+          onClick={() => selectView("billing")}
           className={cn(
             "w-full justify-start gap-2 text-xs",
             plan === "soulmate"
