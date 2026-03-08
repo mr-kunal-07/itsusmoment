@@ -1,53 +1,58 @@
 
-## What's Already Built
+# Media Hub — Team Media Management App
 
-The app already has:
-- Auth (login, signup, reset password)
-- Dashboard with sidebar, folder tree, breadcrumb navigation
-- Media grid (masonry + list) with star, edit, delete, move
-- Bulk select with keyboard shortcuts (Ctrl+A, Del, Esc)
-- Drag & drop upload + drag media into folders
-- Search, file type filter (All/Images/Videos)
-- Dark/light theme toggle
-- Media preview modal with keyboard navigation
-- Starred, Recent, Unfiled, and folder views
+## Overview
+A clean, minimal web app where team members can upload, organize, and manage shared media files (images & videos) in a collaborative workspace.
 
----
+## 1. Authentication
+- **Sign up / Login / Logout** with email and password via Supabase Auth
+- User profiles with display name and avatar
+- Protected routes — unauthenticated users redirected to login
 
-## What Can Be Added
+## 2. Dashboard
+- Clean landing page showing recent uploads across the team
+- Top navigation bar with search, user menu, and upload button
+- Sidebar with folder tree navigation
 
-Here are the most impactful features grouped by category:
+## 3. Folder System
+- Create, rename, and delete folders
+- Nested folder support with breadcrumb navigation
+- Folder view shows all media inside with file count
+- All team members can see and manage shared folders
 
-### High Value — Core UX
-1. **Sort controls** — Sort by date uploaded, name, or file size (ascending/descending). A small dropdown in the header. Pure frontend, no DB changes.
+## 4. Media Upload
+- Drag-and-drop upload zone + file picker button
+- Supported formats: JPG, PNG, WebP (images), MP4, MOV, WebM (videos)
+- File size validation up to 500 MB
+- Upload progress indicator
+- Each file requires a title and optional description
+- Upload date auto-generated
 
-2. **Download button** — In the preview modal and in the grid card menu, add a "Download" option that triggers a file download. Simple `<a href download>` using the public URL.
+## 5. Media Library & Grid View
+- Responsive grid layout with thumbnail previews
+- Video thumbnails with play icon overlay
+- Toggle between grid and list view
+- Sort by date, name, or file size
+- Search by title or filter by folder
 
-3. **File count badges on folders** — Show how many files are inside each folder directly in the sidebar. Requires a join query or a count query per folder.
+## 6. Media Preview & Playback
+- Click to open full-size image preview in a modal/lightbox
+- Built-in video player for video files
+- Display file details: title, description, upload date, uploader, file size
 
-4. **User profile page** — Let users set a display name and upload an avatar. The `profiles` table already exists with `display_name` and `avatar_url` columns. Would show a real avatar in the header instead of initials.
+## 7. Media Management
+- Edit title and description inline
+- Delete files with confirmation dialog
+- Move files between folders
 
-### Collaboration
-5. **Uploader name on media cards** — Show who uploaded each file. The `profiles` table exists and `uploaded_by` is stored on media. Just needs a join/lookup when fetching media.
+## 8. Design & UX
+- Clean, minimal design with lots of white space (Google Drive-inspired)
+- Light theme with subtle shadows and borders
+- Responsive layout — works on desktop, tablet, and mobile
+- Smooth animations and loading states
 
-6. **Copy link button** — In the preview modal, a one-click button to copy the public URL to clipboard.
-
-### UX Polish
-7. **Folder color / emoji** — Let users assign a color or emoji to folders to visually differentiate them. Needs a `color` or `emoji` column added to the `folders` table.
-
-8. **Sort/filter persistence** — Remember the user's last chosen sort order and view mode across sessions (localStorage).
-
-9. **Storage usage indicator** — Show total storage used in the sidebar footer (sum of `file_size` across all media).
-
----
-
-## Suggested Plan to Present
-
-Present these as choices so the user can pick what to build. The most practical quick wins are:
-- Sort controls (no DB change, high utility)
-- Download button (trivial, very useful)
-- Uploader name on cards (profiles join)
-- User profile settings (existing table)
-- Storage usage indicator (aggregate query)
-
-I'll present all of these clearly so the user can pick.
+## Backend (Supabase)
+- **Auth**: Supabase Auth for email/password authentication
+- **Database**: Tables for profiles, folders, and media metadata
+- **Storage**: Supabase Storage bucket for file uploads (public bucket for team access)
+- **RLS**: Row-level security ensuring only authenticated team members can access data

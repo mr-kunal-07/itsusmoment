@@ -1,18 +1,21 @@
 import { useState } from "react";
-import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon } from "lucide-react";
+import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash } from "lucide-react";
 import { useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, Folder } from "@/hooks/useFolders";
+import { useMedia } from "@/hooks/useMedia";
+import { useStorageUsage } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  SidebarHeader,
+  SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 export type ViewType = "all" | "unfiled" | "starred" | "recent" | string;
 
@@ -21,8 +24,17 @@ interface Props {
   onSelectView: (view: ViewType) => void;
 }
 
+function formatSize(bytes: number) {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+  if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + " MB";
+  return (bytes / 1073741824).toFixed(1) + " GB";
+}
+
 export function AppSidebar({ selectedView, onSelectView }: Props) {
   const { data: folders = [] } = useFolders();
+  const { data: allMedia = [] } = useMedia();
+  const { data: storageBytes = 0 } = useStorageUsage();
   const createFolder = useCreateFolder();
   const renameFolder = useRenameFolder();
   const deleteFolder = useDeleteFolder();
@@ -35,6 +47,13 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
   const [deletingFolder, setDeletingFolder] = useState<Folder | null>(null);
 
   const rootFolders = folders.filter(f => !f.parent_id);
+
+  // Count media per folder (including "null" = unfiled)
+  const folderCounts: Record<string, number> = {};
+  allMedia.forEach(m => {
+    const key = m.folder_id ?? "__unfiled__";
+    folderCounts[key] = (folderCounts[key] ?? 0) + 1;
+  });
 
   const handleCreate = async (parentId?: string | null) => {
     if (!newFolderName.trim()) return;
@@ -58,10 +77,10 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
   };
 
   const navItems = [
-    { id: "all" as const, label: "All Files", icon: Home },
-    { id: "recent" as const, label: "Recent", icon: Clock },
-    { id: "starred" as const, label: "Starred", icon: Star },
-    { id: "unfiled" as const, label: "Unfiled", icon: FileIcon },
+    { id: "all" as const, label: "All Files", icon: Home, count: allMedia.length },
+    { id: "recent" as const, label: "Recent", icon: Clock, count: null },
+    { id: "starred" as const, label: "Starred", icon: Star, count: allMedia.filter(m => m.is_starred).length },
+    { id: "unfiled" as const, label: "Unfiled", icon: FileIcon, count: folderCounts["__unfiled__"] ?? 0 },
   ];
 
   return (
@@ -77,10 +96,15 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
                     onClick={() => onSelectView(item.id)}
-                    className={cn(selectedView === item.id && "bg-accent text-accent-foreground")}
+                    className={cn("justify-between", selectedView === item.id && "bg-accent text-accent-foreground")}
                   >
-                    <item.icon className="h-4 w-4 mr-2" />
-                    <span>{item.label}</span>
+                    <span className="flex items-center">
+                      <item.icon className="h-4 w-4 mr-2" />
+                      <span>{item.label}</span>
+                    </span>
+                    {item.count !== null && item.count > 0 && (
+                      <Badge variant="secondary" className="text-xs h-5 px-1.5 font-normal">{item.count}</Badge>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -115,6 +139,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
                   key={folder.id}
                   folder={folder}
                   allFolders={folders}
+                  folderCounts={folderCounts}
                   selectedView={selectedView}
                   onSelectView={onSelectView}
                   editingId={editingId}
@@ -136,6 +161,26 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
         </SidebarGroup>
       </SidebarContent>
 
+      {/* ── Storage usage footer ──────────────────────────────── */}
+      <SidebarFooter className="p-4 border-t">
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Hash className="h-3 w-3" />
+              Storage used
+            </span>
+            <span className="font-medium text-foreground">{formatSize(storageBytes)}</span>
+          </div>
+          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full transition-all duration-500"
+              style={{ width: `${Math.min((storageBytes / (500 * 1024 * 1024)) * 100, 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground/60">of 500 MB</p>
+        </div>
+      </SidebarFooter>
+
       <AlertDialog open={!!deletingFolder} onOpenChange={open => !open && setDeletingFolder(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -155,11 +200,12 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
 }
 
 function FolderItem({
-  folder, allFolders, selectedView, onSelectView,
+  folder, allFolders, folderCounts, selectedView, onSelectView,
   editingId, editName, setEditingId, setEditName, onRename, onDelete,
   creatingInParent, newFolderName, setNewFolderName, onCreateSubfolder, onSubmitCreate, onCancelCreate,
 }: {
   folder: Folder; allFolders: Folder[];
+  folderCounts: Record<string, number>;
   selectedView: string;
   onSelectView: (id: string) => void;
   editingId: string | null; editName: string;
@@ -173,6 +219,7 @@ function FolderItem({
 }) {
   const [expanded, setExpanded] = useState(false);
   const children = allFolders.filter(f => f.parent_id === folder.id);
+  const fileCount = folderCounts[folder.id] ?? 0;
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -183,10 +230,12 @@ function FolderItem({
     e.preventDefault();
     const mediaId = e.dataTransfer.getData("media-id");
     if (mediaId) {
-      // Will be handled by parent via custom event
       window.dispatchEvent(new CustomEvent("move-media", { detail: { mediaId, folderId: folder.id } }));
     }
   };
+
+  // Use emoji if set, else show folder icon
+  const folderEmoji = (folder as Folder & { emoji?: string }).emoji;
 
   return (
     <SidebarMenuItem>
@@ -207,26 +256,35 @@ function FolderItem({
           onDrop={handleDrop}
           className={cn("group justify-between", selectedView === folder.id && "bg-accent text-accent-foreground")}
         >
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-2 min-w-0">
             {children.length > 0 && (
               <ChevronRight
-                className={cn("h-3 w-3 transition-transform", expanded && "rotate-90")}
+                className={cn("h-3 w-3 transition-transform shrink-0", expanded && "rotate-90")}
                 onClick={e => { e.stopPropagation(); setExpanded(!expanded); }}
               />
             )}
-            <FolderIcon className="h-4 w-4" />
+            {folderEmoji ? (
+              <span className="text-sm leading-none">{folderEmoji}</span>
+            ) : (
+              <FolderIcon className="h-4 w-4 shrink-0" />
+            )}
             <span className="truncate">{folder.name}</span>
           </span>
-          <span className="hidden group-hover:flex items-center gap-0.5">
-            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); onCreateSubfolder(folder.id); setExpanded(true); }}>
-              <FolderPlus className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); setEditName(folder.name); setEditingId(folder.id); }}>
-              <Pencil className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); onDelete(folder); }}>
-              <Trash2 className="h-3 w-3" />
-            </Button>
+          <span className="flex items-center gap-0.5">
+            {fileCount > 0 && (
+              <Badge variant="secondary" className="text-xs h-4 px-1 font-normal group-hover:hidden">{fileCount}</Badge>
+            )}
+            <span className="hidden group-hover:flex items-center gap-0.5">
+              <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); onCreateSubfolder(folder.id); setExpanded(true); }}>
+                <FolderPlus className="h-3 w-3" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); setEditName(folder.name); setEditingId(folder.id); }}>
+                <Pencil className="h-3 w-3" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); onDelete(folder); }}>
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </span>
           </span>
         </SidebarMenuButton>
       )}
@@ -250,6 +308,7 @@ function FolderItem({
               key={child.id}
               folder={child}
               allFolders={allFolders}
+              folderCounts={folderCounts}
               selectedView={selectedView}
               onSelectView={onSelectView}
               editingId={editingId}

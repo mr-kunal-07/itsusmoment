@@ -1,12 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Play, MoreVertical, Pencil, Trash2, Star, Image as ImageIcon, FolderInput, X, CheckSquare, FolderOpen, Keyboard } from "lucide-react";
+import { Play, MoreVertical, Pencil, Trash2, Star, Image as ImageIcon, FolderInput, X, CheckSquare, FolderOpen, Keyboard, Download, Link, User } from "lucide-react";
 import { Media, getPublicUrl, useDeleteMedia, useUpdateMedia, useToggleStar, useBulkDeleteMedia, useBulkMoveMedia } from "@/hooks/useMedia";
 import { useFolders } from "@/hooks/useFolders";
+import { useAllProfiles } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
@@ -50,6 +51,17 @@ function formatSize(bytes: number) {
   return (bytes / 1073741824).toFixed(1) + " GB";
 }
 
+function downloadFile(url: string, filename: string) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoadMore }: Props) {
   const deleteMedia = useDeleteMedia();
   const updateMedia = useUpdateMedia();
@@ -57,7 +69,11 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
   const bulkDelete = useBulkDeleteMedia();
   const bulkMove = useBulkMoveMedia();
   const { data: folders = [] } = useFolders();
+  const { data: profiles = [] } = useAllProfiles();
   const { toast } = useToast();
+
+  // Build uploader map: userId -> display_name
+  const uploaderMap = Object.fromEntries(profiles.map(p => [p.user_id, p.display_name ?? p.user_id.slice(0, 8)]));
 
   const [editItem, setEditItem] = useState<Media | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -89,7 +105,6 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
   // ── Keyboard shortcuts ──────────────────────────────────────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Don't fire when typing in an input/textarea/dialog
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement).closest("[role=dialog]")) return;
 
@@ -187,6 +202,13 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
     }
   };
 
+  const handleCopyLink = (item: Media) => {
+    const url = getPublicUrl(item.file_path);
+    navigator.clipboard.writeText(url).then(() => {
+      toast({ title: "Link copied to clipboard" });
+    });
+  };
+
   const handleDragStart = (e: React.DragEvent, item: Media) => {
     e.dataTransfer.setData("media-id", item.id);
     e.dataTransfer.effectAllowed = "move";
@@ -224,6 +246,61 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
       </div>
     );
   }
+
+  // Context menu items — reused in both grid and list
+  const renderContextMenuItems = (item: Media) => (
+    <>
+      <ContextMenuItem onClick={() => { setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
+        <Pencil className="h-4 w-4 mr-2" /> Edit details
+      </ContextMenuItem>
+      <ContextMenuItem onClick={() => handleToggleStar(item)}>
+        <Star className={cn("h-4 w-4 mr-2", item.is_starred && "fill-yellow-400 text-yellow-400")} />
+        {item.is_starred ? "Unstar" : "Star"}
+      </ContextMenuItem>
+      <ContextMenuItem onClick={() => { setSingleMoveFolderId(item.folder_id ?? "__none__"); setMoveItem(item); }}>
+        <FolderOpen className="h-4 w-4 mr-2" /> Move to folder
+      </ContextMenuItem>
+      <ContextMenuItem onClick={() => downloadFile(getPublicUrl(item.file_path), item.file_name)}>
+        <Download className="h-4 w-4 mr-2" /> Download
+      </ContextMenuItem>
+      <ContextMenuItem onClick={() => handleCopyLink(item)}>
+        <Link className="h-4 w-4 mr-2" /> Copy link
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem onClick={() => setDeleteItem(item)} className="text-destructive focus:text-destructive">
+        <Trash2 className="h-4 w-4 mr-2" /> Delete
+      </ContextMenuItem>
+    </>
+  );
+
+  // Dropdown menu items — reused in both grid and list
+  const renderDropdownItems = (item: Media, stopPropagation = false) => {
+    const wrap = (fn: () => void) => (e: React.MouseEvent) => { if (stopPropagation) e.stopPropagation(); fn(); };
+    return (
+      <>
+        <DropdownMenuItem onClick={wrap(() => { setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); })}>
+          <Pencil className="h-4 w-4 mr-2" /> Edit details
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={wrap(() => handleToggleStar(item))}>
+          <Star className={cn("h-4 w-4 mr-2", item.is_starred && "fill-yellow-400 text-yellow-400")} />
+          {item.is_starred ? "Unstar" : "Star"}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={wrap(() => { setSingleMoveFolderId(item.folder_id ?? "__none__"); setMoveItem(item); })}>
+          <FolderOpen className="h-4 w-4 mr-2" /> Move to folder
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={wrap(() => downloadFile(getPublicUrl(item.file_path), item.file_name))}>
+          <Download className="h-4 w-4 mr-2" /> Download
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={wrap(() => handleCopyLink(item))}>
+          <Link className="h-4 w-4 mr-2" /> Copy link
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={wrap(() => setDeleteItem(item))} className="text-destructive focus:text-destructive">
+          <Trash2 className="h-4 w-4 mr-2" /> Delete
+        </DropdownMenuItem>
+      </>
+    );
+  };
 
   return (
     <>
@@ -266,7 +343,7 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
         </div>
       )}
 
-      {/* ── Keyboard hint (shown only when nothing selected) ──────── */}
+      {/* ── Keyboard hint ──────────────────────────────────────────── */}
       {!isSelecting && media.length > 0 && (
         <div className="flex items-center gap-1.5 mb-4 text-xs text-muted-foreground/60 select-none">
           <Keyboard className="h-3 w-3" />
@@ -279,6 +356,7 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
         <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4">
           {media.map(item => {
             const isSelected = selected.has(item.id);
+            const uploaderName = uploaderMap[item.uploaded_by];
             return (
               <ContextMenu key={item.id}>
                 <ContextMenuTrigger asChild>
@@ -347,6 +425,11 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium truncate leading-tight">{item.title}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">{formatSize(item.file_size)} · {format(new Date(item.created_at), "MMM d")}</p>
+                        {uploaderName && (
+                          <p className="text-xs text-muted-foreground/70 mt-0.5 flex items-center gap-1">
+                            <User className="h-2.5 w-2.5" />{uploaderName}
+                          </p>
+                        )}
                       </div>
                       {!isSelecting && (
                         <DropdownMenu>
@@ -355,41 +438,16 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-44">
-                            <DropdownMenuItem onClick={() => { setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
-                              <Pencil className="h-4 w-4 mr-2" /> Edit details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleToggleStar(item)}>
-                              <Star className={cn("h-4 w-4 mr-2", item.is_starred && "fill-yellow-400 text-yellow-400")} />
-                              {item.is_starred ? "Unstar" : "Star"}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => { setSingleMoveFolderId(item.folder_id ?? "__none__"); setMoveItem(item); }}>
-                              <FolderOpen className="h-4 w-4 mr-2" /> Move to folder
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setDeleteItem(item)} className="text-destructive focus:text-destructive">
-                              <Trash2 className="h-4 w-4 mr-2" /> Delete
-                            </DropdownMenuItem>
+                          <DropdownMenuContent align="end" className="w-48">
+                            {renderDropdownItems(item)}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}
                     </div>
                   </Card>
                 </ContextMenuTrigger>
-                <ContextMenuContent className="w-44">
-                  <ContextMenuItem onClick={() => { setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
-                    <Pencil className="h-4 w-4 mr-2" /> Edit details
-                  </ContextMenuItem>
-                  <ContextMenuItem onClick={() => handleToggleStar(item)}>
-                    <Star className={cn("h-4 w-4 mr-2", item.is_starred && "fill-yellow-400 text-yellow-400")} />
-                    {item.is_starred ? "Unstar" : "Star"}
-                  </ContextMenuItem>
-                  <ContextMenuItem onClick={() => { setSingleMoveFolderId(item.folder_id ?? "__none__"); setMoveItem(item); }}>
-                    <FolderOpen className="h-4 w-4 mr-2" /> Move to folder
-                  </ContextMenuItem>
-                  <ContextMenuSeparator />
-                  <ContextMenuItem onClick={() => setDeleteItem(item)} className="text-destructive focus:text-destructive">
-                    <Trash2 className="h-4 w-4 mr-2" /> Delete
-                  </ContextMenuItem>
+                <ContextMenuContent className="w-48">
+                  {renderContextMenuItems(item)}
                 </ContextMenuContent>
               </ContextMenu>
             );
@@ -400,6 +458,7 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
         <div className="space-y-1">
           {media.map(item => {
             const isSelected = selected.has(item.id);
+            const uploaderName = uploaderMap[item.uploaded_by];
             return (
               <ContextMenu key={item.id}>
                 <ContextMenuTrigger asChild>
@@ -438,7 +497,10 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
 
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{item.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{formatSize(item.file_size)} · {format(new Date(item.created_at), "MMM d, yyyy")}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatSize(item.file_size)} · {format(new Date(item.created_at), "MMM d, yyyy")}
+                        {uploaderName && <span className="ml-1.5">· <User className="h-2.5 w-2.5 inline mb-0.5" /> {uploaderName}</span>}
+                      </p>
                     </div>
 
                     {item.is_starred && (
@@ -454,47 +516,29 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
                         >
                           <Star className={cn("h-4 w-4", item.is_starred ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground")} />
                         </Button>
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={e => { e.stopPropagation(); downloadFile(getPublicUrl(item.file_path), item.file_name); }}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-44">
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
-                              <Pencil className="h-4 w-4 mr-2" /> Edit details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); handleToggleStar(item); }}>
-                              <Star className={cn("h-4 w-4 mr-2", item.is_starred && "fill-yellow-400 text-yellow-400")} />
-                              {item.is_starred ? "Unstar" : "Star"}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setSingleMoveFolderId(item.folder_id ?? "__none__"); setMoveItem(item); }}>
-                              <FolderOpen className="h-4 w-4 mr-2" /> Move to folder
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteItem(item); }} className="text-destructive focus:text-destructive">
-                              <Trash2 className="h-4 w-4 mr-2" /> Delete
-                            </DropdownMenuItem>
+                          <DropdownMenuContent align="end" className="w-48">
+                            {renderDropdownItems(item, true)}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </>
                     )}
                   </div>
                 </ContextMenuTrigger>
-                <ContextMenuContent className="w-44">
-                  <ContextMenuItem onClick={() => { setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
-                    <Pencil className="h-4 w-4 mr-2" /> Edit details
-                  </ContextMenuItem>
-                  <ContextMenuItem onClick={() => handleToggleStar(item)}>
-                    <Star className={cn("h-4 w-4 mr-2", item.is_starred && "fill-yellow-400 text-yellow-400")} />
-                    {item.is_starred ? "Unstar" : "Star"}
-                  </ContextMenuItem>
-                  <ContextMenuItem onClick={() => { setSingleMoveFolderId(item.folder_id ?? "__none__"); setMoveItem(item); }}>
-                    <FolderOpen className="h-4 w-4 mr-2" /> Move to folder
-                  </ContextMenuItem>
-                  <ContextMenuSeparator />
-                  <ContextMenuItem onClick={() => setDeleteItem(item)} className="text-destructive focus:text-destructive">
-                    <Trash2 className="h-4 w-4 mr-2" /> Delete
-                  </ContextMenuItem>
+                <ContextMenuContent className="w-48">
+                  {renderContextMenuItems(item)}
                 </ContextMenuContent>
               </ContextMenu>
             );
