@@ -379,7 +379,7 @@ export default function Admin() {
                           <DropdownMenuSeparator />
                           {u.is_admin ? (
                             <DropdownMenuItem
-                              className="gap-2 text-xs text-amber-600 focus:text-amber-600"
+                              className="gap-2 text-xs text-destructive/70 focus:text-destructive"
                               onClick={() => handleToggleAdmin(u, false)}
                             >
                               <ShieldOff className="h-3.5 w-3.5" /> Remove admin
