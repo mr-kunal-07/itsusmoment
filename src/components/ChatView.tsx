@@ -212,7 +212,6 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   const [voiceMode, setVoiceMode] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const coupleId = couple?.status === "active" ? couple.id : null;
   const partnerId = couple?.status === "active"
