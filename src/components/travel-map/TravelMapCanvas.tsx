@@ -11,7 +11,7 @@ interface Props {
   showHeatmap?: boolean;
 }
 
-// Heart-shaped SVG pin — vibrant pink
+// Heart-shaped SVG pin
 function HeartPin(color = "#ec4899") {
   return `
     <div style="
@@ -42,7 +42,6 @@ function GlowHeartPin() {
   `;
 }
 
-// Normalize country name for matching GeoJSON
 function normalizeCountry(name: string): string {
   return name.trim().toLowerCase()
     .replace(/\bunited states\b.*/i, "united states of america")
@@ -51,6 +50,22 @@ function normalizeCountry(name: string): string {
     .replace(/\bsouth korea\b/i, "republic of korea")
     .replace(/\bnorth korea\b/i, "democratic people's republic of korea");
 }
+
+const GEOFENCE_STYLE: L.PathOptions = {
+  color: "#f472b6",
+  weight: 3,
+  opacity: 1,
+  dashArray: "0",
+  lineCap: "round",
+  lineJoin: "round",
+  fillColor: "#fce7f3",
+  fillOpacity: 0.30,
+};
+
+const GEOFENCE_HOVER: L.PathOptions = {
+  fillOpacity: 0.50,
+  weight: 4.5,
+};
 
 export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocation, showHeatmap = false }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -61,7 +76,7 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
   const geojsonDataRef = useRef<GeoJSON.FeatureCollection | null>(null);
   const geofenceLayerRef = useRef<L.GeoJSON | null>(null);
 
-  // Init map once — show full world
+  // ── Init map once
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
@@ -75,16 +90,13 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
       worldCopyJump: true,
     });
 
-    // Colorful vibrant tile layer — CartoDB Voyager (full color, matches our theme accent)
     L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
       subdomains: "abcd",
       maxZoom: 19,
     }).addTo(map);
 
-    // Fit the entire world in view
     map.fitBounds([[-75, -180], [85, 180]], { padding: [0, 0] });
-
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
     map.on("click", (e: L.LeafletMouseEvent) => {
@@ -100,12 +112,11 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update markers + polyline
+  // ── Markers + polyline
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    // Remove stale markers
     markersRef.current.forEach((marker, id) => {
       if (!locations.find(l => l.id === id)) {
         marker.remove();
@@ -113,7 +124,6 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
       }
     });
 
-    // Show/hide existing markers based on heatmap mode
     markersRef.current.forEach(marker => {
       marker.setOpacity(showHeatmap ? 0 : 1);
     });
@@ -144,7 +154,7 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
           .on("mouseout", function () { (this as L.Marker).setIcon(icon); });
 
         marker.bindTooltip(
-          `<div style="background:rgba(255,255,255,0.95);border:1.5px solid #f9a8d4;color:#831843;padding:6px 12px;border-radius:10px;font-size:12px;font-weight:700;box-shadow:0 4px 20px rgba(236,72,153,0.2);backdrop-filter:blur(8px)">
+          `<div style="background:rgba(255,255,255,0.95);border:1.5px solid #f9a8d4;color:#831843;padding:6px 12px;border-radius:10px;font-size:12px;font-weight:700;box-shadow:0 4px 20px rgba(236,72,153,0.2)">
             ❤️ ${loc.location_name}${loc.city ? `<br><span style="font-weight:500;font-size:10px;color:#be185d">📍 ${loc.city}</span>` : ""}
           </div>`,
           { permanent: false, direction: "top", offset: [0, -8], opacity: 1 }
@@ -154,7 +164,6 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
       });
     }
 
-    // Travel path polyline — vibrant pink dashed route
     if (polylineRef.current) {
       polylineRef.current.remove();
       polylineRef.current = null;
@@ -167,15 +176,7 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
 
       if (sorted.length >= 2) {
         const points = sorted.map(l => [l.latitude, l.longitude] as [number, number]);
-        // Outer glow line
-        L.polyline(points, {
-          color: "#f9a8d4",
-          weight: 6,
-          opacity: 0.18,
-          lineCap: "round",
-          lineJoin: "round",
-        }).addTo(map);
-        // Main dashed route
+        L.polyline(points, { color: "#f9a8d4", weight: 6, opacity: 0.18, lineCap: "round" }).addTo(map);
         polylineRef.current = L.polyline(points, {
           color: "#ec4899",
           weight: 2.5,
@@ -188,7 +189,7 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
     }
   }, [locations, onPinClick, showHeatmap]);
 
-  // Heatmap: GeoJSON country layer
+  // ── Heatmap GeoJSON layer
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -201,24 +202,16 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
     if (!showHeatmap) return;
 
     const visitedCountries = new Set(
-      locations
-        .map(l => l.country)
-        .filter(Boolean)
-        .map(c => normalizeCountry(c!))
+      locations.map(l => l.country).filter(Boolean).map(c => normalizeCountry(c!))
     );
 
     const renderGeoJSON = (data: GeoJSON.FeatureCollection) => {
-      if (geojsonLayerRef.current) {
-        geojsonLayerRef.current.remove();
-      }
+      if (geojsonLayerRef.current) geojsonLayerRef.current.remove();
 
       const layer = L.geoJSON(data, {
         style: (feature) => {
           const name = normalizeCountry(
-            feature?.properties?.ADMIN ||
-            feature?.properties?.name ||
-            feature?.properties?.NAME ||
-            ""
+            feature?.properties?.ADMIN || feature?.properties?.name || feature?.properties?.NAME || ""
           );
           const visited = visitedCountries.has(name);
           return {
@@ -232,9 +225,7 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
         onEachFeature: (feature, layer) => {
           const name = feature?.properties?.ADMIN || feature?.properties?.name || "";
           const normName = normalizeCountry(name);
-          const isVisited = visitedCountries.has(normName);
-
-          if (isVisited) {
+          if (visitedCountries.has(normName)) {
             const count = locations.filter(l => l.country && normalizeCountry(l.country) === normName).length;
             layer.bindTooltip(
               `<div style="background:rgba(255,255,255,0.96);border:1.5px solid #f9a8d4;color:#831843;padding:6px 10px;border-radius:10px;font-size:12px;font-weight:700;box-shadow:0 4px 20px rgba(236,72,153,0.25)">
@@ -270,7 +261,7 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
       .catch(() => {});
   }, [locations, showHeatmap]);
 
-  // Proper geofence: fetch real administrative boundary polygon from Nominatim
+  // ── Geofence: real polygon boundary of selected location (NO circle fallback)
   useEffect(() => {
     const map = mapInstanceRef.current;
 
@@ -281,31 +272,20 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
 
     if (!map || !focusLocation) return;
 
-    const geofenceStyle = {
-      color: "#f472b6",
-      weight: 3,
-      opacity: 1,
-      dashArray: "0",
-      lineCap: "round" as const,
-      lineJoin: "round" as const,
-      fillColor: "#fce7f3",
-      fillOpacity: 0.30,
-    };
+    const isPolygon = (type?: string) => type === "Polygon" || type === "MultiPolygon";
 
-    const renderBoundary = (geojson: GeoJSON.Feature | GeoJSON.FeatureCollection) => {
+    const applyLayer = (geojson: GeoJSON.Feature | GeoJSON.FeatureCollection) => {
       if (!mapInstanceRef.current) return;
-      if (geofenceLayerRef.current) {
-        geofenceLayerRef.current.remove();
-      }
+      if (geofenceLayerRef.current) geofenceLayerRef.current.remove();
 
       const layer = L.geoJSON(geojson, {
-        style: () => geofenceStyle,
+        style: () => ({ ...GEOFENCE_STYLE }),
         onEachFeature: (_f, fl) => {
           fl.on("mouseover", function (e: L.LeafletMouseEvent) {
-            (e.target as L.Path).setStyle({ fillOpacity: 0.50, weight: 4 });
+            (e.target as L.Path).setStyle({ ...GEOFENCE_STYLE, ...GEOFENCE_HOVER });
           });
           fl.on("mouseout", function (e: L.LeafletMouseEvent) {
-            (e.target as L.Path).setStyle(geofenceStyle);
+            (e.target as L.Path).setStyle({ ...GEOFENCE_STYLE });
           });
         },
       });
@@ -315,203 +295,71 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
 
       const bounds = layer.getBounds();
       if (bounds.isValid()) {
-        mapInstanceRef.current.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
+        mapInstanceRef.current.fitBounds(bounds, { padding: [52, 52], maxZoom: 15 });
       }
     };
 
-    const hasPolygonGeom = (geomType?: string) =>
-      geomType === "Polygon" || geomType === "MultiPolygon";
+    const { latitude: lat, longitude: lng, location_name, city, country } = focusLocation;
 
     const fetchBoundary = async () => {
-      const { latitude: lat, longitude: lng, location_name, city, country } = focusLocation;
-
-      // ── Strategy 1: Search by name (most accurate — finds the actual place boundary)
-      // Try progressively broader queries
+      // ── Step 1: Search by name — tries to find the actual named place boundary
+      // Build queries from most specific to least specific
       const searchQueries = [
         location_name && city && country ? `${location_name}, ${city}, ${country}` : null,
-        location_name && country ? `${location_name}, ${country}` : null,
-        city && country ? `${city}, ${country}` : null,
-        city ?? null,
+        location_name && country        ? `${location_name}, ${country}` : null,
+        city && country                 ? `${city}, ${country}` : null,
+        city                            ? city : null,
+        country                         ? country : null,
       ].filter(Boolean) as string[];
 
       for (const q of searchQueries) {
         try {
           const url =
             `https://nominatim.openstreetmap.org/search` +
-            `?q=${encodeURIComponent(q)}&format=geojson&polygon_geojson=1&limit=5` +
-            `&accept-language=en`;
+            `?q=${encodeURIComponent(q)}` +
+            `&format=geojson&polygon_geojson=1&limit=5&accept-language=en`;
 
           const res = await fetch(url, {
             headers: { "User-Agent": "OurVault-App/1.0", "Accept": "application/json" },
           });
           if (!res.ok) continue;
 
-          const fc = await res.json() as GeoJSON.FeatureCollection;
-          // Pick the first result that has a real polygon geometry
-          const match = fc.features?.find(f => hasPolygonGeom(f.geometry?.type));
+          const fc = (await res.json()) as GeoJSON.FeatureCollection;
+          // Pick the first result that carries a real polygon boundary
+          const match = fc.features?.find(f => isPolygon(f.geometry?.type));
           if (match && mapInstanceRef.current) {
-            renderBoundary(match);
+            applyLayer(match);
             return;
           }
-        } catch { /* try next */ }
+        } catch { /* try next query */ }
       }
 
-      // ── Strategy 2: Reverse geocode at multiple zoom levels (suburb → city → district → state)
+      // ── Step 2: Reverse geocode with polygon_geojson — from suburb down to state
       for (const zoom of [14, 12, 10, 8, 6]) {
         try {
           const url =
             `https://nominatim.openstreetmap.org/reverse` +
-            `?lat=${lat}&lon=${lng}&format=geojson&polygon_geojson=1&zoom=${zoom}` +
-            `&accept-language=en`;
+            `?lat=${lat}&lon=${lng}` +
+            `&format=geojson&polygon_geojson=1&zoom=${zoom}&accept-language=en`;
 
           const res = await fetch(url, {
             headers: { "User-Agent": "OurVault-App/1.0", "Accept": "application/json" },
           });
           if (!res.ok) continue;
 
-          const feature = await res.json() as GeoJSON.Feature;
-          if (hasPolygonGeom(feature?.geometry?.type) && mapInstanceRef.current) {
-            renderBoundary(feature);
+          const feature = (await res.json()) as GeoJSON.Feature;
+          if (isPolygon(feature?.geometry?.type) && mapInstanceRef.current) {
+            applyLayer(feature);
             return;
           }
-        } catch { /* try next */ }
+        } catch { /* try next zoom */ }
       }
 
-      // ── No polygon found at all — just fly to the pin, no geofence drawn
+      // ── No polygon boundary found — just fly to the pin without any geofence
       map.flyTo([lat, lng], 13, { duration: 1.2 });
     };
 
     fetchBoundary();
-  }, [focusLocation]);
-
-  return (
-    <div
-      ref={mapRef}
-      className="w-full h-full"
-      style={{ minHeight: "70vh", cursor: showHeatmap ? "default" : "crosshair" }}
-    />
-  );
-}
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-
-    // Always remove previous geofence layer
-    if (geofenceLayerRef.current) {
-      geofenceLayerRef.current.remove();
-      geofenceLayerRef.current = null;
-    }
-
-    if (!map || !focusLocation) return;
-
-    const geofenceStyle = {
-      color: "#f472b6",
-      weight: 2.5,
-      opacity: 1,
-      dashArray: "8 5",
-      lineCap: "round" as const,
-      lineJoin: "round" as const,
-      fillColor: "#fce7f3",
-      fillOpacity: 0.32,
-    };
-
-    // Render a GeoJSON Feature (what Nominatim /reverse actually returns — a single Feature, NOT a FeatureCollection)
-    const renderBoundary = (feature: GeoJSON.Feature) => {
-      if (!mapInstanceRef.current) return;
-      if (geofenceLayerRef.current) {
-        geofenceLayerRef.current.remove();
-      }
-
-      const layer = L.geoJSON(feature, {
-        style: () => geofenceStyle,
-        onEachFeature: (_f, fl) => {
-          fl.on("mouseover", function (e: L.LeafletMouseEvent) {
-            (e.target as L.Path).setStyle({ fillOpacity: 0.52, weight: 3.5, dashArray: "0" });
-          });
-          fl.on("mouseout", function (e: L.LeafletMouseEvent) {
-            (e.target as L.Path).setStyle(geofenceStyle);
-          });
-        },
-      });
-
-      layer.addTo(mapInstanceRef.current);
-      geofenceLayerRef.current = layer;
-
-      const bounds = layer.getBounds();
-      if (bounds.isValid()) {
-        mapInstanceRef.current.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 });
-      }
-    };
-
-    // Fallback: draw a circle when no polygon boundary is available
-    const renderFallbackCircle = () => {
-      if (!mapInstanceRef.current) return;
-      if (geofenceLayerRef.current) {
-        geofenceLayerRef.current.remove();
-      }
-      // Use a circle as a rough geofence
-      const circle = L.circle(
-        [focusLocation.latitude, focusLocation.longitude],
-        {
-          radius: 3000,
-          ...geofenceStyle,
-        }
-      );
-      // Wrap in a layer group so the ref type matches
-      const layer = L.geoJSON();
-      circle.addTo(mapInstanceRef.current);
-      // Store the circle removal in the geofence layer ref using a workaround
-      (layer as unknown as { _fallbackCircle: L.Circle })._fallbackCircle = circle;
-      layer.remove = () => {
-        circle.remove();
-        return layer;
-      };
-      geofenceLayerRef.current = layer;
-
-      mapInstanceRef.current.flyTo(
-        [focusLocation.latitude, focusLocation.longitude], 13,
-        { duration: 1.2, easeLinearity: 0.25 }
-      );
-    };
-
-    // Try zoom levels from most specific (suburb) to broader (city → district)
-    // Nominatim /reverse returns a single GeoJSON Feature, not a FeatureCollection
-    const tryZoomLevels = async (zoomLevels: number[]): Promise<void> => {
-      for (const zoom of zoomLevels) {
-        try {
-          const url =
-            `https://nominatim.openstreetmap.org/reverse` +
-            `?lat=${focusLocation.latitude}&lon=${focusLocation.longitude}` +
-            `&format=geojson&polygon_geojson=1&zoom=${zoom}` +
-            `&accept-language=en`;
-
-          const res = await fetch(url, {
-            headers: { "User-Agent": "OurVault-App/1.0", "Accept": "application/json" },
-          });
-
-          if (!res.ok) continue;
-
-          const feature = await res.json() as GeoJSON.Feature;
-
-          // Check if we got a real polygon (not just a Point fallback)
-          const geomType = feature?.geometry?.type;
-          const hasPolygon =
-            geomType === "Polygon" ||
-            geomType === "MultiPolygon";
-
-          if (hasPolygon && mapInstanceRef.current) {
-            renderBoundary(feature);
-            return; // success — stop trying
-          }
-        } catch {
-          // continue to next zoom level
-        }
-      }
-      // All zoom levels returned only Points — draw fallback circle
-      renderFallbackCircle();
-    };
-
-    // zoom 14 = building/suburb, 12 = neighbourhood, 10 = city, 8 = county, 6 = state
-    tryZoomLevels([14, 12, 10, 8]);
   }, [focusLocation]);
 
   return (
