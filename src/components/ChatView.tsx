@@ -417,52 +417,52 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
       {/* ── Header: normal mode OR select mode ── */}
       {selectMode ? (
         <div
-          className="flex items-center gap-3 px-3 py-3 shrink-0 z-10"
+          className="flex items-center gap-2 px-3 py-2 shrink-0 z-10"
           style={{ background: "hsl(var(--wa-header))", borderBottom: "1px solid hsl(var(--border))" }}
         >
           <button
             onClick={clearSelect}
-            className="p-1.5 rounded-full shrink-0"
+            className="p-1 rounded-full shrink-0"
             style={{ color: "hsl(var(--wa-text))" }}
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
           <span className="flex-1 text-sm font-semibold" style={{ color: "hsl(var(--wa-text))" }}>
             {selectedIds.size} selected
           </span>
           <button
             onClick={handleDeleteSelected}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
             style={{ background: "hsl(var(--destructive) / 0.12)", color: "hsl(var(--destructive))" }}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
             Delete
           </button>
         </div>
       ) : (
-        /* ── WhatsApp-style Header ── */
+        /* ── Compact Header ── */
         <div
-          className="flex items-center gap-2 px-3 py-3 shrink-0 z-10"
+          className="flex items-center gap-2 px-3 py-2 shrink-0 z-10"
           style={{ background: "hsl(var(--wa-header))", borderBottom: "1px solid hsl(var(--border))" }}
         >
           {onBack && (
             <button
               onClick={onBack}
-              className="sm:hidden p-1.5 rounded-full transition-colors mr-1 shrink-0"
+              className="sm:hidden p-1 rounded-full transition-colors mr-0.5 shrink-0"
               style={{ color: "hsl(var(--wa-text))" }}
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-4 w-4" />
             </button>
           )}
-          <div className="relative">
-            <Avatar className="h-10 w-10 ring-2 ring-border">
+          <div className="relative shrink-0">
+            <Avatar className="h-8 w-8 ring-1 ring-border">
               <AvatarImage src={partnerProfile?.avatar_url ?? undefined} />
-              <AvatarFallback className="text-sm font-semibold" style={{ background: "hsl(var(--wa-avatar))", color: "hsl(var(--wa-bg))" }}>
+              <AvatarFallback className="text-xs font-semibold" style={{ background: "hsl(var(--wa-avatar))", color: "hsl(var(--wa-bg))" }}>
                 {partnerInitials}
               </AvatarFallback>
             </Avatar>
             <span
-              className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 transition-colors"
+              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 transition-colors"
               style={{
                 borderColor: "hsl(var(--wa-header))",
                 background: partnerOnline ? "hsl(var(--wa-online))" : "hsl(var(--wa-meta))"
@@ -471,12 +471,11 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
           </div>
 
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold leading-none truncate" style={{ color: "hsl(var(--wa-text))" }}>{partnerName}</p>
-            <p className="text-[10px] flex items-center gap-1 mt-0.5" style={{ color: "hsl(var(--wa-meta))" }}>
-              <Lock className="h-2.5 w-2.5 inline-block" />
-              <span>End-to-end encrypted</span>
-            </p>
-            <p className="text-xs truncate" style={{ color: "hsl(var(--wa-meta))" }}>
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-semibold leading-none truncate" style={{ color: "hsl(var(--wa-text))" }}>{partnerName}</p>
+              <Lock className="h-2.5 w-2.5 shrink-0" style={{ color: "hsl(var(--wa-meta))" }} />
+            </div>
+            <p className="text-[10px] truncate mt-0.5" style={{ color: "hsl(var(--wa-meta))" }}>
               {partnerTyping ? (
                 <span style={{ color: "hsl(var(--wa-online))" }}>typing…</span>
               ) : partnerOnline ? (
@@ -487,16 +486,6 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                 <span>offline</span>
               )}
             </p>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <button
-              className="p-2 rounded-full transition-colors"
-              style={{ color: "hsl(var(--wa-text) / 0.6)" }}
-              title="More options"
-            >
-              <MoreVertical className="h-5 w-5" />
-            </button>
           </div>
         </div>
       )}
