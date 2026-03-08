@@ -412,7 +412,6 @@ export function SettingsView({ onNavigateBilling }: Props) {
   );
 }
 
-    return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
   const currentAvatarUrl = avatarUrl ?? profile?.avatar_url ?? null;
