@@ -19,7 +19,8 @@ export function useMedia(folderId?: string | null, search?: string) {
         query = query.is("folder_id", null);
       }
       if (search) {
-        query = query.ilike("title", `%${search}%`);
+        // Search title AND description for full-text coverage
+        query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
       }
       const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
