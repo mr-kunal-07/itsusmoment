@@ -335,6 +335,16 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
           {plan === "soulmate" ? "Soulmate plan active" : plan === "dating" ? "Dating plan active" : "Upgrade plan"}
         </SidebarMenuButton>
 
+        {isAdmin && (
+          <SidebarMenuButton
+            onClick={() => navigate("/admin")}
+            className="w-full justify-start gap-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
+            Admin panel
+          </SidebarMenuButton>
+        )}
+
         <DaysTogether />
       </SidebarFooter>
 
