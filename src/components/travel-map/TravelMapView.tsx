@@ -249,7 +249,7 @@ export function TravelMapView() {
                   animate={{ opacity: 1, y: 0 }}
                   className="mx-3 mb-2 px-4 py-2 rounded-xl bg-gradient-to-r from-pink-900/30 to-purple-900/30 border border-pink-500/20 flex items-center gap-2"
                 >
-                  <Globe className="h-3.5 w-3.5 text-pink-400 shrink-0" />
+                  <Globe2 className="h-3.5 w-3.5 text-pink-400 shrink-0" />
                   <p className="text-[11px] text-pink-200">
                     Countries you've visited together are highlighted in pink/purple
                     {locations.filter(l => l.country).length === 0 && " — add locations with a Country to see them highlighted"}
