@@ -53,7 +53,7 @@ function Reveal({ children, delay = 0, className = "" }: {
 /* ── Typography helpers ─────────────────────────────────── */
 const displayFont: React.CSSProperties = {
   fontFamily: "'Space Grotesk', system-ui, sans-serif",
-  fontWeight: 800,
+  fontWeight: 600,
   letterSpacing: "-0.025em",
 };
 
