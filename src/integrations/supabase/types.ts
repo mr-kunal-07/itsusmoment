@@ -52,6 +52,41 @@ export type Database = {
           },
         ]
       }
+      love_notes: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          media_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          media_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          media_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "love_notes_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media: {
         Row: {
           created_at: string
@@ -104,6 +139,38 @@ export type Database = {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          media_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          media_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          media_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_reactions_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
             referencedColumns: ["id"]
           },
         ]
