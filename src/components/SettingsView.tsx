@@ -163,10 +163,10 @@ export function SettingsView({ onNavigateBilling }: Props) {
   const handleBiometricToggle = (enabled: boolean) => {
     setBiometricEnabled(enabled);
     if (enabled) {
-      localStorage.setItem("ourvault_biometric", "1");
+      localStorage.setItem(LOCK_KEYS.biometric, "1");
       toast({ title: "Biometric unlock enabled 👆" });
     } else {
-      localStorage.removeItem("ourvault_biometric");
+      localStorage.removeItem(LOCK_KEYS.biometric);
     }
   };
 
