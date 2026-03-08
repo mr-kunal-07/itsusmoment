@@ -29,9 +29,10 @@ function useThisMonthUploadCount() {
 
 interface Props {
   onUpgrade: () => void;
+  selectedView?: string;
 }
 
-export function UpgradeBanner({ onUpgrade }: Props) {
+export function UpgradeBanner({ onUpgrade, selectedView }: Props) {
   const plan = usePlan();
   const [dismissed, setDismissed] = useState(false);
   const { data: usedCount = 0 } = useThisMonthUploadCount();
