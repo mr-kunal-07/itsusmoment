@@ -526,7 +526,7 @@ export default function Index() {
           </div>
 
           <Reveal className="text-center mt-14">
-            <Link to="/auth" className="inline-flex items-center gap-2 font-bold text-white px-8 py-3.5 rounded-xl hover:opacity-90 transition-all shadow-md text-sm" style={{ background: T.accent }}>
+            <Link to="/auth" className="inline-flex items-center gap-2 font-semibold text-white px-8 py-3.5 rounded-xl hover:opacity-90 transition-all shadow-md text-sm" style={{ background: T.accent }}>
               Create your vault free <ArrowRight className="w-4 h-4" />
             </Link>
           </Reveal>
