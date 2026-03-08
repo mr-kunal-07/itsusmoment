@@ -75,15 +75,15 @@ const NAV = [
 ];
 
 const FEATURES = [
-  { icon: Image, title: "Save every photo & video", desc: "Upload anything — a selfie, a trip, a random Tuesday — and it all lives safely in one beautiful place, just for the two of you." },
-  { icon: Lock, title: "Only you two can see it", desc: "No public feed, no ads, no strangers. What you share here stays here. Your most personal moments, kept completely private." },
-  { icon: MessageCircle, title: "Chat that's just for you two", desc: "Text, react with emojis, reply to messages, send voice notes. Like WhatsApp — but a quiet space that's only yours." },
-  { icon: Calendar, title: "Never forget a special date", desc: "Add your first date, first trip, first anniversary. Get reminders before each one so you're always ready to celebrate." },
-  { icon: Mic, title: "Send voice messages", desc: "Sometimes words aren't enough. Record a voice note and let them hear your voice — not just read your words." },
-  { icon: Heart, title: "Write love notes on photos", desc: "Add a little message to any memory. A joke, a feeling, a 'remember when?' — right on the photo that brought it back." },
-  { icon: Star, title: "Star your favourites", desc: "Mark the memories you never want to lose track of. Your best moments, always one tap away." },
-  { icon: Sparkles, title: "Watch your story grow", desc: "A beautiful timeline that fills up as your relationship grows — from your first photo to your latest adventure." },
-  { icon: Shield, title: "Your data is yours, forever", desc: "We don't sell your data, show you ads, or share anything with anyone. Everything you upload belongs to you. Always." }
+  { icon: Image, title: "Save every photo & video", desc: "One beautiful private place for every memory you share." },
+  { icon: Lock, title: "Only you two can see it", desc: "No ads, no strangers. Completely private, always." },
+  { icon: MessageCircle, title: "Chat just for you two", desc: "Text, react, reply — your own quiet corner online." },
+  { icon: Calendar, title: "Never miss a special date", desc: "Log milestones and get reminders before every one." },
+  { icon: Mic, title: "Voice messages", desc: "Send a voice note — warmer than any text." },
+  { icon: Heart, title: "Love notes on photos", desc: "Add a sweet message to any memory you share." },
+  { icon: Star, title: "Star your favourites", desc: "Bookmark the moments you never want to lose." },
+  { icon: Sparkles, title: "Watch your story grow", desc: "A timeline that fills up as your relationship does." },
+  { icon: Shield, title: "Your data, forever yours", desc: "We never sell your data or show you ads. Ever." }
 ];
 
 const STEPS = [
