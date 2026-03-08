@@ -232,97 +232,41 @@ export function SettingsView({ onNavigateBilling }: Props) {
           <CardTitle className="text-base flex items-center gap-2">
             <Lock className="h-4 w-4 text-primary" /> App Lock
           </CardTitle>
-          <CardDescription className="text-xs">Protect your vault with a 4-digit PIN</CardDescription>
+          <CardDescription className="text-xs">
+            Protect your vault with fingerprint / Face ID
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-
-          {/* Lock toggle */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {lockEnabled ? <Lock className="h-4 w-4 text-primary" /> : <LockOpen className="h-4 w-4 text-muted-foreground" />}
+              {lockEnabled
+                ? <Fingerprint className="h-4 w-4 text-primary" />
+                : <LockOpen className="h-4 w-4 text-muted-foreground" />}
               <div>
-                <p className="text-sm font-medium">{lockEnabled ? "Locked" : "Unlocked"}</p>
+                <p className="text-sm font-medium">
+                  {lockEnabled ? "Fingerprint lock on" : "Lock disabled"}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  {lockEnabled ? "PIN required to open app" : "No PIN set"}
+                  {lockEnabled
+                    ? "Biometric required to open app"
+                    : biometricAvailable
+                      ? "Enable to require fingerprint on open"
+                      : "Biometric not available on this device"}
                 </p>
               </div>
             </div>
             <Switch
               checked={lockEnabled}
-              onCheckedChange={(v) => {
-                if (v) { setShowPinSetup(true); setPinStep("enter"); setPinDraft(""); setPinConfirm(""); setPinError(""); }
-                else handleDisableLock();
-              }}
+              disabled={!biometricAvailable}
+              onCheckedChange={(v) => v ? handleEnableLock() : handleDisableLock()}
             />
           </div>
-
-          {/* Biometric toggle (only when lock is on) */}
-          {lockEnabled && biometricAvailable && (
-            <div className="flex items-center justify-between border-t border-border pt-3">
-              <div className="flex items-center gap-3">
-                <Fingerprint className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">Fingerprint / Face ID</p>
-                  <p className="text-xs text-muted-foreground">Use biometrics to unlock instead of PIN</p>
-                </div>
-              </div>
-              <Switch checked={biometricEnabled} onCheckedChange={handleBiometricToggle} />
-            </div>
-          )}
-
-          {/* PIN setup inline numpad */}
-          {showPinSetup && (
-            <div className="border border-border rounded-xl p-4 bg-muted/30 space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-foreground">
-                  {pinStep === "enter" ? "Set a 4-digit PIN" : "Confirm your PIN"}
-                </p>
-                <button onClick={() => { setShowPinSetup(false); setPinDraft(""); setPinConfirm(""); setPinError(""); }}
-                  className="text-muted-foreground hover:text-foreground">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              {pinError && <p className="text-xs text-destructive font-medium">{pinError}</p>}
-              {/* Dots */}
-              <div className="flex justify-center gap-4">
-                {pinDots.map((filled, i) => (
-                  <div key={i} className={cn(
-                    "h-3.5 w-3.5 rounded-full border-2 transition-all duration-150",
-                    filled ? "bg-primary border-primary scale-110" : "border-border bg-transparent"
-                  )} />
-                ))}
-              </div>
-              {/* Numpad */}
-              <div className="flex flex-col gap-2 items-center">
-                {pinRows.map((row, ri) => (
-                  <div key={ri} className="flex gap-2">
-                    {row.map(d => (
-                      <button key={d} onClick={() => handlePinDigit(d)}
-                        className="h-12 w-12 rounded-xl bg-background hover:bg-muted active:scale-95 text-lg font-semibold text-foreground transition-all flex items-center justify-center border border-border shadow-sm">
-                        {d}
-                      </button>
-                    ))}
-                  </div>
-                ))}
-                <div className="flex gap-2">
-                  <div className="h-12 w-12" />
-                  <button onClick={() => handlePinDigit("0")}
-                    className="h-12 w-12 rounded-xl bg-background hover:bg-muted active:scale-95 text-lg font-semibold text-foreground transition-all flex items-center justify-center border border-border shadow-sm">
-                    0
-                  </button>
-                  <button onClick={handlePinDelete}
-                    className="h-12 w-12 rounded-xl bg-background hover:bg-muted active:scale-95 flex items-center justify-center transition-all border border-border">
-                    ←
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 
       {/* Install App */}
       <Card>
+
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Smartphone className="h-4 w-4 text-primary" /> Install App
