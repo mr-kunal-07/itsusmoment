@@ -6,22 +6,24 @@ import {
   Sparkles, Image, Mic, Bell, Users, ChevronRight,
 } from "lucide-react";
 
-/* ── Tokens ─────────────────────────────────────────────── */
+/* ── Design Tokens — Black & White ──────────────────────── */
 const T = {
-  bg:      "#ffffff",
-  bgWarm:  "#faf9f7",   // warm off-white for alternating sections
-  bgHero:  "#f5f3ef",   // hero section warm cream
-  dark:    "#111827",   // headlines
-  body:    "#374151",   // body copy
-  muted:   "#6b7280",   // helper / metadata
-  border:  "#e5e7eb",
-  accent:  "#059669",   // emerald — warm, couple-friendly
-  accentL: "#ecfdf5",   // light accent bg
-  accentD: "#047857",   // darker accent for hover
+  white:   "#ffffff",
+  bg:      "#fafafa",      // very light gray page bg
+  surface: "#f4f4f5",      // subtle card / section bg
+  surfaceHover: "#eeeeef", // hover state
+  ink:     "#0a0a0a",      // near-black headlines
+  body:    "#3f3f46",      // zinc-700 body text
+  muted:   "#71717a",      // zinc-500 helper text
+  subtle:  "#a1a1aa",      // zinc-400 faint text
+  border:  "#e4e4e7",      // zinc-200 borders
+  borderDark: "#d4d4d8",   // zinc-300 stronger border
+  black:   "#0a0a0a",      // CTA fill
+  blackHover: "#27272a",   // CTA hover
 };
 
 /* ── Scroll reveal ──────────────────────────────────────── */
-function useInView(threshold = 0.08) {
+function useInView(threshold = 0.07) {
   const ref = useRef<HTMLDivElement>(null);
   const [vis, setVis] = useState(false);
   useEffect(() => {
@@ -35,6 +37,7 @@ function useInView(threshold = 0.08) {
   }, [threshold]);
   return { ref, vis };
 }
+
 function Reveal({ children, delay = 0, className = "" }: {
   children: React.ReactNode; delay?: number; className?: string;
 }) {
@@ -42,7 +45,7 @@ function Reveal({ children, delay = 0, className = "" }: {
   return (
     <div
       ref={ref}
-      className={`transition-all duration-700 ease-out ${vis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"} ${className}`}
+      className={`transition-all duration-700 ease-out ${vis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"} ${className}`}
       style={{ transitionDelay: `${delay}ms` }}
     >
       {children}
@@ -51,161 +54,159 @@ function Reveal({ children, delay = 0, className = "" }: {
 }
 
 /* ── Typography helpers ─────────────────────────────────── */
-const displayFont: React.CSSProperties = {
+const display: React.CSSProperties = {
   fontFamily: "'Space Grotesk', system-ui, sans-serif",
   fontWeight: 600,
-  letterSpacing: "-0.025em",
+  letterSpacing: "-0.03em",
+  color: T.ink,
 };
 
-/* ── Data ───────────────────────────────────────────────── */
-const NAV_LINKS = [
+const mono: React.CSSProperties = {
+  fontFamily: "ui-monospace, 'SF Mono', monospace",
+  fontSize: 11,
+  letterSpacing: "0.08em",
+};
+
+/* ── Static data ────────────────────────────────────────── */
+const NAV = [
   ["#features", "Features"],
   ["#how-it-works", "How it works"],
   ["#pricing", "Pricing"],
   ["#stories", "Stories"],
 ];
 
-const FEATURE_CARDS = [
-  { icon: Image,          title: "Memory Vault",      desc: "Upload photos & videos into a private, organised vault that only the two of you can access." },
-  { icon: Lock,           title: "100% Private",      desc: "End-to-end private — no ads, no algorithm, no strangers. Your data is yours, forever." },
-  { icon: MessageCircle,  title: "Private Chat",       desc: "Dedicated chat space for the two of you. Send voice notes, react with emojis, reply to threads." },
-  { icon: Calendar,       title: "Milestone Timeline", desc: "Log every first — your first date, trip, anniversary — with reminders so nothing gets forgotten." },
-  { icon: Mic,            title: "Voice Messages",     desc: "Say it out loud. Record and send voice messages that feel warmer than any text ever could." },
-  { icon: Bell,           title: "Reminders",          desc: "Never miss an anniversary. Smart reminders for every milestone you've added to your timeline." },
-];
-
-const SHOWCASE = [
-  {
-    tag: "SHARED MEMORIES",
-    title: "Every photo. Every memory. In one private place.",
-    body: "Upload your photos and videos and organise them into folders. Build a beautiful private timeline that grows with your relationship — visible only to you and your partner.",
-    bullets: ["Private folders & albums", "Love notes on every photo", "Star your all-time favourites", "Shared access for both partners"],
-    visual: (
-      <div className="bg-white rounded-2xl shadow-xl overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
-        <div className="px-4 py-3 flex items-center gap-2" style={{ background: T.bgWarm, borderBottom: `1px solid ${T.border}` }}>
-          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: T.accent }}>
-            <Heart className="w-3 h-3 text-white fill-white" />
-          </div>
-          <span className="text-xs font-semibold" style={{ color: T.dark }}>Our Memories</span>
-          <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ background: T.accentL, color: T.accent }}>47 photos</span>
-        </div>
-        <div className="p-3">
-          <div className="grid grid-cols-3 gap-1.5 mb-2.5">
-            {["🌅","🎂","🌿","✈️","🍽️","💚"].map((e, i) => (
-              <div key={i} className="rounded-xl aspect-square flex items-center justify-center text-2xl shadow-sm" style={{ background: i % 2 === 0 ? T.accentL : "#f9fafb" }}>{e}</div>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <div className="flex-1 rounded-xl px-3 py-2 text-[11px]" style={{ background: T.accentL, color: T.accent }}>Write a love note…</div>
-            <button className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: T.accent }}>
-              <Heart className="w-3.5 h-3.5 text-white fill-white" />
-            </button>
-          </div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    tag: "PRIVATE CHAT",
-    title: "Your own corner of the internet. No one else allowed.",
-    body: "A dedicated messaging space for just the two of you. Send voice messages, react with emojis, reply to specific messages — and enjoy the peace of knowing no one else is watching.",
-    bullets: ["Fully private — no third-party access", "Voice messages (Soulmate plan)", "Emoji reactions & reply threads", "Read receipts included"],
-    visual: (
-      <div className="bg-white rounded-2xl shadow-xl overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
-        <div className="flex items-center gap-2.5 px-4 py-3" style={{ background: T.bgWarm, borderBottom: `1px solid ${T.border}` }}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-base" style={{ background: T.accentL }}>💚</div>
-          <div>
-            <p className="text-xs font-semibold" style={{ color: T.dark }}>Priya</p>
-            <p className="text-[10px] font-medium" style={{ color: T.accent }}>● Online now</p>
-          </div>
-        </div>
-        <div className="px-3 py-3 space-y-2" style={{ minHeight: 160 }}>
-          {[
-            { mine: false, msg: "Remember our first date? 🥹" },
-            { mine: true,  msg: "How could I ever forget 😄" },
-            { mine: false, msg: "I just uploaded the photos 💚" },
-            { mine: true,  msg: "Adding love notes to each one 🌿" },
-          ].map((m, i) => (
-            <div key={i} className={`flex ${m.mine ? "justify-end" : "justify-start"}`}>
-              <div className="max-w-[78%] px-3 py-2 rounded-2xl text-xs"
-                style={m.mine
-                  ? { background: T.accent, color: "#fff", borderBottomRightRadius: 4 }
-                  : { background: "#f3f4f6", color: T.body, borderBottomLeftRadius: 4 }}>
-                {m.msg}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="px-3 py-2.5 flex gap-2" style={{ borderTop: `1px solid ${T.border}` }}>
-          <div className="flex-1 rounded-xl px-3 py-2 text-[11px]" style={{ background: T.accentL, color: T.accent }}>Type a message…</div>
-          <button className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: T.accent }}>
-            <ArrowRight className="w-3.5 h-3.5 text-white" />
-          </button>
-        </div>
-      </div>
-    ),
-  },
-  {
-    tag: "LOVE TIMELINE",
-    title: "Log every milestone. Relive every first.",
-    body: "From your first date to your first anniversary and beyond — every milestone lives on a beautiful timeline. Set reminders so no special date ever slips by unnoticed.",
-    bullets: ["Log custom milestone types", "Smart anniversary reminders", "Attach photos to any milestone", "Chronological timeline view"],
-    visual: (
-      <div className="bg-white rounded-2xl shadow-xl overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
-        <div className="px-4 py-3 flex items-center gap-2" style={{ background: T.bgWarm, borderBottom: `1px solid ${T.border}` }}>
-          <Calendar className="w-4 h-4" style={{ color: T.accent }} />
-          <span className="text-xs font-semibold" style={{ color: T.dark }}>Love Timeline</span>
-        </div>
-        <div className="p-3 space-y-2">
-          {[
-            { emoji: "💑", label: "First Date",          date: "Dec 2, 2024",  active: false },
-            { emoji: "💬", label: "First 'I Love You'",  date: "Jan 14, 2025", active: false },
-            { emoji: "✈️", label: "Goa Trip together",  date: "Feb 14, 2025", active: true  },
-            { emoji: "🎂", label: "1 Year Anniversary",  date: "Dec 2, 2025",  active: false },
-          ].map((m, i) => (
-            <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
-              style={m.active
-                ? { background: T.accentL, border: `1px solid ${T.accent}30` }
-                : { background: "#f9fafb", border: `1px solid ${T.border}` }}>
-              <span className="text-lg">{m.emoji}</span>
-              <p className="flex-1 text-xs font-semibold" style={{ color: T.dark }}>{m.label}</p>
-              <span className="text-[10px] font-medium" style={{ color: m.active ? T.accent : T.muted }}>{m.date}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    ),
-  },
+const FEATURES = [
+  { icon: Image,         title: "Memory Vault",       desc: "A private, organised vault for every photo and video you've shared together." },
+  { icon: Lock,          title: "100% Private",        desc: "No ads, no algorithm, no strangers. Your data is yours — always and forever." },
+  { icon: MessageCircle, title: "Private Chat",        desc: "Your own dedicated chat. Send voice notes, emoji reactions, reply to threads." },
+  { icon: Calendar,      title: "Milestone Timeline",  desc: "Log every first — first date, trip, anniversary — with smart reminders." },
+  { icon: Mic,           title: "Voice Messages",      desc: "Record and send voice messages that feel warmer than any text ever could." },
+  { icon: Bell,          title: "Smart Reminders",     desc: "Never miss a special date. Automatic reminders for every milestone you set." },
 ];
 
 const STEPS = [
-  { n: "1", icon: Users,      title: "Create your account",     desc: "Sign up free in under a minute. No credit card, no commitment." },
-  { n: "2", icon: Heart,      title: "Invite your partner",     desc: "Share a unique link. They join instantly and you're connected." },
-  { n: "3", icon: Camera,     title: "Start building memories", desc: "Upload photos, chat, add milestones. Your story starts now." },
+  { n: "01", icon: Users,  title: "Create your account",     desc: "Sign up free in under a minute. No credit card, no commitment." },
+  { n: "02", icon: Heart,  title: "Invite your partner",     desc: "Share a unique link. They join instantly and you're connected." },
+  { n: "03", icon: Camera, title: "Start building memories", desc: "Upload photos, chat, add milestones. Your story starts now." },
 ];
 
 const TESTIMONIALS = [
-  { quote: "We live in different cities. OurVault is the only place we feel genuinely close. The voice messages make it feel like they're right there.", name: "Priya & Arjun",  days: "487 days together",   initial: "PA" },
-  { quote: "Every trip, every date night, every little note — it's all here. We open it every single morning with our coffee.",                         name: "Sneha & Rahul", days: "1,204 days together", initial: "SR" },
-  { quote: "I wrote a love note on our first photo together. She cried. Best ₹9 I have ever spent in my entire life.",                                 name: "Rohan M.",      days: "Dating plan",         initial: "RM" },
+  { quote: "We live in different cities. OurVault is the only place we feel genuinely close. The voice messages make it feel like they're right there.", name: "Priya & Arjun",  meta: "487 days together",   init: "PA" },
+  { quote: "Every trip, every date night, every little note — it's all here. We open it every morning with our coffee.", name: "Sneha & Rahul", meta: "1,204 days together", init: "SR" },
+  { quote: "I wrote a love note on our first photo together. She cried. Best ₹9 I've ever spent in my life.", name: "Rohan M.",      meta: "Dating plan",         init: "RM" },
 ];
 
 const PLANS = [
-  {
-    name: "Free",     price: "₹0",  desc: "Start exploring together.",  cta: "Get started free", accent: false,
-    features: ["50 uploads per month", "Shared memory vault", "Milestone calendar", "Private chat"],
-  },
-  {
-    name: "Dating",   price: "₹9",  desc: "For couples who want more.",  cta: "Get Dating",       accent: true,
-    features: ["200 uploads per month", "Everything in Free", "Emoji reactions", "Love notes on photos", "Activity feed"],
-  },
-  {
-    name: "Soulmate", price: "₹99", desc: "Everything, no limits.",      cta: "Become Soulmates", accent: false,
-    features: ["Unlimited uploads", "Everything in Dating", "Voice messages", "Slideshow mode", "Priority support"],
-  },
+  { name: "Free",     price: "₹0",  period: "forever", desc: "Start exploring together.",  cta: "Get started free", highlight: false,
+    features: ["50 uploads per month", "Shared memory vault", "Milestone calendar", "Private chat"] },
+  { name: "Dating",   price: "₹9",  period: "per month", desc: "For couples who want more.", cta: "Get Dating",       highlight: true,
+    features: ["200 uploads per month", "Everything in Free", "Emoji reactions", "Love notes on photos", "Activity feed"] },
+  { name: "Soulmate", price: "₹99", period: "per month", desc: "Everything, no limits.",     cta: "Become Soulmates", highlight: false,
+    features: ["Unlimited uploads", "Everything in Dating", "Voice messages", "Slideshow mode", "Priority support"] },
 ];
 
-/* ════════════════════ COMPONENT ════════════════════ */
+/* ── App mockup visuals ─────────────────────────────────── */
+function MemoriesCard() {
+  return (
+    <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+      <div style={{ padding: "10px 14px", background: T.surface, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ width: 22, height: 22, borderRadius: 8, background: T.ink, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Heart className="w-3 h-3 text-white fill-white" />
+        </div>
+        <span style={{ fontSize: 12, fontWeight: 600, color: T.ink }}>Our Memories</span>
+        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, color: T.muted, background: T.surface, border: `1px solid ${T.border}`, padding: "2px 8px", borderRadius: 99 }}>47 photos</span>
+      </div>
+      <div style={{ padding: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginBottom: 10 }}>
+          {["🌅","🎂","🌿","✈️","🍽️","🌙"].map((e, i) => (
+            <div key={i} style={{ aspectRatio: "1", background: i % 2 === 0 ? T.surface : "#f0f0f1", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>{e}</div>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ flex: 1, background: T.surface, borderRadius: 10, padding: "8px 12px", fontSize: 11, color: T.muted, border: `1px solid ${T.border}` }}>Write a love note…</div>
+          <button style={{ width: 34, height: 34, borderRadius: 10, background: T.ink, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+            <Heart className="w-3.5 h-3.5 text-white fill-white" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChatCard() {
+  return (
+    <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+      <div style={{ padding: "10px 14px", background: T.surface, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 30, height: 30, borderRadius: "50%", background: T.surface, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>💑</div>
+        <div>
+          <p style={{ fontSize: 12, fontWeight: 600, color: T.ink, margin: 0 }}>Priya</p>
+          <p style={{ fontSize: 10, color: T.muted, margin: 0 }}>● Online now</p>
+        </div>
+      </div>
+      <div style={{ padding: "12px 12px 8px", minHeight: 140, display: "flex", flexDirection: "column", gap: 8 }}>
+        {[
+          { mine: false, msg: "Remember our first date? 🥹" },
+          { mine: true,  msg: "How could I ever forget 😄" },
+          { mine: false, msg: "I just uploaded the photos 🖤" },
+          { mine: true,  msg: "Adding love notes to each one 🌙" },
+        ].map((m, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: m.mine ? "flex-end" : "flex-start" }}>
+            <div style={{
+              maxWidth: "75%", padding: "7px 12px", borderRadius: 14, fontSize: 12,
+              background: m.mine ? T.ink : T.surface,
+              color: m.mine ? "#fff" : T.body,
+              borderBottomRightRadius: m.mine ? 4 : 14,
+              borderBottomLeftRadius: m.mine ? 14 : 4,
+            }}>{m.msg}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ padding: "8px 12px 12px", borderTop: `1px solid ${T.border}`, display: "flex", gap: 8 }}>
+        <div style={{ flex: 1, background: T.surface, borderRadius: 10, padding: "8px 12px", fontSize: 11, color: T.muted, border: `1px solid ${T.border}` }}>Type a message…</div>
+        <button style={{ width: 34, height: 34, borderRadius: 10, background: T.ink, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+          <ArrowRight className="w-3.5 h-3.5 text-white" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TimelineCard() {
+  return (
+    <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+      <div style={{ padding: "10px 14px", background: T.surface, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 8 }}>
+        <Calendar style={{ width: 15, height: 15, color: T.ink }} />
+        <span style={{ fontSize: 12, fontWeight: 600, color: T.ink }}>Love Timeline</span>
+      </div>
+      <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+        {[
+          { e: "💑", l: "First Date",          d: "Dec 2, 2024",  active: false },
+          { e: "💬", l: "First 'I Love You'",  d: "Jan 14, 2025", active: false },
+          { e: "✈️", l: "Goa Trip together",  d: "Feb 14, 2025", active: true  },
+          { e: "🎂", l: "1 Year Anniversary",  d: "Dec 2, 2025",  active: false },
+        ].map((m, i) => (
+          <div key={i} style={{
+            display: "flex", alignItems: "center", gap: 12, padding: "9px 12px", borderRadius: 10,
+            background: m.active ? T.ink : T.surface,
+            border: `1px solid ${m.active ? T.ink : T.border}`,
+          }}>
+            <span style={{ fontSize: 16 }}>{m.e}</span>
+            <p style={{ flex: 1, fontSize: 12, fontWeight: 600, color: m.active ? "#fff" : T.ink, margin: 0 }}>{m.l}</p>
+            <span style={{ fontSize: 10, fontWeight: 500, color: m.active ? "rgba(255,255,255,0.6)" : T.muted }}>{m.d}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const SHOWCASES = [
+  { tag: "SHARED MEMORIES", title: "Every photo. Every memory.\nIn one private place.", body: "Build a beautiful private album that grows with your relationship. Add love notes, star favourites, and relive every moment together.", bullets: ["Private folders & albums", "Love notes on every photo", "Star your all-time favourites", "Shared access, always"], card: <MemoriesCard /> },
+  { tag: "PRIVATE CHAT",    title: "Your own corner of the\ninternet. Yours only.", body: "A dedicated space for just the two of you. Voice messages, emoji reactions, reply threads — with the peace of total privacy.", bullets: ["Fully private — no third-party access", "Voice messages (Soulmate plan)", "Emoji reactions & reply threads", "Read receipts included"], card: <ChatCard /> },
+  { tag: "LOVE TIMELINE",   title: "Log every milestone.\nRelive every first.",     body: "From your first date to your first anniversary and beyond — every milestone on a beautiful timeline, with smart reminders.", bullets: ["Log custom milestone types", "Smart anniversary reminders", "Attach photos to any milestone", "Chronological timeline view"], card: <TimelineCard /> },
+];
+
+/* ════════════════════ PAGE ════════════════════ */
 export default function Index() {
   const [scrollY, setScrollY] = useState(0);
   const [menu, setMenu] = useState(false);
@@ -216,191 +217,207 @@ export default function Index() {
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
-  const navScrolled = scrollY > 24;
+  const scrolled = scrollY > 20;
 
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ background: T.bg, color: T.dark, fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div style={{ background: T.bg, color: T.ink, fontFamily: "'Inter', system-ui, sans-serif", overflowX: "hidden", minHeight: "100vh" }}>
 
-      {/* ══════════════ NAV ══════════════ */}
-      <header
-        className="fixed top-0 inset-x-0 z-50 transition-all duration-300"
-        style={{
-          background: navScrolled ? "rgba(255,255,255,0.92)" : "transparent",
-          backdropFilter: navScrolled ? "blur(16px)" : "none",
-          borderBottom: navScrolled ? `1px solid ${T.border}` : "1px solid transparent",
-        }}
-      >
-        <div className="max-w-6xl mx-auto px-6 md:px-10 h-16 flex items-center gap-8">
-          <Link to="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: T.accent }}>
-              <Heart className="w-4 h-4 text-white fill-white" />
+      {/* ══ NAV ══════════════════════════════════════════════ */}
+      <header style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
+        background: scrolled ? "rgba(250,250,250,0.94)" : "transparent",
+        backdropFilter: scrolled ? "blur(16px)" : "none",
+        borderBottom: scrolled ? `1px solid ${T.border}` : "1px solid transparent",
+        transition: "all 0.25s ease",
+      }}>
+        <div style={{ maxWidth: 1120, margin: "0 auto", padding: "0 32px", height: 64, display: "flex", alignItems: "center", gap: 32 }}>
+          {/* Logo */}
+          <Link to="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", flexShrink: 0 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: T.ink, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Heart className="w-3.5 h-3.5 text-white fill-white" />
             </div>
-            <span className="text-[17px]" style={{ ...displayFont, color: T.dark }}>OurVault</span>
+            <span style={{ ...display, fontSize: 17, color: T.ink }}>OurVault</span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-7 flex-1 justify-center">
-            {NAV_LINKS.map(([href, label]) => (
-              <a key={href} href={href} className="text-sm font-medium transition-colors hover:text-gray-900" style={{ color: T.body }}>{label}</a>
+          {/* Desktop nav */}
+          <nav style={{ display: "flex", alignItems: "center", gap: 28, flex: 1, justifyContent: "center" }} className="hidden md:flex">
+            {NAV.map(([href, label]) => (
+              <a key={href} href={href} style={{ fontSize: 14, fontWeight: 500, color: T.muted, textDecoration: "none", transition: "color 0.15s" }}
+                onMouseEnter={e => (e.currentTarget.style.color = T.ink)}
+                onMouseLeave={e => (e.currentTarget.style.color = T.muted)}>
+                {label}
+              </a>
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-2 shrink-0">
-            <Link to="/auth" className="text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors" style={{ color: T.body }}>Log in</Link>
-            <Link to="/auth" className="text-sm font-semibold text-white px-5 py-2.5 rounded-xl hover:opacity-90 transition-all" style={{ background: T.accent }}>
+          {/* Desktop CTA */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }} className="hidden md:flex">
+            <Link to="/auth" style={{ fontSize: 13, fontWeight: 500, color: T.body, padding: "7px 14px", borderRadius: 8, textDecoration: "none", transition: "background 0.15s" }}
+              onMouseEnter={e => (e.currentTarget.style.background = T.surface)}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+              Log in
+            </Link>
+            <Link to="/auth" style={{ fontSize: 13, fontWeight: 600, color: "#fff", background: T.ink, padding: "8px 18px", borderRadius: 10, textDecoration: "none", transition: "opacity 0.15s" }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+              onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
               Sign up free →
             </Link>
           </div>
 
-          <button onClick={() => setMenu(!menu)} className="md:hidden p-2 rounded-lg ml-auto hover:bg-gray-100">
-            {menu ? <XIcon className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {/* Mobile hamburger */}
+          <button onClick={() => setMenu(!menu)} className="md:hidden" style={{ marginLeft: "auto", padding: 8, borderRadius: 8, background: "transparent", border: "none", cursor: "pointer" }}>
+            {menu ? <XIcon style={{ width: 20, height: 20, color: T.ink }} /> : <Menu style={{ width: 20, height: 20, color: T.ink }} />}
           </button>
         </div>
 
+        {/* Mobile menu */}
         {menu && (
-          <div className="md:hidden bg-white px-6 pb-6 flex flex-col gap-1 shadow-xl" style={{ borderTop: `1px solid ${T.border}` }}>
-            {NAV_LINKS.map(([href, label]) => (
+          <div style={{ background: T.white, borderTop: `1px solid ${T.border}`, padding: "8px 24px 24px" }} className="md:hidden">
+            {NAV.map(([href, label]) => (
               <a key={href} href={href} onClick={() => setMenu(false)}
-                className="text-sm font-medium py-3" style={{ color: T.body, borderBottom: `1px solid #f3f4f6` }}>{label}</a>
+                style={{ display: "block", fontSize: 14, fontWeight: 500, color: T.body, padding: "12px 0", borderBottom: `1px solid ${T.border}`, textDecoration: "none" }}>
+                {label}
+              </a>
             ))}
-            <Link to="/auth" onClick={() => setMenu(false)} className="mt-3 text-sm font-semibold text-white py-3.5 rounded-xl text-center" style={{ background: T.accent }}>
+            <Link to="/auth" onClick={() => setMenu(false)}
+              style={{ display: "block", marginTop: 16, fontSize: 14, fontWeight: 600, color: "#fff", background: T.ink, padding: "13px", borderRadius: 10, textAlign: "center", textDecoration: "none" }}>
               Sign up free →
             </Link>
           </div>
         )}
       </header>
 
-      {/* ══════════════ HERO ══════════════ */}
-      {/*  Centered layout — inspired by Linear.app / Vercel  */}
-      <section className="pt-16" style={{ background: T.bgHero }}>
-        <div className="max-w-4xl mx-auto px-6 md:px-10 pt-20 pb-14 text-center">
+      {/* ══ HERO ═════════════════════════════════════════════ */}
+      <section style={{ background: T.white, paddingTop: 64 }}>
+        <div style={{ maxWidth: 800, margin: "0 auto", padding: "80px 32px 64px", textAlign: "center" }}>
 
-          {/* Eyebrow pill */}
+          {/* Eyebrow */}
           <Reveal>
-            <div className="inline-flex items-center gap-2 bg-white border px-4 py-1.5 rounded-full text-xs font-semibold mb-8 shadow-sm" style={{ color: T.muted, borderColor: T.border }}>
-              <Sparkles className="w-3.5 h-3.5" style={{ color: T.accent }} />
-              50,000+ couples already joined · 2M+ memories stored
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: T.surface, border: `1px solid ${T.border}`, padding: "6px 14px", borderRadius: 99, fontSize: 12, fontWeight: 500, color: T.muted, marginBottom: 32 }}>
+              <Sparkles style={{ width: 13, height: 13, color: T.ink }} />
+              50,000+ couples · 2M+ memories stored
             </div>
           </Reveal>
 
-          {/* Headline */}
+          {/* H1 */}
           <Reveal delay={60}>
-            <h1
-              style={{ ...displayFont, fontSize: "clamp(40px, 6.5vw, 72px)", lineHeight: 1.04, color: T.dark }}
-              className="mb-6 mx-auto max-w-3xl"
-            >
-              The private space your
+            <h1 style={{ ...display, fontSize: "clamp(42px, 7vw, 76px)", lineHeight: 1.02, marginBottom: 24, maxWidth: 700, marginLeft: "auto", marginRight: "auto" }}>
+              The private space your<br />
               love story{" "}
-              <span style={{ color: T.accent }}>deserves.</span>
+              <span style={{ background: "linear-gradient(135deg, #0a0a0a 30%, #52525b)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                deserves.
+              </span>
             </h1>
           </Reveal>
 
-          {/* Sub-copy */}
-          <Reveal delay={120}>
-            <p className="text-lg md:text-xl leading-relaxed mb-9 max-w-xl mx-auto" style={{ color: T.body, lineHeight: 1.7 }}>
-              Store memories, chat privately, send voice messages, and celebrate every milestone together — just the two of you.
+          {/* Sub */}
+          <Reveal delay={110}>
+            <p style={{ fontSize: 18, lineHeight: 1.7, color: T.body, marginBottom: 36, maxWidth: 520, marginLeft: "auto", marginRight: "auto" }}>
+              Store memories, chat privately, send voice messages, and celebrate every milestone — just the two of you.
             </p>
           </Reveal>
 
           {/* CTAs */}
-          <Reveal delay={180}>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-9">
-              <Link to="/auth"
-                className="inline-flex items-center gap-2 font-semibold text-white px-8 py-3.5 rounded-xl hover:opacity-90 transition-all hover:scale-[1.02] shadow-lg text-base"
-                style={{ background: T.accent }}>
-                Start for free
-                <ArrowRight className="w-4 h-4" />
+          <Reveal delay={160}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center", marginBottom: 32 }}>
+              <Link to="/auth" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 15, color: "#fff", background: T.ink, padding: "13px 28px", borderRadius: 12, textDecoration: "none", boxShadow: "0 2px 12px rgba(0,0,0,0.18)", transition: "opacity 0.15s" }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+                onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
+                Start for free <ArrowRight style={{ width: 16, height: 16 }} />
               </Link>
-              <a href="#features"
-                className="inline-flex items-center gap-2 font-medium px-8 py-3.5 rounded-xl border text-base hover:bg-white transition-all"
-                style={{ color: T.body, borderColor: "#d1d5db" }}>
+              <a href="#features" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 500, fontSize: 15, color: T.body, background: T.white, padding: "13px 28px", borderRadius: 12, textDecoration: "none", border: `1px solid ${T.borderDark}`, transition: "background 0.15s" }}
+                onMouseEnter={e => (e.currentTarget.style.background = T.surface)}
+                onMouseLeave={e => (e.currentTarget.style.background = T.white)}>
                 See how it works
               </a>
             </div>
           </Reveal>
 
-          {/* Trust row */}
-          <Reveal delay={220}>
-            <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-medium" style={{ color: T.muted }}>
-              <span className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5" style={{ color: T.accent }} /> No credit card required</span>
-              <span className="flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" style={{ color: T.accent }} /> Fully private — always</span>
-              <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5" style={{ color: T.accent }} /> Secure storage</span>
-              <span className="flex items-center gap-1.5"><Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" /> 4.9 / 5 rating</span>
+          {/* Trust strip */}
+          <Reveal delay={200}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 20, justifyContent: "center", fontSize: 12, fontWeight: 500, color: T.muted }}>
+              {[
+                [<Check style={{ width: 13, height: 13 }} />, "No credit card required"],
+                [<Lock style={{ width: 13, height: 13 }} />, "Fully private — always"],
+                [<Shield style={{ width: 13, height: 13 }} />, "Secure storage"],
+                [<Star style={{ width: 13, height: 13, fill: "#0a0a0a", color: "#0a0a0a" }} />, "4.9 / 5 rating"],
+              ].map(([icon, label], i) => (
+                <span key={i} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  {icon as React.ReactNode}
+                  {label as string}
+                </span>
+              ))}
             </div>
           </Reveal>
         </div>
 
-        {/* App mockup — Linkrunner style, browser frame centered */}
-        <Reveal delay={280} className="max-w-5xl mx-auto px-6 md:px-10 pb-0">
-          <div className="rounded-t-2xl overflow-hidden shadow-2xl border-x border-t" style={{ borderColor: T.border }}>
-            {/* Browser chrome */}
-            <div className="flex items-center gap-2 px-5 py-3" style={{ background: "#f3f4f6", borderBottom: `1px solid ${T.border}` }}>
-              <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-red-400" />
-                <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                <div className="w-3 h-3 rounded-full bg-green-500" />
+        {/* App mockup — browser frame */}
+        <Reveal delay={260} className="max-w-5xl mx-auto px-6 md:px-10 pb-0">
+          <div style={{ borderRadius: "16px 16px 0 0", overflow: "hidden", border: `1px solid ${T.border}`, borderBottom: "none", boxShadow: "0 -4px 40px rgba(0,0,0,0.08)" }}>
+            {/* Chrome bar */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", background: T.surface, borderBottom: `1px solid ${T.border}` }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                <div style={{ width: 11, height: 11, borderRadius: "50%", background: "#fca5a5" }} />
+                <div style={{ width: 11, height: 11, borderRadius: "50%", background: "#fcd34d" }} />
+                <div style={{ width: 11, height: 11, borderRadius: "50%", background: "#86efac" }} />
               </div>
-              <div className="flex-1 max-w-xs mx-auto bg-white rounded-md px-3 py-1.5 text-[11px] text-gray-400 text-center" style={{ border: `1px solid ${T.border}` }}>
+              <div style={{ flex: 1, maxWidth: 260, margin: "0 auto", background: T.white, border: `1px solid ${T.border}`, borderRadius: 6, padding: "5px 12px", fontSize: 11, color: T.muted, textAlign: "center" }}>
                 app.ourvault.in/memories
               </div>
             </div>
             {/* App interior */}
-            <div className="grid grid-cols-4 bg-white" style={{ minHeight: 320 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 3fr", background: T.white, minHeight: 300 }}>
               {/* Sidebar */}
-              <div className="col-span-1 border-r p-4 flex flex-col gap-1" style={{ background: "#fafafa", borderColor: T.border }}>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: T.accent }}>
+              <div style={{ background: "#fafafa", borderRight: `1px solid ${T.border}`, padding: 16, display: "flex", flexDirection: "column", gap: 4 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                  <div style={{ width: 22, height: 22, borderRadius: 7, background: T.ink, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Heart className="w-3 h-3 text-white fill-white" />
                   </div>
-                  <span className="text-xs font-semibold" style={{ color: T.dark }}>OurVault</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: T.ink }}>OurVault</span>
                 </div>
-                {["Memories","Chat","Milestones","Notes","Settings"].map((item, i) => (
-                  <div key={i}
-                    className="text-[11px] px-2.5 py-1.5 rounded-lg font-medium"
-                    style={i === 0 ? { background: T.accent, color: "#fff" } : { color: T.muted }}>
+                {["Memories", "Chat", "Milestones", "Notes", "Settings"].map((item, i) => (
+                  <div key={i} style={{ fontSize: 11, padding: "6px 10px", borderRadius: 8, fontWeight: 500, background: i === 0 ? T.ink : "transparent", color: i === 0 ? "#fff" : T.muted }}>
                     {item}
                   </div>
                 ))}
-                <div className="mt-auto pt-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs">💑</div>
-                    <div>
-                      <p className="text-[9px] font-semibold" style={{ color: T.dark }}>You & Priya</p>
-                      <p className="text-[8px]" style={{ color: T.accent }}>● Online</p>
-                    </div>
+                <div style={{ marginTop: "auto", paddingTop: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: T.surface, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>💑</div>
+                  <div>
+                    <p style={{ fontSize: 9, fontWeight: 600, color: T.ink, margin: 0 }}>You & Priya</p>
+                    <p style={{ fontSize: 8, color: T.muted, margin: 0 }}>● Online</p>
                   </div>
                 </div>
               </div>
-              {/* Content area */}
-              <div className="col-span-3 p-4">
-                <div className="flex items-center justify-between mb-4">
+              {/* Content */}
+              <div style={{ padding: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                   <div>
-                    <h3 className="text-sm font-semibold" style={{ color: T.dark }}>Our Memories</h3>
-                    <p className="text-[11px]" style={{ color: T.muted }}>47 photos · last added 2h ago</p>
+                    <h3 style={{ fontSize: 13, fontWeight: 600, color: T.ink, margin: 0 }}>Our Memories</h3>
+                    <p style={{ fontSize: 10, color: T.muted, margin: 0 }}>47 photos · last added 2h ago</p>
                   </div>
-                  <div className="text-[10px] px-3 py-1 rounded-full font-semibold" style={{ background: T.accentL, color: T.accent }}>+ Add memory</div>
+                  <div style={{ fontSize: 10, fontWeight: 600, color: T.ink, background: T.surface, border: `1px solid ${T.border}`, padding: "4px 10px", borderRadius: 8 }}>+ Add memory</div>
                 </div>
-                <div className="grid grid-cols-4 gap-2 mb-4">
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 7, marginBottom: 12 }}>
                   {[
-                    { bg: T.accentL, e: "🌅", l: "Goa Trip" },
-                    { bg: "#fff7ed", e: "🎂", l: "Birthday" },
-                    { bg: "#f0fdf4", e: "🌿", l: "Forest Walk" },
-                    { bg: "#fef9c3", e: "✈️", l: "Mumbai Trip" },
-                    { bg: "#fdf2f8", e: "🍽️", l: "Date Night" },
-                    { bg: T.accentL, e: "💚", l: "1 Year!" },
-                    { bg: "#fff7ed", e: "🌊", l: "Beach Day" },
-                    { bg: "#f0fdf4", e: "☕", l: "Morning Cafe" },
+                    { bg: T.surface, e: "🌅", l: "Goa Trip" },
+                    { bg: "#f5f5f5", e: "🎂", l: "Birthday" },
+                    { bg: T.surface, e: "🌿", l: "Forest" },
+                    { bg: "#f5f5f5", e: "✈️", l: "Mumbai" },
+                    { bg: T.surface, e: "🍽️", l: "Date Night" },
+                    { bg: "#f5f5f5", e: "💑", l: "1 Year!" },
+                    { bg: T.surface, e: "🌊", l: "Beach" },
+                    { bg: "#f5f5f5", e: "☕", l: "Morning" },
                   ].map((t, i) => (
-                    <div key={i} className="rounded-xl aspect-square flex flex-col items-center justify-center gap-0.5 shadow-sm" style={{ background: t.bg }}>
-                      <span className="text-base md:text-xl">{t.e}</span>
-                      <span className="text-[7px] md:text-[9px] font-medium" style={{ color: T.muted }}>{t.l}</span>
+                    <div key={i} style={{ aspectRatio: "1", background: t.bg, borderRadius: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, border: `1px solid ${T.border}` }}>
+                      <span style={{ fontSize: 16 }}>{t.e}</span>
+                      <span style={{ fontSize: 8, fontWeight: 500, color: T.muted }}>{t.l}</span>
                     </div>
                   ))}
                 </div>
-                {/* Bottom bar */}
-                <div className="flex items-center gap-2 p-2 rounded-xl" style={{ background: "#f9fafb", border: `1px solid ${T.border}` }}>
-                  <div className="flex-1 text-[11px]" style={{ color: T.muted }}>Write a love note on this memory…</div>
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: T.accent }}>
-                    <Heart className="w-3.5 h-3.5 text-white fill-white" />
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10 }}>
+                  <p style={{ flex: 1, fontSize: 11, color: T.muted, margin: 0 }}>Write a love note on this memory…</p>
+                  <div style={{ width: 26, height: 26, borderRadius: 8, background: T.ink, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Heart className="w-3 h-3 text-white fill-white" />
                   </div>
                 </div>
               </div>
@@ -409,47 +426,49 @@ export default function Index() {
         </Reveal>
       </section>
 
-      {/* ══════════════ STATS STRIP ══════════════ */}
+      {/* ══ STATS ════════════════════════════════════════════ */}
       <Reveal>
-        <div className="py-10" style={{ background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-          <div className="max-w-5xl mx-auto px-6 md:px-10 grid grid-cols-2 md:grid-cols-4 divide-x" style={{ borderColor: T.border }}>
+        <div style={{ background: T.surface, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
+          <div style={{ maxWidth: 1000, margin: "0 auto", padding: "0 32px", display: "grid", gridTemplateColumns: "repeat(4,1fr)" }} className="grid grid-cols-2 md:grid-cols-4">
             {[
               { val: "50,000+", label: "Couples using OurVault" },
               { val: "2M+",     label: "Memories safely stored" },
               { val: "4.9 ★",   label: "Average app rating" },
               { val: "100%",    label: "Private, always" },
             ].map((s, i) => (
-              <div key={i} className="text-center px-4 md:px-8 py-2">
-                <div className="text-2xl md:text-3xl font-semibold mb-0.5" style={{ ...displayFont, color: T.dark }}>{s.val}</div>
-                <div className="text-xs font-medium" style={{ color: T.muted }}>{s.label}</div>
+              <div key={i} style={{ textAlign: "center", padding: "28px 16px", borderRight: i < 3 ? `1px solid ${T.border}` : "none" }}>
+                <div style={{ ...display, fontSize: 28, marginBottom: 2 }}>{s.val}</div>
+                <div style={{ fontSize: 12, fontWeight: 500, color: T.muted }}>{s.label}</div>
               </div>
             ))}
           </div>
         </div>
       </Reveal>
 
-      {/* ══════════════ FEATURE GRID ══════════════ */}
-      <section id="features" className="py-24" style={{ background: T.bgWarm }}>
-        <div className="max-w-6xl mx-auto px-6 md:px-10">
-          <Reveal className="max-w-2xl mb-14">
-            <p className="text-[11px] font-semibold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>THE FULL PICTURE</p>
-            <h2 style={{ ...displayFont, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1, color: T.dark }} className="mb-4">
+      {/* ══ FEATURES ═════════════════════════════════════════ */}
+      <section id="features" style={{ background: T.white, padding: "96px 0" }}>
+        <div style={{ maxWidth: 1120, margin: "0 auto", padding: "0 32px" }}>
+          <Reveal className="max-w-2xl mb-14" style={{ maxWidth: 640, marginBottom: 56 }}>
+            <p style={{ ...mono, color: T.muted, textTransform: "uppercase", marginBottom: 14 }}>THE FULL PICTURE</p>
+            <h2 style={{ ...display, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1, marginBottom: 14 }}>
               Everything a couple needs.<br />Nothing they don't.
             </h2>
-            <p className="text-base leading-[1.75]" style={{ color: T.body }}>Built around intimacy, privacy, and the rhythm of a real relationship — not a social network.</p>
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: T.body }}>Built around intimacy, privacy, and the rhythm of a real relationship.</p>
           </Reveal>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px" style={{ background: T.border }}>
-            {FEATURE_CARDS.map((f, i) => {
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 0, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((f, i) => {
               const Icon = f.icon;
               return (
-                <Reveal key={i} delay={i * 50} className="p-8 flex flex-col gap-4 bg-white">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: T.accentL }}>
-                    <Icon className="w-5 h-5" style={{ color: T.accent }} strokeWidth={1.75} />
-                  </div>
-                  <div>
-                    <h3 className="text-[15px] font-semibold mb-1.5" style={{ color: T.dark }}>{f.title}</h3>
-                    <p className="text-[13.5px] leading-[1.7]" style={{ color: T.body }}>{f.desc}</p>
+                <Reveal key={i} delay={i * 50}>
+                  <div style={{ padding: "36px 32px", background: T.white, borderRight: (i + 1) % 3 !== 0 ? `1px solid ${T.border}` : "none", borderBottom: i < 3 ? `1px solid ${T.border}` : "none", transition: "background 0.15s" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = T.bg)}
+                    onMouseLeave={e => (e.currentTarget.style.background = T.white)}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: T.surface, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}>
+                      <Icon style={{ width: 18, height: 18, color: T.ink }} strokeWidth={1.75} />
+                    </div>
+                    <h3 style={{ fontSize: 15, fontWeight: 600, color: T.ink, marginBottom: 8 }}>{f.title}</h3>
+                    <p style={{ fontSize: 14, lineHeight: 1.7, color: T.body }}>{f.desc}</p>
                   </div>
                 </Reveal>
               );
@@ -458,111 +477,109 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ══════════════ FEATURE SHOWCASES — alternating ══════════════ */}
-      <section className="py-8" style={{ background: T.bg }}>
-        {SHOWCASE.map((s, i) => (
-          <div key={i} className="py-16 md:py-24" style={{ borderBottom: i < SHOWCASE.length - 1 ? `1px solid ${T.border}` : "none" }}>
-            <div className="max-w-6xl mx-auto px-6 md:px-10">
-              <div className={`grid lg:grid-cols-2 gap-16 items-center ${i % 2 === 1 ? "lg:[&>*:first-child]:order-2" : ""}`}>
-                {/* Text */}
-                <Reveal delay={50}>
-                  <p className="text-[11px] font-semibold tracking-[0.14em] uppercase mb-5" style={{ color: T.accent }}>{s.tag}</p>
-                  <h2 style={{ ...displayFont, fontSize: "clamp(24px, 3vw, 38px)", lineHeight: 1.12, color: T.dark }} className="mb-5">
-                    {s.title}
-                  </h2>
-                  <p className="text-[15px] leading-[1.8] mb-7" style={{ color: T.body }}>{s.body}</p>
-                  <ul className="space-y-3 mb-8">
-                    {s.bullets.map((b, j) => (
-                      <li key={j} className="flex items-start gap-3 text-[14px] font-medium" style={{ color: T.dark }}>
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: T.accentL }}>
-                          <Check className="w-2.5 h-2.5" style={{ color: T.accent }} />
-                        </div>
-                        {b}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link to="/auth" className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline underline-offset-4" style={{ color: T.accent }}>
-                    Get started free <ChevronRight className="w-4 h-4" />
-                  </Link>
-                </Reveal>
-                {/* Visual */}
-                <Reveal delay={150} className="flex justify-center">
-                  <div className="w-full max-w-[340px]">{s.visual}</div>
-                </Reveal>
-              </div>
+      {/* ══ SHOWCASES ════════════════════════════════════════ */}
+      {SHOWCASES.map((s, i) => (
+        <section key={i} style={{ background: i % 2 === 0 ? T.surface : T.white, borderTop: `1px solid ${T.border}`, padding: "96px 0" }}>
+          <div style={{ maxWidth: 1120, margin: "0 auto", padding: "0 32px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }} className={i % 2 === 1 ? "lg:[&>*:first-child]:order-2" : ""}>
+              <Reveal delay={40}>
+                <p style={{ ...mono, color: T.muted, textTransform: "uppercase", marginBottom: 18 }}>{s.tag}</p>
+                <h2 style={{ ...display, fontSize: "clamp(24px, 3vw, 38px)", lineHeight: 1.1, marginBottom: 18, whiteSpace: "pre-line" }}>{s.title}</h2>
+                <p style={{ fontSize: 15, lineHeight: 1.8, color: T.body, marginBottom: 28 }}>{s.body}</p>
+                <ul style={{ listStyle: "none", padding: 0, margin: "0 0 28px", display: "flex", flexDirection: "column", gap: 10 }}>
+                  {s.bullets.map((b, j) => (
+                    <li key={j} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, fontWeight: 500, color: T.ink }}>
+                      <div style={{ width: 18, height: 18, borderRadius: "50%", background: T.surface, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                        <Check style={{ width: 10, height: 10, color: T.ink }} />
+                      </div>
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+                <Link to="/auth" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 14, fontWeight: 600, color: T.ink, textDecoration: "none", borderBottom: `1.5px solid ${T.ink}`, paddingBottom: 2 }}>
+                  Get started free <ChevronRight style={{ width: 15, height: 15 }} />
+                </Link>
+              </Reveal>
+              <Reveal delay={120} style={{ display: "flex", justifyContent: "center" }}>
+                <div style={{ width: "100%", maxWidth: 340 }}>{s.card}</div>
+              </Reveal>
             </div>
           </div>
-        ))}
-      </section>
+        </section>
+      ))}
 
-      {/* ══════════════ HOW IT WORKS ══════════════ */}
-      <section id="how-it-works" className="py-24" style={{ background: T.bgWarm, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
-        <div className="max-w-5xl mx-auto px-6 md:px-10">
-          <Reveal className="text-center mb-16 max-w-xl mx-auto">
-            <p className="text-[11px] font-semibold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>QUICK START</p>
-            <h2 style={{ ...displayFont, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1, color: T.dark }} className="mb-4">
+      {/* ══ HOW IT WORKS ═════════════════════════════════════ */}
+      <section id="how-it-works" style={{ background: T.ink, padding: "96px 0" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 32px" }}>
+          <Reveal style={{ textAlign: "center", marginBottom: 64 }}>
+            <p style={{ ...mono, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", marginBottom: 16 }}>QUICK START</p>
+            <h2 style={{ ...display, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1, color: "#fff", marginBottom: 14 }}>
               Ready in under a minute.
             </h2>
-            <p className="text-[16px] leading-[1.75]" style={{ color: T.body }}>No tutorial needed. Just sign up and start creating memories together.</p>
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: "rgba(255,255,255,0.55)", maxWidth: 440, margin: "0 auto" }}>
+              No tutorial needed. Sign up and start creating memories together.
+            </p>
           </Reveal>
 
-          <div className="grid md:grid-cols-3 gap-8 relative">
-            <div className="hidden md:block absolute top-9 left-[calc(16.67%+36px)] right-[calc(16.67%+36px)] h-px" style={{ background: `linear-gradient(to right, ${T.accent}30, ${T.accent}70, ${T.accent}30)` }} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 32, position: "relative" }} className="grid-cols-1 md:grid-cols-3">
+            {/* connector line */}
+            <div className="hidden md:block" style={{ position: "absolute", top: 36, left: "calc(16.67% + 36px)", right: "calc(16.67% + 36px)", height: 1, background: "rgba(255,255,255,0.12)" }} />
             {STEPS.map((s, i) => {
               const Icon = s.icon;
               return (
-                <Reveal key={i} delay={i * 100} className="text-center">
-                  <div className="relative inline-flex mb-6">
-                    <div className="w-[72px] h-[72px] rounded-2xl bg-white flex items-center justify-center shadow-sm" style={{ border: `1px solid ${T.border}` }}>
-                      <Icon className="w-8 h-8" style={{ color: T.accent }} strokeWidth={1.5} />
+                <Reveal key={i} delay={i * 100} style={{ textAlign: "center" }}>
+                  <div style={{ position: "relative", display: "inline-flex", marginBottom: 24 }}>
+                    <div style={{ width: 72, height: 72, borderRadius: 20, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Icon style={{ width: 30, height: 30, color: "rgba(255,255,255,0.8)" }} strokeWidth={1.5} />
                     </div>
-                    <span className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full text-white text-[10px] font-semibold flex items-center justify-center" style={{ background: T.dark }}>{s.n}</span>
+                    <span style={{ position: "absolute", top: -10, right: -10, width: 24, height: 24, borderRadius: "50%", background: "#fff", color: T.ink, fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", ...mono }}>
+                      {s.n}
+                    </span>
                   </div>
-                  <h3 className="font-semibold text-[15px] mb-2" style={{ color: T.dark }}>{s.title}</h3>
-                  <p className="text-sm leading-[1.7]" style={{ color: T.body }}>{s.desc}</p>
+                  <h3 style={{ fontSize: 15, fontWeight: 600, color: "#fff", marginBottom: 8 }}>{s.title}</h3>
+                  <p style={{ fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,0.5)" }}>{s.desc}</p>
                 </Reveal>
               );
             })}
           </div>
 
-          <Reveal className="text-center mt-14">
-            <Link to="/auth" className="inline-flex items-center gap-2 font-semibold text-white px-8 py-3.5 rounded-xl hover:opacity-90 transition-all shadow-md text-sm" style={{ background: T.accent }}>
-              Create your vault free <ArrowRight className="w-4 h-4" />
+          <Reveal style={{ textAlign: "center", marginTop: 56 }}>
+            <Link to="/auth" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 14, color: T.ink, background: "#fff", padding: "13px 28px", borderRadius: 12, textDecoration: "none", transition: "opacity 0.15s" }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = "0.88")}
+              onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
+              Create your vault free <ArrowRight style={{ width: 15, height: 15 }} />
             </Link>
           </Reveal>
         </div>
       </section>
 
-      {/* ══════════════ TESTIMONIALS ══════════════ */}
-      <section id="stories" className="py-24" style={{ background: T.bg }}>
-        <div className="max-w-6xl mx-auto px-6 md:px-10">
-          <Reveal className="mb-14 max-w-xl">
-            <p className="text-[11px] font-semibold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>REAL COUPLES</p>
-            <h2 style={{ ...displayFont, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1, color: T.dark }}>
-              Loved by couples<br />
-              <span style={{ color: T.accent }}>all over India.</span>
+      {/* ══ TESTIMONIALS ═════════════════════════════════════ */}
+      <section id="stories" style={{ background: T.white, borderTop: `1px solid ${T.border}`, padding: "96px 0" }}>
+        <div style={{ maxWidth: 1120, margin: "0 auto", padding: "0 32px" }}>
+          <Reveal style={{ marginBottom: 56 }}>
+            <p style={{ ...mono, color: T.muted, textTransform: "uppercase", marginBottom: 14 }}>REAL COUPLES</p>
+            <h2 style={{ ...display, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1 }}>
+              Loved by couples<br />all over India.
             </h2>
           </Reveal>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }} className="grid-cols-1 md:grid-cols-3">
             {TESTIMONIALS.map((t, i) => (
-              <Reveal key={i} delay={i * 80}>
-                <div
-                  className="bg-white rounded-2xl p-7 flex flex-col gap-5 h-full hover:-translate-y-1 transition-all duration-300"
-                  style={{ border: `1px solid ${T.border}`, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-                  <div className="flex gap-0.5">
+              <Reveal key={i} delay={i * 70}>
+                <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 16, padding: "28px", display: "flex", flexDirection: "column", gap: 20, height: "100%", transition: "box-shadow 0.2s, border-color 0.2s" }}
+                  onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.08)"; e.currentTarget.style.borderColor = T.borderDark; }}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = T.border; }}>
+                  <div style={{ display: "flex", gap: 3 }}>
                     {Array.from({ length: 5 }).map((_, j) => (
-                      <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      <Star key={j} style={{ width: 14, height: 14, fill: T.ink, color: T.ink }} />
                     ))}
                   </div>
-                  <p className="text-[14.5px] leading-[1.8] flex-1" style={{ color: T.body }}>"{t.quote}"</p>
-                  <div className="flex items-center gap-3 pt-4" style={{ borderTop: `1px solid ${T.border}` }}>
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style={{ background: T.accent }}>
-                      {t.initial}
-                    </div>
+                  <p style={{ fontSize: 14, lineHeight: 1.8, color: T.body, flex: 1 }}>"{t.quote}"</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 16, borderTop: `1px solid ${T.border}` }}>
+                    <div style={{ width: 38, height: 38, borderRadius: "50%", background: T.ink, color: "#fff", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{t.init}</div>
                     <div>
-                      <p className="text-sm font-semibold" style={{ color: T.dark }}>{t.name}</p>
-                      <p className="text-[12px]" style={{ color: T.muted }}>{t.days}</p>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: T.ink, margin: 0 }}>{t.name}</p>
+                      <p style={{ fontSize: 11, color: T.muted, margin: 0 }}>{t.meta}</p>
                     </div>
                   </div>
                 </div>
@@ -572,55 +589,58 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ══════════════ PRICING ══════════════ */}
-      <section id="pricing" className="py-24" style={{ background: T.bgWarm, borderTop: `1px solid ${T.border}` }}>
-        <div className="max-w-5xl mx-auto px-6 md:px-10">
-          <Reveal className="text-center mb-14 max-w-xl mx-auto">
-            <p className="text-[11px] font-semibold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>PRICING</p>
-            <h2 style={{ ...displayFont, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1, color: T.dark }} className="mb-4">
+      {/* ══ PRICING ══════════════════════════════════════════ */}
+      <section id="pricing" style={{ background: T.surface, borderTop: `1px solid ${T.border}`, padding: "96px 0" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 32px" }}>
+          <Reveal style={{ textAlign: "center", marginBottom: 56 }}>
+            <p style={{ ...mono, color: T.muted, textTransform: "uppercase", marginBottom: 14 }}>PRICING</p>
+            <h2 style={{ ...display, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1, marginBottom: 14 }}>
               Simple, honest pricing.
             </h2>
-            <p className="text-[16px] leading-[1.75]" style={{ color: T.body }}>Start completely free. Upgrade only when you want more.</p>
+            <p style={{ fontSize: 16, lineHeight: 1.75, color: T.body }}>Start completely free. Upgrade only when you want more.</p>
           </Reveal>
 
-          <div className="grid md:grid-cols-3 gap-5 items-start">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, alignItems: "start" }} className="grid-cols-1 md:grid-cols-3">
             {PLANS.map((plan, i) => (
-              <Reveal key={i} delay={i * 80}>
-                <div
-                  className="relative bg-white rounded-2xl p-8 flex flex-col transition-all"
-                  style={plan.accent
-                    ? { border: `2px solid ${T.accent}`, transform: "scale(1.03)", boxShadow: `0 12px 48px ${T.accent}1a` }
-                    : { border: `1px solid ${T.border}` }}>
-                  {plan.accent && (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-white text-[11px] font-semibold px-4 py-1 rounded-full whitespace-nowrap" style={{ background: T.accent }}>
-                      Most popular
+              <Reveal key={i} delay={i * 70}>
+                <div style={{
+                  background: plan.highlight ? T.ink : T.white,
+                  border: `1px solid ${plan.highlight ? T.ink : T.border}`,
+                  borderRadius: 16, padding: "32px 28px",
+                  display: "flex", flexDirection: "column",
+                  transform: plan.highlight ? "scale(1.03)" : "none",
+                  boxShadow: plan.highlight ? "0 16px 48px rgba(0,0,0,0.16)" : "none",
+                  position: "relative",
+                }}>
+                  {plan.highlight && (
+                    <div style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)", background: T.white, color: T.ink, fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 99, border: `1px solid ${T.border}`, whiteSpace: "nowrap", ...mono, letterSpacing: "0.06em" }}>
+                      MOST POPULAR
                     </div>
                   )}
-                  <div className="mb-6">
-                    <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: T.muted }}>{plan.name}</p>
-                    <div className="flex items-baseline gap-1 mb-1">
-                      <span style={{ ...displayFont, fontSize: 42, letterSpacing: "-0.03em", color: T.dark }}>{plan.price}</span>
-                      <span className="text-sm" style={{ color: T.muted }}>/month</span>
+                  <div style={{ marginBottom: 24 }}>
+                    <p style={{ ...mono, color: plan.highlight ? "rgba(255,255,255,0.5)" : T.muted, textTransform: "uppercase", marginBottom: 6 }}>{plan.name}</p>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
+                      <span style={{ ...display, fontSize: 42, letterSpacing: "-0.04em", color: plan.highlight ? "#fff" : T.ink }}>{plan.price}</span>
+                      <span style={{ fontSize: 13, color: plan.highlight ? "rgba(255,255,255,0.5)" : T.muted }}>/{plan.period}</span>
                     </div>
-                    <p className="text-[13px]" style={{ color: T.muted }}>{plan.desc}</p>
+                    <p style={{ fontSize: 13, color: plan.highlight ? "rgba(255,255,255,0.6)" : T.muted }}>{plan.desc}</p>
                   </div>
-                  <ul className="space-y-3 mb-8 flex-1">
+                  <ul style={{ listStyle: "none", padding: 0, margin: "0 0 28px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
                     {plan.features.map((f, j) => (
-                      <li key={j} className="flex items-center gap-2.5 text-[13.5px]" style={{ color: T.body }}>
-                        <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ background: T.accentL }}>
-                          <Check className="w-2.5 h-2.5" style={{ color: T.accent }} />
+                      <li key={j} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: plan.highlight ? "rgba(255,255,255,0.85)" : T.body }}>
+                        <div style={{ width: 16, height: 16, borderRadius: "50%", background: plan.highlight ? "rgba(255,255,255,0.15)" : T.surface, border: `1px solid ${plan.highlight ? "rgba(255,255,255,0.2)" : T.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Check style={{ width: 9, height: 9, color: plan.highlight ? "#fff" : T.ink }} />
                         </div>
                         {f}
                       </li>
                     ))}
                   </ul>
-                  <Link
-                    to="/auth"
-                    className="w-full py-3 rounded-xl font-semibold text-[14px] text-center block text-white hover:opacity-90 transition-all"
-                    style={{ background: plan.accent ? T.accent : T.dark }}>
+                  <Link to="/auth" style={{ display: "block", textAlign: "center", fontWeight: 600, fontSize: 14, padding: "12px", borderRadius: 10, textDecoration: "none", background: plan.highlight ? "#fff" : T.ink, color: plan.highlight ? T.ink : "#fff", transition: "opacity 0.15s" }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
                     {plan.cta}
                   </Link>
-                  {plan.accent && <p className="text-[11px] text-center mt-3" style={{ color: T.muted }}>Cancel anytime · No hidden fees</p>}
+                  {plan.highlight && <p style={{ fontSize: 11, textAlign: "center", color: "rgba(255,255,255,0.4)", marginTop: 10 }}>Cancel anytime · No hidden fees</p>}
                 </div>
               </Reveal>
             ))}
@@ -628,48 +648,51 @@ export default function Index() {
         </div>
       </section>
 
-      {/* ══════════════ FINAL CTA ══════════════ */}
-      <section className="py-32" style={{ background: T.dark }}>
-        <div className="max-w-3xl mx-auto px-6 md:px-10 text-center">
+      {/* ══ FINAL CTA ════════════════════════════════════════ */}
+      <section style={{ background: T.surface, borderTop: `1px solid ${T.border}`, padding: "120px 0" }}>
+        <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 32px", textAlign: "center" }}>
           <Reveal>
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-8" style={{ background: `${T.accent}20` }}>
-              <Heart className="w-6 h-6 fill-current" style={{ color: T.accent }} />
+            <div style={{ width: 48, height: 48, borderRadius: 14, background: T.surface, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 28px" }}>
+              <Heart style={{ width: 22, height: 22, fill: T.ink, color: T.ink }} />
             </div>
-            <h2 style={{ ...displayFont, fontSize: "clamp(32px, 5vw, 56px)", lineHeight: 1.08, color: "#fff" }} className="mb-5">
+            <h2 style={{ ...display, fontSize: "clamp(32px, 5vw, 52px)", lineHeight: 1.06, marginBottom: 18 }}>
               Your love story deserves<br />
-              <span style={{ color: T.accent }}>a home that lasts.</span>
+              <span style={{ color: T.muted }}>a home that lasts.</span>
             </h2>
-            <p className="text-lg leading-[1.75] mb-10 max-w-xl mx-auto" style={{ color: "#9ca3af" }}>
+            <p style={{ fontSize: 17, lineHeight: 1.75, color: T.body, marginBottom: 36 }}>
               Join 50,000+ couples who trust OurVault with their most precious moments. Free to start, always private.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link to="/auth"
-                className="inline-flex items-center gap-2 font-semibold text-white px-9 py-4 rounded-xl hover:opacity-90 transition-all text-base shadow-xl"
-                style={{ background: T.accent }}>
-                Start for free today <ArrowRight className="w-4 h-4" />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
+              <Link to="/auth" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 15, color: "#fff", background: T.ink, padding: "14px 32px", borderRadius: 12, textDecoration: "none", boxShadow: "0 2px 12px rgba(0,0,0,0.16)", transition: "opacity 0.15s" }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+                onMouseLeave={e => (e.currentTarget.style.opacity = "1")}>
+                Start for free today <ArrowRight style={{ width: 16, height: 16 }} />
               </Link>
-              <span className="text-xs font-medium flex items-center gap-1.5" style={{ color: "#6b7280" }}>
-                <Shield className="w-3.5 h-3.5" style={{ color: T.accent }} /> No credit card · 100% private · Free forever tier
+              <span style={{ fontSize: 12, fontWeight: 500, color: T.muted, display: "flex", alignItems: "center", gap: 5 }}>
+                <Shield style={{ width: 13, height: 13 }} /> No credit card · 100% private · Free forever tier
               </span>
             </div>
           </Reveal>
         </div>
       </section>
 
-      {/* ══════════════ FOOTER ══════════════ */}
-      <footer style={{ background: T.dark, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-        <div className="max-w-6xl mx-auto px-6 md:px-10 py-10 flex flex-col md:flex-row items-center justify-between gap-5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: T.accent }}>
-              <Heart className="w-3.5 h-3.5 text-white fill-white" />
+      {/* ══ FOOTER ═══════════════════════════════════════════ */}
+      <footer style={{ background: T.ink, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ maxWidth: 1120, margin: "0 auto", padding: "32px 32px", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <div style={{ width: 26, height: 26, borderRadius: 8, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Heart className="w-3 h-3 text-white fill-white" />
             </div>
-            <span className="font-semibold text-base text-white" style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>OurVault</span>
+            <span style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif", fontWeight: 600, fontSize: 15, color: "#fff" }}>OurVault</span>
           </div>
-          <p className="text-xs text-center" style={{ color: "#6b7280" }}>Made with 💚 for couples everywhere · Always private · Always secure</p>
-          <div className="flex items-center gap-6 text-xs font-medium" style={{ color: "#6b7280" }}>
-            <Link to="/auth" className="hover:text-white transition-colors">Sign In</Link>
-            <span style={{ color: "#374151" }}>|</span>
-            <Link to="/auth" className="hover:text-white transition-colors">Get Started</Link>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", textAlign: "center" }}>Made with 🖤 for couples everywhere · Always private · Always secure</p>
+          <div style={{ display: "flex", gap: 20, fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.4)" }}>
+            <Link to="/auth" style={{ color: "rgba(255,255,255,0.4)", textDecoration: "none", transition: "color 0.15s" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
+              onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}>Sign In</Link>
+            <Link to="/auth" style={{ color: "rgba(255,255,255,0.4)", textDecoration: "none", transition: "color 0.15s" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
+              onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}>Get Started</Link>
           </div>
         </div>
       </footer>
