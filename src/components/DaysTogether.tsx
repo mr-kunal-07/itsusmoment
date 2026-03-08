@@ -55,9 +55,9 @@ export function DaysTogether() {
           <PopoverTrigger asChild>
             <button
               className="w-full text-left group rounded-xl px-3 py-2.5 transition-all"
-              style={{
-                background: "linear-gradient(135deg, hsl(38 80% 12%) 0%, hsl(42 60% 16%) 100%)",
-                border: "1px solid hsl(42 70% 30% / 0.5)",
+            style={{
+                background: "linear-gradient(135deg, hsl(38 60% 22%) 0%, hsl(42 45% 28%) 100%)",
+                border: "1px solid hsl(42 60% 42% / 0.5)",
               }}
             >
               {/* Top row: calendar + edit */}

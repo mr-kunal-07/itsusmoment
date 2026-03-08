@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Camera, Loader2, Save, Heart, Moon, Sun, Link2,
   Trash2, Crown, LogOut, Smartphone, Download,
+  Fingerprint, Lock, Eye, EyeOff, ShieldCheck, KeyRound,
 } from "lucide-react";
 import { PartnerConnect } from "@/components/PartnerConnect";
 import { usePlan } from "@/hooks/useSubscription";
@@ -24,6 +25,9 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 interface Props { onNavigateBilling: () => void; }
+
+const PIN_KEY = "ourvault_pin";
+const LOCK_KEY = "ourvault_lock_method"; // "pin" | "biometric" | null
 
 export function SettingsView({ onNavigateBilling }: Props) {
   const navigate = useNavigate();
@@ -41,6 +45,120 @@ export function SettingsView({ onNavigateBilling }: Props) {
   const [displayName, setDisplayName] = useState(profile?.display_name ?? user?.email?.split("@")[0] ?? "");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // ── Security state ───────────────────────────────────────────────────────────
+  const [lockMethod, setLockMethod] = useState<"pin" | "biometric" | null>(() => {
+    const v = localStorage.getItem(LOCK_KEY);
+    return (v === "pin" || v === "biometric") ? v : null;
+  });
+  const [hasPin, setHasPin] = useState(() => !!localStorage.getItem(PIN_KEY));
+  const [pinSetupMode, setPinSetupMode] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [pinConfirm, setPinConfirmInput] = useState("");
+  const [showPin, setShowPin] = useState(false);
+  const biometricSupported = typeof window !== "undefined" && "PublicKeyCredential" in window;
+
+  // ── PWA install state ───────────────────────────────────────────────────────
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !(window as any).MSStream;
+
+  useEffect(() => {
+    const standalone = window.matchMedia("(display-mode: standalone)").matches
+      || (window.navigator as any).standalone === true;
+    setIsInstalled(standalone);
+    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e as BeforeInstallPromptEvent); };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const currentAvatarUrl = avatarUrl ?? profile?.avatar_url ?? null;
+  const initials = (profile?.display_name ?? user?.email ?? "U").slice(0, 2).toUpperCase();
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    try {
+      const url = await uploadAvatar.mutateAsync(file);
+      setAvatarUrl(url);
+      await updateProfile.mutateAsync({ avatarUrl: url });
+      toast({ title: "Avatar updated" });
+    } catch {
+      toast({ title: "Error uploading avatar", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      await updateProfile.mutateAsync({ displayName: displayName.trim() || undefined });
+      toast({ title: "Profile saved" });
+    } catch {
+      toast({ title: "Error saving profile", variant: "destructive" });
+    }
+  };
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === "accepted") setInstallPrompt(null);
+  };
+
+  const handleSavePin = () => {
+    if (pinInput.length < 4) { toast({ title: "PIN must be at least 4 digits", variant: "destructive" }); return; }
+    if (pinInput !== pinConfirm) { toast({ title: "PINs don't match", variant: "destructive" }); return; }
+    localStorage.setItem(PIN_KEY, pinInput);
+    localStorage.setItem(LOCK_KEY, "pin");
+    setHasPin(true);
+    setLockMethod("pin");
+    setPinSetupMode(false);
+    setPinInput("");
+    setPinConfirmInput("");
+    toast({ title: "🔒 PIN lock enabled" });
+  };
+
+  const handleRemovePin = () => {
+    localStorage.removeItem(PIN_KEY);
+    localStorage.removeItem(LOCK_KEY);
+    setHasPin(false);
+    setLockMethod(null);
+    setPinSetupMode(false);
+    toast({ title: "PIN lock removed" });
+  };
+
+  const handleEnableBiometric = async () => {
+    if (!biometricSupported) { toast({ title: "Biometrics not supported on this device", variant: "destructive" }); return; }
+    try {
+      // Request biometric credential creation as proof of device support
+      const credential = await navigator.credentials.create({
+        publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          rp: { name: "OurVault", id: window.location.hostname },
+          user: { id: new TextEncoder().encode(user?.id ?? "user"), name: user?.email ?? "user", displayName: profile?.display_name ?? "User" },
+          pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+          authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+          timeout: 60000,
+        },
+      });
+      if (credential) {
+        localStorage.setItem(LOCK_KEY, "biometric");
+        setLockMethod("biometric");
+        toast({ title: "🔒 Biometric lock enabled" });
+      }
+    } catch (err: any) {
+      if (err?.name === "NotAllowedError") toast({ title: "Biometric setup cancelled" });
+      else toast({ title: "Biometric not available on this device", variant: "destructive" });
+    }
+  };
+
+  const handleDisableBiometric = () => {
+    localStorage.removeItem(LOCK_KEY);
+    setLockMethod(null);
+    toast({ title: "Biometric lock disabled" });
+  };
 
   // ── PWA install state ───────────────────────────────────────────────────────
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
