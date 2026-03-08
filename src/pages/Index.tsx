@@ -496,9 +496,9 @@ export default function Index() {
                 </p>
                 <div className="grid grid-cols-2 gap-4">
                   {[
-                    { icon: Shield, title: "100% Private", sub: "Only you two can see" },
+                    { icon: ShieldCheck, title: "100% Private", sub: "Only you two can see" },
                     { icon: Gift, title: "Love Notes", sub: "Attach words to memories" },
-                    { icon: Star, title: "Starred Albums", sub: "Your best moments" },
+                    { icon: Film, title: "Starred Albums", sub: "Your best moments" },
                     { icon: Infinity, title: "Unlimited*", sub: "On Soulmate plan" },
                   ].map((item, i) => {
                     const Icon = item.icon;
