@@ -294,6 +294,9 @@ export default function Dashboard() {
             </div>
           </header>
 
+          {/* Partner invite banner */}
+          <PartnerBanner />
+
           {/* Content */}
           <main
             className={cn("flex-1 p-6", dragOverMain && "ring-2 ring-primary ring-inset bg-primary/5")}
