@@ -29,7 +29,8 @@ export function SettingsView({ onNavigateBilling }: Props) {
   const { data: couple } = useMyCouple();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
-  const plan = usePlan();
+  const rawPlan = usePlan();
+  const plan = rawPlan as string;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState(profile?.display_name ?? user?.email?.split("@")[0] ?? "");
