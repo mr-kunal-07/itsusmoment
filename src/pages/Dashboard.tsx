@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Search, Upload, LogOut, Moon, Sun, LayoutGrid, List } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Media, useMedia, useStarredMedia, useRecentMedia, useMoveMedia } from "@/hooks/useMedia";
+import { useMedia, useStarredMedia, useRecentMedia, useMoveMedia } from "@/hooks/useMedia";
 import { useFolders } from "@/hooks/useFolders";
 import { useTheme } from "@/hooks/useTheme";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 type FileTypeFilter = "all" | "image" | "video";
 
