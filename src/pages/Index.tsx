@@ -384,7 +384,7 @@ export default function Index() {
         </FadeIn>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
           {FEATURES.map((f, i) => (
-            <FeatureCard key={i} icon={f.icon} title={f.title} desc={f.desc} tag={f.tag} delay={i * 80} />
+            <FeatureCard key={i} icon={f.icon} title={f.title} desc={f.desc} tag={f.tag} color={f.color} delay={i * 80} />
           ))}
         </div>
       </section>
