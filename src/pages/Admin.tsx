@@ -332,7 +332,7 @@ export default function Admin() {
                           <Heart className="h-3 w-3 text-primary fill-primary shrink-0" />
                         )}
                         {u.is_admin && (
-                          <ShieldCheck className="h-3 w-3 text-primary shrink-0" title="Admin" />
+                          <ShieldCheck className="h-3 w-3 text-primary shrink-0" />
                         )}
                       </div>
 
