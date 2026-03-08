@@ -233,7 +233,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
 
   // Scroll to bottom on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
   const handleSend = async () => {
