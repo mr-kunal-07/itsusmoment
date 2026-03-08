@@ -301,7 +301,7 @@ export default function Index() {
 
 <br />
               <span style={{ background: "linear-gradient(135deg, #0a0a0a 30%, #52525b)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                
+                deserves.
               </span>
             </h1>
           </Reveal>
