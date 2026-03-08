@@ -4,9 +4,10 @@ import { useAllProfiles } from "@/hooks/useProfile";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { ChevronLeft, ChevronRight, Download, Link, User, MessageCircleHeart } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Link, User, MessageCircleHeart, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { LoveNotesPanel } from "@/components/LoveNotesPanel";
+import { TagsPanel } from "@/components/TagsPanel";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -40,6 +41,7 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < media.length - 1;
   const [showNotes, setShowNotes] = useState(false);
+  const [showTags, setShowTags] = useState(false);
   const { data: profiles = [] } = useAllProfiles();
   const { toast } = useToast();
 
@@ -65,7 +67,12 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
     return () => window.removeEventListener("keydown", handler);
   }, [open, goPrev, goNext]);
 
-  // Touch swipe handlers
+  // Reset panels when item changes
+  useEffect(() => {
+    setShowNotes(false);
+    setShowTags(false);
+  }, [currentIndex]);
+
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
@@ -77,7 +84,6 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
     if (touchStartX.current === null || touchStartY.current === null) return;
     const dx = e.touches[0].clientX - touchStartX.current;
     const dy = e.touches[0].clientY - touchStartY.current;
-    // Only track horizontal swipes (not vertical scroll)
     if (Math.abs(dy) > Math.abs(dx)) return;
     e.preventDefault();
     setSwipeDelta(dx);
@@ -103,7 +109,6 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
     });
   };
 
-  // Visual swipe offset clamped
   const clampedDelta = Math.max(-120, Math.min(120, swipeDelta));
 
   return (
@@ -118,7 +123,20 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
                 <span className="text-xs sm:text-sm font-normal text-muted-foreground">
                   {currentIndex + 1} / {media.length}
                 </span>
-                <Button variant="ghost" size="icon" className={cn("h-8 w-8", showNotes && "text-primary bg-primary/10")} onClick={() => setShowNotes(v => !v)} title="Love Notes">
+                <Button
+                  variant="ghost" size="icon"
+                  className={cn("h-8 w-8", showTags && "text-primary bg-primary/10")}
+                  onClick={() => { setShowTags(v => !v); setShowNotes(false); }}
+                  title="Tags"
+                >
+                  <Tag className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost" size="icon"
+                  className={cn("h-8 w-8", showNotes && "text-primary bg-primary/10")}
+                  onClick={() => { setShowNotes(v => !v); setShowTags(false); }}
+                  title="Love Notes"
+                >
                   <MessageCircleHeart className="h-4 w-4" />
                 </Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopyLink} title="Copy link">
@@ -132,7 +150,7 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
           </DialogHeader>
         </div>
 
-        {/* Body — scrollable */}
+        {/* Body */}
         <div className="flex-1 overflow-y-auto px-4 sm:px-5 pb-5 pt-3 space-y-4">
           {/* Media with swipe */}
           <div
@@ -152,7 +170,6 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
               )}
             </div>
 
-            {/* Swipe hint indicators */}
             {isSwiping && (
               <>
                 {swipeDelta < -20 && hasNext && (
@@ -168,11 +185,10 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
               </>
             )}
 
-            {/* Arrow buttons — visible on hover (desktop) / always on mobile if no swipe active */}
             {hasPrev && !isSwiping && (
               <Button
                 variant="secondary" size="icon"
-                className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity rounded-full shadow-lg"
+                className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-lg"
                 onClick={goPrev}
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -181,14 +197,13 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
             {hasNext && !isSwiping && (
               <Button
                 variant="secondary" size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity rounded-full shadow-lg"
+                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-lg"
                 onClick={goNext}
               >
                 <ChevronRight className="h-5 w-5" />
               </Button>
             )}
 
-            {/* Dot indicators for mobile */}
             {media.length > 1 && media.length <= 20 && (
               <div className="absolute bottom-2 left-0 right-0 flex items-center justify-center gap-1 pointer-events-none">
                 {media.map((_, i) => (
@@ -196,9 +211,7 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
                     key={i}
                     className={cn(
                       "rounded-full transition-all duration-200",
-                      i === currentIndex
-                        ? "w-4 h-1.5 bg-white shadow"
-                        : "w-1.5 h-1.5 bg-white/50"
+                      i === currentIndex ? "w-4 h-1.5 bg-white shadow" : "w-1.5 h-1.5 bg-white/50"
                     )}
                   />
                 ))}
@@ -217,6 +230,9 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
               </p>
             )}
           </div>
+
+          {/* Tags — toggled */}
+          {showTags && <TagsPanel mediaId={item.id} />}
 
           {/* Love Notes — toggled */}
           {showNotes && <LoveNotesPanel mediaId={item.id} />}
