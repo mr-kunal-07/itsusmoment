@@ -16,7 +16,7 @@ import { MediaGrid, ViewMode } from "@/components/MediaGrid";
 import { UploadDialog } from "@/components/UploadDialog";
 import { MediaPreview } from "@/components/MediaPreview";
 import { FolderBreadcrumb } from "@/components/FolderBreadcrumb";
-import { MemoriesTimeline, RelationshipStats } from "@/components/MemoriesView";
+import { MemoriesTimeline } from "@/components/MemoriesView";
 import { AnniversariesView } from "@/components/AnniversariesView";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { Slideshow } from "@/components/Slideshow";
@@ -27,7 +27,7 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { BillingView } from "@/components/BillingView";
 import { SettingsView } from "@/components/SettingsView";
 import { RecentlyDeletedView } from "@/components/RecentlyDeletedView";
-import { BucketList } from "@/components/BucketList";
+
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,7 @@ function loadPref<T>(key: string, fallback: T): T {
 const SPECIAL_VIEWS = [
   "all", "starred", "recently-deleted",
   "timeline", "on-this-day", "anniversaries",
-  "chat", "activity", "billing", "settings", "stats", "bucket-list",
+  "chat", "activity", "billing", "settings",
 ];
 
 function tabToView(tab?: string): ViewType {
@@ -167,8 +167,6 @@ export default function Dashboard() {
     : selectedView === "activity" ? "Activity Feed"
     : selectedView === "billing" ? "Billing & Plan"
     : selectedView === "settings" ? "Settings"
-    : selectedView === "stats" ? "Our Stats 💕"
-    : selectedView === "bucket-list" ? "Bucket List 🪣"
     : currentFolder?.name || "Folder";
 
   const avatarUrl = profile?.avatar_url ?? null;
@@ -199,7 +197,7 @@ export default function Dashboard() {
 
   const sortLabel = { created_at: "Date", title: "Name", file_size: "Size" }[sortKey] + (sortDir === "asc" ? " ↑" : " ↓");
 
-  const NON_GRID_VIEWS = ["timeline", "anniversaries", "chat", "activity", "billing", "settings", "recently-deleted", "stats", "bucket-list"];
+  const NON_GRID_VIEWS = ["timeline", "anniversaries", "chat", "activity", "billing", "settings", "recently-deleted"];
   const isGridView = !NON_GRID_VIEWS.includes(selectedView);
   const isChat = selectedView === "chat";
 
@@ -372,10 +370,6 @@ export default function Dashboard() {
                 <SettingsView onNavigateBilling={() => setSelectedView("billing")} />
               ) : selectedView === "recently-deleted" ? (
                 <RecentlyDeletedView />
-              ) : selectedView === "stats" ? (
-                <RelationshipStats />
-              ) : selectedView === "bucket-list" ? (
-                <BucketList />
               ) : (
                 <MediaGrid
                   media={media}

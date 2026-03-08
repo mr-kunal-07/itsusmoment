@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Hash, Heart, CalendarHeart, Play, Trophy, Link2, MessageCircleHeart, Crown, ShieldCheck, Settings, RotateCcw } from "lucide-react";
+import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Hash, Heart, CalendarHeart, Play, Trophy, Link2, MessageCircleHeart, Crown, ShieldCheck, Settings, Activity } from "lucide-react";
 import { usePlan, getStorageLimit, formatStorageLimit } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { DaysTogether } from "@/components/DaysTogether";
@@ -26,7 +26,7 @@ import {
 import { cn, formatSize } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
-export type ViewType = "all" | "starred" | "recently-deleted" | "timeline" | "stats" | "on-this-day" | "anniversaries" | "chat" | "activity" | "billing" | "settings" | "bucket-list" | string;
+export type ViewType = "all" | "starred" | "recently-deleted" | "timeline" | "on-this-day" | "anniversaries" | "chat" | "activity" | "billing" | "settings" | string;
 
 interface Props {
   selectedView: ViewType;
@@ -109,11 +109,10 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
   ];
 
   const specialItems = [
+    { id: "chat" as const, label: "Chat with Partner", icon: MessageCircleHeart, badge: unreadCount },
     { id: "timeline" as const, label: "Memories Timeline", icon: CalendarHeart },
     { id: "anniversaries" as const, label: "Anniversaries", icon: Trophy },
-    { id: "chat" as const, label: "Chat with Partner", icon: MessageCircleHeart, badge: unreadCount },
-    { id: "stats" as const, label: "Our Stats", icon: Heart },
-    { id: "bucket-list" as const, label: "Bucket List", icon: RotateCcw },
+    { id: "activity" as const, label: "Activity Feed", icon: Activity },
   ];
 
   const plan = usePlan();
@@ -209,7 +208,8 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
           <SidebarGroupContent>
             <SidebarMenu>
               {specialItems.map(item => (
-                <SidebarMenuItem key={item.id} className={cn((item.id === "timeline" || item.id === "chat") && "sm:flex hidden")}>
+                // Hide Chat & Timeline on mobile — they live in the bottom nav
+                <SidebarMenuItem key={item.id} className={cn((item.id === "chat" || item.id === "timeline") && "sm:flex hidden")}>
                   <SidebarMenuButton
                     onClick={() => selectView(item.id)}
                     className={cn("justify-between", selectedView === item.id && "bg-accent text-accent-foreground")}
