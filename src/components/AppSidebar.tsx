@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart } from "lucide-react";
+import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart, CalendarHeart, BarChart3, Play } from "lucide-react";
 import { useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, Folder } from "@/hooks/useFolders";
 import { useMedia } from "@/hooks/useMedia";
 import { useStorageUsage } from "@/hooks/useProfile";
+import { useOnThisDay } from "@/hooks/useMemories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,11 +18,12 @@ import {
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
-export type ViewType = "all" | "unfiled" | "starred" | "recent" | string;
+export type ViewType = "all" | "unfiled" | "starred" | "recent" | "timeline" | "stats" | string;
 
 interface Props {
   selectedView: ViewType;
   onSelectView: (view: ViewType) => void;
+  onStartSlideshow?: () => void;
 }
 
 function formatSize(bytes: number) {
@@ -31,10 +33,11 @@ function formatSize(bytes: number) {
   return (bytes / 1073741824).toFixed(1) + " GB";
 }
 
-export function AppSidebar({ selectedView, onSelectView }: Props) {
+export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Props) {
   const { data: folders = [] } = useFolders();
   const { data: allMedia = [] } = useMedia();
   const { data: storageBytes = 0 } = useStorageUsage();
+  const { data: onThisDayMedia = [] } = useOnThisDay();
   const createFolder = useCreateFolder();
   const renameFolder = useRenameFolder();
   const deleteFolder = useDeleteFolder();
@@ -83,6 +86,11 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
     { id: "unfiled" as const, label: "Unfiled", icon: FileIcon, count: folderCounts["__unfiled__"] ?? 0 },
   ];
 
+  const specialItems = [
+    { id: "timeline" as const, label: "Memories Timeline", icon: CalendarHeart, count: null },
+    { id: "stats" as const, label: "Our Stats", icon: BarChart3, count: null },
+  ];
+
   return (
     <Sidebar className="border-r">
       <SidebarHeader className="p-4 border-b border-sidebar-border">
@@ -116,6 +124,56 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* ── Couple Features ──────────────────────────────────── */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="flex items-center gap-1.5">
+            <Heart className="h-3 w-3 text-primary fill-primary" /> For Us
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {specialItems.map(item => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton
+                    onClick={() => onSelectView(item.id)}
+                    className={cn("justify-between", selectedView === item.id && "bg-accent text-accent-foreground")}
+                  >
+                    <span className="flex items-center">
+                      <item.icon className="h-4 w-4 mr-2" />
+                      <span>{item.label}</span>
+                    </span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              {/* On This Day — only if we have past memories */}
+              {onThisDayMedia.length > 0 && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => onSelectView("on-this-day")}
+                    className={cn("justify-between", selectedView === "on-this-day" && "bg-accent text-accent-foreground")}
+                  >
+                    <span className="flex items-center">
+                      <span className="text-base mr-2">🗓️</span>
+                      <span>On This Day</span>
+                    </span>
+                    <Badge variant="secondary" className="text-xs h-5 px-1.5 font-normal animate-pulse bg-primary/15 text-primary border-0">{onThisDayMedia.length}</Badge>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
+              {/* Slideshow button */}
+              {onStartSlideshow && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={onStartSlideshow} className="text-primary hover:text-primary">
+                    <Play className="h-4 w-4 mr-2 fill-primary" />
+                    <span>Slideshow</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

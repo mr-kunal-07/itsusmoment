@@ -6,12 +6,15 @@ import { useMedia, useStarredMedia, useRecentMedia, useMoveMedia } from "@/hooks
 import { useFolders } from "@/hooks/useFolders";
 import { useTheme } from "@/hooks/useTheme";
 import { useProfile } from "@/hooks/useProfile";
+import { useOnThisDay } from "@/hooks/useMemories";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar, ViewType } from "@/components/AppSidebar";
 import { MediaGrid, ViewMode } from "@/components/MediaGrid";
 import { UploadDialog } from "@/components/UploadDialog";
 import { MediaPreview } from "@/components/MediaPreview";
 import { FolderBreadcrumb } from "@/components/FolderBreadcrumb";
+import { MemoriesTimeline, RelationshipStats } from "@/components/MemoriesView";
+import { Slideshow } from "@/components/Slideshow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,6 +23,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 type FileTypeFilter = "all" | "image" | "video";
 type SortKey = "created_at" | "title" | "file_size";
@@ -31,6 +35,8 @@ const STORAGE_KEY_VIEW = "mediahub_view";
 function loadPref<T>(key: string, fallback: T): T {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
 }
+
+const SPECIAL_VIEWS = ["all", "unfiled", "starred", "recent", "timeline", "stats", "on-this-day"];
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -44,24 +50,24 @@ export default function Dashboard() {
   const [fileTypeFilter, setFileTypeFilter] = useState<FileTypeFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>(() => loadPref<SortKey>(STORAGE_KEY_SORT + "_key", "created_at"));
   const [sortDir, setSortDir] = useState<SortDir>(() => loadPref<SortDir>(STORAGE_KEY_SORT + "_dir", "desc"));
+  const [slideshowOpen, setSlideshowOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const moveMedia = useMoveMedia();
   const { data: profile } = useProfile();
+  const { data: onThisDayMedia = [] } = useOnThisDay();
 
   // Persist prefs
   useEffect(() => { localStorage.setItem(STORAGE_KEY_VIEW, JSON.stringify(viewMode)); }, [viewMode]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_SORT + "_key", JSON.stringify(sortKey)); }, [sortKey]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_SORT + "_dir", JSON.stringify(sortDir)); }, [sortDir]);
 
-  // Determine folder ID from view
+  const isSpecialView = SPECIAL_VIEWS.includes(selectedView);
+
   const folderId = selectedView === "all" ? undefined
     : selectedView === "unfiled" ? null
-    : selectedView === "starred" ? undefined
-    : selectedView === "recent" ? undefined
+    : isSpecialView ? undefined
     : selectedView;
-
-  const isSpecialView = ["all", "unfiled", "starred", "recent"].includes(selectedView);
 
   const { data: regularMedia = [], isLoading } = useMedia(
     isSpecialView && selectedView !== "starred" && selectedView !== "recent" ? folderId : (isSpecialView ? undefined : folderId),
@@ -71,24 +77,19 @@ export default function Dashboard() {
   const { data: recentMedia = [] } = useRecentMedia();
   const { data: folders = [] } = useFolders();
 
-  // Pick media based on view, then apply file type filter
   const rawMedia = selectedView === "starred" ? starredMedia
     : selectedView === "recent" ? recentMedia
+    : selectedView === "on-this-day" ? onThisDayMedia
     : regularMedia;
 
   const typeFiltered = fileTypeFilter === "all" ? rawMedia
     : rawMedia.filter(m => m.file_type === fileTypeFilter);
 
-  // Sort
   const media = [...typeFiltered].sort((a, b) => {
     let cmp = 0;
-    if (sortKey === "created_at") {
-      cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-    } else if (sortKey === "title") {
-      cmp = a.title.localeCompare(b.title);
-    } else if (sortKey === "file_size") {
-      cmp = a.file_size - b.file_size;
-    }
+    if (sortKey === "created_at") cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    else if (sortKey === "title") cmp = a.title.localeCompare(b.title);
+    else if (sortKey === "file_size") cmp = a.file_size - b.file_size;
     return sortDir === "asc" ? cmp : -cmp;
   });
 
@@ -97,13 +98,15 @@ export default function Dashboard() {
     : selectedView === "unfiled" ? "Unfiled"
     : selectedView === "starred" ? "Starred"
     : selectedView === "recent" ? "Recent"
+    : selectedView === "timeline" ? "Memories Timeline"
+    : selectedView === "stats" ? "Our Story"
+    : selectedView === "on-this-day" ? `On This Day · ${format(new Date(), "MMMM d")}`
     : currentFolder?.name || "Folder";
 
   const avatarUrl = profile?.avatar_url ?? null;
   const displayName = profile?.display_name ?? user?.email?.split("@")[0] ?? "U";
   const initials = displayName.slice(0, 2).toUpperCase();
 
-  // Listen for drag-drop move events from sidebar
   useEffect(() => {
     const handler = (e: Event) => {
       const { mediaId, folderId } = (e as CustomEvent).detail;
@@ -117,109 +120,102 @@ export default function Dashboard() {
     return () => window.removeEventListener("move-media", handler);
   }, [moveMedia, toast]);
 
-  // Drag & drop upload on main area
   const handleMainDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragOverMain(false);
-    if (e.dataTransfer.files.length > 0) {
-      setUploadOpen(true);
-    }
+    if (e.dataTransfer.files.length > 0) setUploadOpen(true);
   }, []);
 
   const toggleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir(d => d === "asc" ? "desc" : "asc");
-    } else {
-      setSortKey(key);
-      setSortDir("desc");
-    }
+    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("desc"); }
   };
 
-  const sortLabel = {
-    created_at: "Date",
-    title: "Name",
-    file_size: "Size",
-  }[sortKey] + (sortDir === "asc" ? " ↑" : " ↓");
+  const sortLabel = { created_at: "Date", title: "Name", file_size: "Size" }[sortKey] + (sortDir === "asc" ? " ↑" : " ↓");
+
+  const isGridView = selectedView !== "timeline" && selectedView !== "stats";
 
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
-        <AppSidebar selectedView={selectedView} onSelectView={setSelectedView} />
+        <AppSidebar
+          selectedView={selectedView}
+          onSelectView={setSelectedView}
+          onStartSlideshow={() => setSlideshowOpen(true)}
+        />
 
         <div className="flex-1 flex flex-col">
           {/* Header */}
           <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b px-4 h-14 flex items-center gap-3 shadow-sm">
             <SidebarTrigger className="shrink-0" />
 
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search files..."
-                className="pl-9 h-9"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-            </div>
+            {isGridView && (
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search files..."
+                  className="pl-9 h-9"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </div>
+            )}
 
-            {/* File type filter */}
-            <div className="hidden sm:flex items-center gap-0.5 p-0.5 rounded-lg bg-muted">
-              {(["all", "image", "video"] as FileTypeFilter[]).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setFileTypeFilter(f)}
-                  className={cn(
-                    "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
-                    fileTypeFilter === f
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {f === "all" ? "All" : f === "image" ? "Images" : "Videos"}
-                </button>
-              ))}
-            </div>
+            {isGridView && (
+              <div className="hidden sm:flex items-center gap-0.5 p-0.5 rounded-lg bg-muted">
+                {(["all", "image", "video"] as FileTypeFilter[]).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setFileTypeFilter(f)}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                      fileTypeFilter === f ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {f === "all" ? "All" : f === "image" ? "Images" : "Videos"}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div className="flex items-center gap-1 ml-auto">
-              {/* Sort dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-9 text-xs gap-1.5 hidden sm:flex">
-                    <ArrowUpDown className="h-3.5 w-3.5" />
-                    {sortLabel}
+              {isGridView && (
+                <>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-9 text-xs gap-1.5 hidden sm:flex">
+                        <ArrowUpDown className="h-3.5 w-3.5" />
+                        {sortLabel}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem onClick={() => toggleSort("created_at")} className={cn(sortKey === "created_at" && "font-semibold")}>
+                        Date {sortKey === "created_at" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => toggleSort("title")} className={cn(sortKey === "title" && "font-semibold")}>
+                        Name {sortKey === "title" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => toggleSort("file_size")} className={cn(sortKey === "file_size" && "font-semibold")}>
+                        Size {sortKey === "file_size" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <Button variant="ghost" size="icon" className="h-9 w-9"
+                    onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}
+                    title={viewMode === "grid" ? "Switch to list" : "Switch to grid"}
+                  >
+                    {viewMode === "grid" ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-40">
-                  <DropdownMenuItem onClick={() => toggleSort("created_at")} className={cn(sortKey === "created_at" && "font-semibold")}>
-                    Date {sortKey === "created_at" ? (sortDir === "asc" ? "↑" : "↓") : ""}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => toggleSort("title")} className={cn(sortKey === "title" && "font-semibold")}>
-                    Name {sortKey === "title" ? (sortDir === "asc" ? "↑" : "↓") : ""}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => toggleSort("file_size")} className={cn(sortKey === "file_size" && "font-semibold")}>
-                    Size {sortKey === "file_size" ? (sortDir === "asc" ? "↑" : "↓") : ""}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </>
+              )}
 
-              {/* View mode toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
-                onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}
-                title={viewMode === "grid" ? "Switch to list" : "Switch to grid"}
-              >
-                {viewMode === "grid" ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
-              </Button>
-
-              {/* Dark mode toggle */}
               <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleTheme}>
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
 
-              <Button onClick={() => setUploadOpen(true)} size="sm">
-                <Upload className="h-4 w-4 mr-1.5" />
-                Upload
+              <Button onClick={() => setUploadOpen(true)} size="sm" className="gap-1.5">
+                <Upload className="h-4 w-4" /> Upload
               </Button>
 
               <DropdownMenu>
@@ -247,29 +243,49 @@ export default function Dashboard() {
 
           {/* Content */}
           <main
-            className={`flex-1 p-6 ${dragOverMain ? "ring-2 ring-primary ring-inset bg-primary/5" : ""}`}
+            className={cn("flex-1 p-6", dragOverMain && "ring-2 ring-primary ring-inset bg-primary/5")}
             onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setDragOverMain(true); }}
             onDragLeave={() => setDragOverMain(false)}
             onDrop={handleMainDrop}
           >
             <div className="mb-6">
               {!isSpecialView && (
-                <FolderBreadcrumb
-                  folderId={selectedView}
-                  folders={folders}
-                  onNavigate={setSelectedView}
-                />
+                <FolderBreadcrumb folderId={selectedView} folders={folders} onNavigate={setSelectedView} />
               )}
-              <h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
-              {!isLoading && <p className="text-sm text-muted-foreground mt-1">{media.length} file{media.length !== 1 ? "s" : ""}</p>}
+              <h1 className="text-2xl font-bold font-heading tracking-tight">{pageTitle}</h1>
+
+              {/* On This Day sub-header */}
+              {selectedView === "on-this-day" && onThisDayMedia.length > 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  🗓️ {onThisDayMedia.length} {onThisDayMedia.length === 1 ? "memory" : "memories"} from previous years on this date
+                </p>
+              )}
+
+              {isGridView && !isLoading && selectedView !== "on-this-day" && (
+                <p className="text-sm text-muted-foreground mt-1">{media.length} file{media.length !== 1 ? "s" : ""}</p>
+              )}
             </div>
 
-            <MediaGrid
-              media={media}
-              loading={isLoading && selectedView !== "starred" && selectedView !== "recent"}
-              onPreview={(m) => setPreviewIndex(media.findIndex(x => x.id === m.id))}
-              viewMode={viewMode}
-            />
+            {/* Render correct view */}
+            {selectedView === "timeline" ? (
+              <MemoriesTimeline onPreview={(mediaId) => {
+                // find index in all media
+                const allFlat = media;
+                const idx = allFlat.findIndex(m => m.id === mediaId);
+                // fetch all for timeline — use a different approach: navigate to all view first
+                setSelectedView("all");
+                setTimeout(() => setPreviewIndex(idx >= 0 ? idx : 0), 100);
+              }} />
+            ) : selectedView === "stats" ? (
+              <RelationshipStats />
+            ) : (
+              <MediaGrid
+                media={media}
+                loading={isLoading && !["starred","recent","on-this-day"].includes(selectedView)}
+                onPreview={(m) => setPreviewIndex(media.findIndex(x => x.id === m.id))}
+                viewMode={viewMode}
+              />
+            )}
           </main>
         </div>
       </div>
@@ -281,6 +297,11 @@ export default function Dashboard() {
         open={previewIndex >= 0}
         onOpenChange={open => !open && setPreviewIndex(-1)}
         onNavigate={setPreviewIndex}
+      />
+      <Slideshow
+        media={media.length > 0 ? media : []}
+        open={slideshowOpen}
+        onClose={() => setSlideshowOpen(false)}
       />
     </SidebarProvider>
   );

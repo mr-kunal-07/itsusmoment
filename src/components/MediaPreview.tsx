@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { Media, getPublicUrl } from "@/hooks/useMedia";
 import { useAllProfiles } from "@/hooks/useProfile";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { ChevronLeft, ChevronRight, Download, Link, User } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Link, User, MessageCircleHeart, X } from "lucide-react";
 import { useCallback, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { LoveNotesPanel } from "@/components/LoveNotesPanel";
+import { cn } from "@/lib/utils";
 
 interface Props {
   media: Media[];
@@ -37,6 +40,7 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
   const item = media[currentIndex] ?? null;
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < media.length - 1;
+  const [showNotes, setShowNotes] = useState(false);
   const { data: profiles = [] } = useAllProfiles();
   const { toast } = useToast();
 
@@ -67,31 +71,23 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-auto p-0">
-        <div className="p-6 pb-0">
+      <DialogContent className="sm:max-w-5xl max-h-[92vh] p-0 overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="px-5 pt-5 pb-0 flex-shrink-0">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between pr-6">
-              <span className="truncate">{item.title}</span>
-              <div className="flex items-center gap-2 shrink-0 ml-3">
+            <DialogTitle className="flex items-center gap-2 pr-6">
+              <span className="truncate font-heading">{item.title}</span>
+              <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                 <span className="text-sm font-normal text-muted-foreground">
                   {currentIndex + 1} / {media.length}
                 </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleCopyLink}
-                  title="Copy link"
-                >
+                <Button variant="ghost" size="icon" className={cn("h-8 w-8", showNotes && "text-primary bg-primary/10")} onClick={() => setShowNotes(v => !v)} title="Love Notes">
+                  <MessageCircleHeart className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopyLink} title="Copy link">
                   <Link className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => downloadFile(url, item.file_name)}
-                  title="Download"
-                >
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => downloadFile(url, item.file_name)} title="Download">
                   <Download className="h-4 w-4" />
                 </Button>
               </div>
@@ -99,45 +95,50 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
           </DialogHeader>
         </div>
 
-        <div className="px-6 relative group">
-          {item.file_type === "video" ? (
-            <video src={url} controls className="w-full rounded-lg max-h-[60vh]" autoPlay />
-          ) : (
-            <img src={url} alt={item.title} className="w-full rounded-lg max-h-[60vh] object-contain" />
-          )}
+        {/* Body — scrollable */}
+        <div className="flex-1 overflow-y-auto px-5 pb-5 pt-3 space-y-4">
+          {/* Media */}
+          <div className="relative group">
+            {item.file_type === "video" ? (
+              <video src={url} controls className="w-full rounded-xl max-h-[55vh]" autoPlay />
+            ) : (
+              <img src={url} alt={item.title} className="w-full rounded-xl max-h-[55vh] object-contain bg-muted/30" />
+            )}
 
-          {hasPrev && (
-            <Button
-              variant="secondary"
-              size="icon"
-              className="absolute left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-lg"
-              onClick={goPrev}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-          )}
-          {hasNext && (
-            <Button
-              variant="secondary"
-              size="icon"
-              className="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-lg"
-              onClick={goNext}
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          )}
-        </div>
+            {hasPrev && (
+              <Button
+                variant="secondary" size="icon"
+                className="absolute left-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-lg"
+                onClick={goPrev}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            )}
+            {hasNext && (
+              <Button
+                variant="secondary" size="icon"
+                className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-lg"
+                onClick={goNext}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
 
-        <div className="px-6 pb-6 pt-4 space-y-1 text-sm text-muted-foreground">
-          {item.description && <p className="text-foreground">{item.description}</p>}
-          <p>Uploaded {format(new Date(item.created_at), "MMM d, yyyy 'at' h:mm a")}</p>
-          <p>{item.file_name} · {formatSize(item.file_size)} · {item.mime_type}</p>
-          {uploaderName && (
-            <p className="flex items-center gap-1">
-              <User className="h-3.5 w-3.5" />
-              Uploaded by {uploaderName}
-            </p>
-          )}
+          {/* Meta */}
+          <div className="space-y-0.5 text-sm text-muted-foreground">
+            {item.description && <p className="text-foreground">{item.description}</p>}
+            <p>Uploaded {format(new Date(item.created_at), "MMM d, yyyy 'at' h:mm a")}</p>
+            <p>{item.file_name} · {formatSize(item.file_size)} · {item.mime_type}</p>
+            {uploaderName && (
+              <p className="flex items-center gap-1">
+                <User className="h-3.5 w-3.5" /> Uploaded by {uploaderName}
+              </p>
+            )}
+          </div>
+
+          {/* Love Notes — toggled */}
+          {showNotes && <LoveNotesPanel mediaId={item.id} />}
         </div>
       </DialogContent>
     </Dialog>
