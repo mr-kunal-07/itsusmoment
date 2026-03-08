@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import {
   Heart, GalleryVerticalEnd, MessagesSquare, AudioWaveform, CalendarHeart,
   ArrowRight, Check, ChevronDown, Sparkles, ImagePlay, Gift,
-  ShieldCheck, UserPlus, Infinity, PlayCircle, Quote, LockKeyhole,
-  HeartHandshake, Clapperboard, Zap, Star, Film, Gem
+  ShieldCheck, Infinity, PlayCircle, Quote, LockKeyhole,
+  HeartHandshake, Clapperboard, Zap, Film,
+  WandSparkles, BookHeart, PartyPopper, UserRoundCheck
 } from "lucide-react";
 import heroBg from "@/assets/hero-couple.jpg";
 
@@ -40,28 +41,31 @@ function FadeIn({ children, delay = 0, className = "" }: { children: React.React
 }
 
 /* ─── Feature card (extracted so hooks run at component level) ─── */
-function FeatureCard({ icon: Icon, title, desc, tag, delay }: { icon: React.ElementType; title: string; desc: string; tag: string; delay: number }) {
+function FeatureCard({ icon: Icon, title, desc, tag, color, delay }: { icon: React.ElementType; title: string; desc: string; tag: string; color: string; delay: number }) {
   const { ref, visible } = useInView(0.1);
   return (
     <div
       ref={ref}
-      className={`premium-card p-6 group hover:border-primary/30 transition-all duration-500 hover:-translate-y-1 hover:shadow-glow ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+      className={`premium-card p-7 group hover:border-primary/30 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-glow ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
       style={{ transitionDelay: `${delay}ms` }}
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-          <Icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+      <div className="flex items-start justify-between mb-5">
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300"
+          style={{ background: color }}
+        >
+          <Icon className="w-6 h-6 text-white" strokeWidth={1.5} />
         </div>
-        <span className="text-[10px] font-medium text-muted-foreground border border-border px-2 py-0.5 rounded-full">{tag}</span>
+        <span className="text-[10px] font-semibold tracking-wide uppercase text-primary border border-primary/20 bg-primary/8 px-2.5 py-1 rounded-full">{tag}</span>
       </div>
-      <h3 className="font-heading font-semibold text-base mb-2 text-foreground">{title}</h3>
+      <h3 className="font-heading font-bold text-base mb-2.5 text-foreground">{title}</h3>
       <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
     </div>
   );
 }
 
 /* ─── Step card ─── */
-function StepCard({ step, icon: Icon, title, desc, delay }: { step: string; icon: React.ElementType; title: string; desc: string; delay: number }) {
+function StepCard({ step, icon: Icon, title, desc, color, delay }: { step: string; icon: React.ElementType; title: string; desc: string; color: string; delay: number }) {
   const { ref, visible } = useInView(0.1);
   return (
     <div
@@ -70,12 +74,15 @@ function StepCard({ step, icon: Icon, title, desc, delay }: { step: string; icon
       style={{ transitionDelay: `${delay}ms` }}
     >
       <div className="relative inline-flex mb-6">
-        <div className="w-16 h-16 rounded-2xl bg-card border border-border flex items-center justify-center">
-          <Icon className="w-7 h-7 text-primary" />
+        <div
+          className="w-18 h-18 w-[72px] h-[72px] rounded-3xl flex items-center justify-center shadow-xl"
+          style={{ background: color }}
+        >
+          <Icon className="w-8 h-8 text-white" strokeWidth={1.5} />
         </div>
-        <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center font-heading">{step}</span>
+        <span className="absolute -top-2.5 -right-2.5 w-7 h-7 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center font-heading shadow-glow">{step}</span>
       </div>
-      <h3 className="font-heading font-semibold text-base mb-2">{title}</h3>
+      <h3 className="font-heading font-bold text-base mb-2">{title}</h3>
       <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
     </div>
   );
@@ -151,19 +158,19 @@ const MEMORY_CARDS = [
   { emoji: "🎂", label: "1 Year!", sub: "Dec 2, 2025" },
 ];
 
-const FEATURES: { icon: React.ElementType; title: string; desc: string; tag: string }[] = [
-  { icon: GalleryVerticalEnd, title: "Shared Memory Vault", desc: "Upload photos & videos together — private, beautiful, forever yours. No algorithm, no ads, no noise.", tag: "Core" },
-  { icon: MessagesSquare, title: "Private Chat", desc: "A dedicated space just for the two of you. React with emojis, reply to messages, feel every word.", tag: "Connect" },
-  { icon: AudioWaveform, title: "Voice Messages", desc: "Send your voice, your laugh, your 'I miss you' — audio messages that feel like a warm hug.", tag: "Soulmate" },
-  { icon: CalendarHeart, title: "Milestones & Anniversaries", desc: "Never forget a special date. Your timeline of firsts — first kiss, first trip, first everything.", tag: "Core" },
-  { icon: HeartHandshake, title: "Love Notes", desc: "Attach a handwritten note to any photo. Words that stay forever, tied to your best memories.", tag: "Connect" },
-  { icon: Clapperboard, title: "Slideshow & Highlights", desc: "Relive your journey with a cinematic slideshow of your starred memories. Pure magic.", tag: "Core" },
+const FEATURES: { icon: React.ElementType; title: string; desc: string; tag: string; color: string }[] = [
+  { icon: GalleryVerticalEnd, title: "Shared Memory Vault",       desc: "Upload photos & videos together — private, beautiful, forever yours. No algorithm, no ads, no noise.",  tag: "Core",     color: "linear-gradient(135deg,#a855f7,#7c3aed)" },
+  { icon: MessagesSquare,     title: "Private Chat",              desc: "A dedicated space just for the two of you. React with emojis, reply to messages, feel every word.",       tag: "Connect",  color: "linear-gradient(135deg,#ec4899,#be185d)" },
+  { icon: AudioWaveform,      title: "Voice Messages",            desc: "Send your voice, your laugh, your 'I miss you' — audio messages that feel like a warm hug.",              tag: "Soulmate", color: "linear-gradient(135deg,#f97316,#c2410c)" },
+  { icon: CalendarHeart,      title: "Milestones & Anniversaries",desc: "Never forget a special date. Your timeline of firsts — first kiss, first trip, first everything.",      tag: "Core",     color: "linear-gradient(135deg,#14b8a6,#0f766e)" },
+  { icon: BookHeart,          title: "Love Notes",                desc: "Attach a handwritten note to any photo. Words that stay forever, tied to your best memories.",           tag: "Connect",  color: "linear-gradient(135deg,#f43f5e,#9f1239)" },
+  { icon: Clapperboard,       title: "Slideshow & Highlights",    desc: "Relive your journey with a cinematic slideshow of your starred memories. Pure magic.",                   tag: "Core",     color: "linear-gradient(135deg,#3b82f6,#1d4ed8)" },
 ];
 
-const STEPS: { step: string; icon: React.ElementType; title: string; desc: string }[] = [
-  { step: "01", icon: UserPlus, title: "Create your account", desc: "Sign up free — no credit card required. Takes under a minute." },
-  { step: "02", icon: HeartHandshake, title: "Invite your partner", desc: "Share a unique link. They join, you're linked — your private world is live." },
-  { step: "03", icon: ImagePlay, title: "Start building memories", desc: "Upload photos, chat, add milestones. Your story, finally in one place." },
+const STEPS: { step: string; icon: React.ElementType; title: string; desc: string; color: string }[] = [
+  { step: "01", icon: UserRoundCheck, title: "Create your account",       desc: "Sign up free — no credit card required. Takes under a minute.",                        color: "linear-gradient(135deg,#8b5cf6,#6d28d9)" },
+  { step: "02", icon: HeartHandshake, title: "Invite your partner",       desc: "Share a unique link. They join, you're linked — your private world is live.",          color: "linear-gradient(135deg,#ec4899,#9d174d)" },
+  { step: "03", icon: ImagePlay,      title: "Start building memories",   desc: "Upload photos, chat, add milestones. Your story, finally in one place.",               color: "linear-gradient(135deg,#14b8a6,#0e7490)" },
 ];
 
 const TESTIMONIALS = [
@@ -377,7 +384,7 @@ export default function Index() {
         </FadeIn>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
           {FEATURES.map((f, i) => (
-            <FeatureCard key={i} icon={f.icon} title={f.title} desc={f.desc} tag={f.tag} delay={i * 80} />
+            <FeatureCard key={i} icon={f.icon} title={f.title} desc={f.desc} tag={f.tag} color={f.color} delay={i * 80} />
           ))}
         </div>
       </section>
@@ -394,7 +401,7 @@ export default function Index() {
           <div className="grid md:grid-cols-3 gap-8 relative">
             <div className="hidden md:block absolute top-8 left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-px bg-border" />
             {STEPS.map((s, i) => (
-              <StepCard key={i} step={s.step} icon={s.icon} title={s.title} desc={s.desc} delay={i * 150} />
+              <StepCard key={i} step={s.step} icon={s.icon} title={s.title} desc={s.desc} color={s.color} delay={i * 150} />
             ))}
           </div>
         </div>
