@@ -337,10 +337,10 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   }, [messages.length]);
 
   useEffect(() => {
-    const handler = () => setEmojiPickerId(null);
-    if (emojiPickerId) document.addEventListener("click", handler);
+    const handler = () => { setEmojiPickerId(null); setLongPressId(null); };
+    if (emojiPickerId || longPressId) document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
-  }, [emojiPickerId]);
+  }, [emojiPickerId, longPressId]);
 
   const handleSend = async () => {
     const trimmed = text.trim();
