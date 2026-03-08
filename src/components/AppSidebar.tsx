@@ -404,15 +404,36 @@ function FolderItem({
               <Badge variant="secondary" className="text-xs h-4 px-1 font-normal group-hover:hidden">{fileCount}</Badge>
             )}
             <span className="hidden group-hover:flex items-center gap-0.5">
-              <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); onCreateSubfolder(folder.id); setExpanded(true); }}>
+              <span
+                role="button"
+                tabIndex={0}
+                className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent cursor-pointer"
+                onClick={e => { e.stopPropagation(); onCreateSubfolder(folder.id); setExpanded(true); }}
+                onKeyDown={e => e.key === "Enter" && onCreateSubfolder(folder.id)}
+                title="New subfolder"
+              >
                 <FolderPlus className="h-3 w-3" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); setEditName(folder.name); setEditingId(folder.id); }}>
+              </span>
+              <span
+                role="button"
+                tabIndex={0}
+                className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent cursor-pointer"
+                onClick={e => { e.stopPropagation(); setEditName(folder.name); setEditingId(folder.id); }}
+                onKeyDown={e => e.key === "Enter" && setEditingId(folder.id)}
+                title="Rename"
+              >
                 <Pencil className="h-3 w-3" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-5 w-5" onClick={e => { e.stopPropagation(); onDelete(folder); }}>
+              </span>
+              <span
+                role="button"
+                tabIndex={0}
+                className="h-5 w-5 flex items-center justify-center rounded hover:bg-accent cursor-pointer text-destructive/70 hover:text-destructive"
+                onClick={e => { e.stopPropagation(); onDelete(folder); }}
+                onKeyDown={e => e.key === "Enter" && onDelete(folder)}
+                title="Delete"
+              >
                 <Trash2 className="h-3 w-3" />
-              </Button>
+              </span>
             </span>
           </span>
         </SidebarMenuButton>
