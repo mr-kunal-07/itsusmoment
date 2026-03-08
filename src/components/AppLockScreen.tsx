@@ -35,21 +35,32 @@ export function AppLockScreen({ lockMethod, onUnlock }: Props) {
         setBiometricError("Biometrics not supported on this device");
         return;
       }
-      // Use a get() assertion with userVerification required — browser triggers Face ID / Touch ID / Windows Hello
+
       const challenge = new Uint8Array(32);
       crypto.getRandomValues(challenge);
+
+      // Load the stored credential ID so the platform authenticator knows which key to use
+      const credIdBase64 = localStorage.getItem("ourvault_biometric_cred_id");
+      const allowCredentials: PublicKeyCredentialDescriptor[] = credIdBase64
+        ? [{
+            type: "public-key",
+            id: Uint8Array.from(atob(credIdBase64), c => c.charCodeAt(0)),
+            transports: ["internal"] as AuthenticatorTransport[],
+          }]
+        : [];
+
       await navigator.credentials.get({
         publicKey: {
           challenge,
           timeout: 60000,
           userVerification: "required",
           rpId: window.location.hostname,
-          allowCredentials: [],
+          allowCredentials,
         },
       });
       onUnlock();
     } catch (err: any) {
-      // User cancelled or not enrolled — fall back to PIN if available
+      // User cancelled or credential not found — fall back to PIN if available
       const storedPin = localStorage.getItem(PIN_KEY);
       if (storedPin) {
         setBiometricError("Biometrics failed — enter your PIN");
