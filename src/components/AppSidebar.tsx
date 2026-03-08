@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart, CalendarHeart, Play, Trophy, Link2 } from "lucide-react";
+import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart, CalendarHeart, Play, Trophy, Link2, MessageCircleHeart } from "lucide-react";
 import { DaysTogether } from "@/components/DaysTogether";
 import { useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, Folder } from "@/hooks/useFolders";
 import { useMedia } from "@/hooks/useMedia";
