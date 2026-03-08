@@ -19,6 +19,7 @@ import { AnniversariesView } from "@/components/AnniversariesView";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { Slideshow } from "@/components/Slideshow";
 import { PartnerBanner } from "@/components/PartnerBanner";
+import { UpgradeBanner } from "@/components/UpgradeBanner";
 import { ChatView } from "@/components/ChatView";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { BillingView } from "@/components/BillingView";
