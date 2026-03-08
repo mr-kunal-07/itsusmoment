@@ -448,7 +448,7 @@ export default function Index() {
                     <Icon className="w-5 h-5" style={{ color: T.accent }} strokeWidth={1.75} />
                   </div>
                   <div>
-                    <h3 className="text-[15px] font-bold mb-1.5" style={{ color: T.dark }}>{f.title}</h3>
+                    <h3 className="text-[15px] font-semibold mb-1.5" style={{ color: T.dark }}>{f.title}</h3>
                     <p className="text-[13.5px] leading-[1.7]" style={{ color: T.body }}>{f.desc}</p>
                   </div>
                 </Reveal>
