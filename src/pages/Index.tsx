@@ -499,7 +499,7 @@ export default function Index() {
       <section id="how-it-works" className="py-24" style={{ background: T.bgWarm, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
         <div className="max-w-5xl mx-auto px-6 md:px-10">
           <Reveal className="text-center mb-16 max-w-xl mx-auto">
-            <p className="text-[11px] font-extrabold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>QUICK START</p>
+            <p className="text-[11px] font-semibold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>QUICK START</p>
             <h2 style={{ ...displayFont, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1, color: T.dark }} className="mb-4">
               Ready in under a minute.
             </h2>
