@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Search, Upload, Moon, Sun, LayoutGrid, List, ArrowUpDown } from "lucide-react";
+import { Search, Upload, Moon, Sun, LayoutGrid, List, ArrowUpDown, Crown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { usePlan } from "@/hooks/useSubscription";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useMedia, useStarredMedia, useMoveMedia } from "@/hooks/useMedia";

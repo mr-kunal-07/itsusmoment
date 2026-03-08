@@ -1,9 +1,9 @@
-import { Home, CalendarHeart, MessageCircleHeart, Upload, Crown, UserCircle } from "lucide-react";
+import { Home, CalendarHeart, MessageCircleHeart, Upload, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ViewType } from "@/components/AppSidebar";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate, useLocation } from "react-router-dom";
+import { usePlan } from "@/hooks/useSubscription";
 
 interface Props {
   selectedView: ViewType;
