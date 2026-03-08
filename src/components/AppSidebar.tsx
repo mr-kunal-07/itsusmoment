@@ -105,6 +105,7 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
   const specialItems = [
     { id: "timeline" as const, label: "Memories Timeline", icon: CalendarHeart, count: null },
     { id: "anniversaries" as const, label: "Anniversaries", icon: Trophy, count: null },
+    { id: "activity" as const, label: "Activity Feed", icon: Activity, count: null },
     { id: "chat" as const, label: "Chat with Partner", icon: MessageCircleHeart, count: null },
   ];
 
