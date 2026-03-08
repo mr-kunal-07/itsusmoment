@@ -31,7 +31,15 @@ export default function Auth() {
       </div>
     );
   }
-  if (user) return <Navigate to="/" replace />;
+  if (user) {
+    const redirect = sessionStorage.getItem("join_redirect");
+    if (redirect) {
+      sessionStorage.removeItem("join_redirect");
+      window.location.href = redirect;
+      return null;
+    }
+    return <Navigate to="/" replace />;
+  }
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
