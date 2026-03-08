@@ -249,7 +249,6 @@ function TimelineCard() {
 }
 
 const SHOWCASES = [
-  { tag: "SHARED MEMORIES", title: "Every photo. Every memory.\nIn one private place.", body: "Build a beautiful private album that grows with your relationship. Add love notes, star favourites, and relive every moment together.", bullets: ["Private folders & albums", "Love notes on every photo", "Star your all-time favourites", "Shared access, always"], card: <MemoriesCard /> },
   { tag: "PRIVATE CHAT", title: "Your own corner of the\ninternet. Yours only.", body: "A dedicated space for just the two of you. Voice messages, emoji reactions, reply threads — with the peace of total privacy.", bullets: ["Fully private — no third-party access", "Voice messages (Soulmate plan)", "Emoji reactions & reply threads", "Read receipts included"], card: <ChatCard /> },
   { tag: "LOVE TIMELINE", title: "Log every milestone.\nRelive every first.", body: "From your first date to your first anniversary and beyond — every milestone on a beautiful timeline, with smart reminders.", bullets: ["Log custom milestone types", "Smart anniversary reminders", "Attach photos to any milestone", "Chronological timeline view"], card: <TimelineCard /> }
 ];
