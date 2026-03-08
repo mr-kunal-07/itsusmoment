@@ -274,7 +274,12 @@ export function TravelMapView() {
                   <TravelMapCanvas
                     locations={locations}
                     onMapClick={handleMapClick}
-                    onPinClick={loc => { if (mode !== "heatmap") setSelectedLocation(loc); }}
+                    onPinClick={loc => {
+                      if (mode !== "heatmap") {
+                        setSelectedLocation(loc);
+                        setFocusLocation(loc);
+                      }
+                    }}
                     focusLocation={focusLocation}
                     showHeatmap={mode === "heatmap"}
                   />
