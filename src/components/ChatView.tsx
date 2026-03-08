@@ -103,8 +103,8 @@ function AudioBubble({
             style={{ background: "hsl(var(--wa-voice-thumb))" }}
           >
             {playing
-              ? <Pause className="h-3.5 w-3.5 text-[hsl(var(--wa-bg))]" />
-              : <Play className="h-3.5 w-3.5 text-[hsl(var(--wa-bg))] ml-0.5" />
+              ? <Pause className="h-3.5 w-3.5 text-white" />
+              : <Play className="h-3.5 w-3.5 text-white ml-0.5" />
             }
           </button>
 
@@ -112,7 +112,6 @@ function AudioBubble({
           <div className="flex items-center gap-[2px] flex-1 h-8">
             {Array.from({ length: BARS }).map((_, i) => {
               const filled = i / BARS < progress;
-              // Vary bar heights for realism
               const heights = [6,9,14,10,7,12,16,8,11,6,13,18,10,7,15,9,12,6,10,14,8,16,11,7,13,9,6,12,10,8];
               return (
                 <span
@@ -172,12 +171,12 @@ function SwipeableMessage({
   const onTouchMove = (e: React.TouchEvent) => {
     if (startXRef.current === null) return;
     const dx = e.touches[0].clientX - startXRef.current;
-    // Only allow rightward swipe, cap at 60px
     if (dx > 0) {
       setOffset(Math.min(dx, 60));
       if (dx > 50 && !triggered.current) {
         triggered.current = true;
         onSwipeReply();
+        if (navigator.vibrate) navigator.vibrate(20);
       }
     }
   };
@@ -213,6 +212,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   const [voiceMode, setVoiceMode] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const chatWrapRef = useRef<HTMLDivElement>(null);
 
   const coupleId = couple?.status === "active" ? couple.id : null;
   const partnerId = couple?.status === "active"
@@ -232,22 +232,26 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
     return () => document.removeEventListener("click", handler);
   }, [emojiPickerId]);
 
-  // Fix mobile keyboard pushing content off-screen using visualViewport
-  const chatRef = useRef<HTMLDivElement>(null);
+  // Fix mobile keyboard: use visualViewport to adjust container height
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const onResize = () => {
-      if (chatRef.current) {
-        const offsetFromBottom = window.innerHeight - vv.height - vv.offsetTop;
-        chatRef.current.style.paddingBottom = offsetFromBottom > 0 ? `${offsetFromBottom}px` : "0px";
-      }
+
+    const onViewportChange = () => {
+      if (!chatWrapRef.current) return;
+      // The visible height = vv.height; offset from top = vv.offsetTop
+      const visibleHeight = vv.height;
+      chatWrapRef.current.style.height = `${visibleHeight}px`;
+      // Scroll to bottom when keyboard opens
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     };
-    vv.addEventListener("resize", onResize);
-    vv.addEventListener("scroll", onResize);
+
+    vv.addEventListener("resize", onViewportChange);
+    vv.addEventListener("scroll", onViewportChange);
+
     return () => {
-      vv.removeEventListener("resize", onResize);
-      vv.removeEventListener("scroll", onResize);
+      vv.removeEventListener("resize", onViewportChange);
+      vv.removeEventListener("scroll", onViewportChange);
     };
   }, []);
 
@@ -257,6 +261,10 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
     setText("");
     const replyId = replyTo?.id ?? null;
     setReplyTo(null);
+    // Reset textarea height
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+    }
     await sendMessage.mutateAsync({ content: trimmed, replyToId: replyId, messageType: "text" });
   };
 
@@ -289,12 +297,12 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
 
   if (couple?.status !== "active") {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
+      <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8 bg-background">
         <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
           <Lock className="h-7 w-7 text-muted-foreground" />
         </div>
         <div>
-          <h2 className="text-xl font-bold font-heading">No Partner Connected</h2>
+          <h2 className="text-xl font-bold font-heading text-foreground">No Partner Connected</h2>
           <p className="text-sm text-muted-foreground mt-1">Connect with your partner to start chatting.</p>
         </div>
       </div>
@@ -309,20 +317,23 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
 
   return (
     <div
-      ref={chatRef}
-      className="flex flex-col overflow-hidden h-full"
-      style={{ background: "hsl(var(--wa-bg))" }}
+      ref={chatWrapRef}
+      className="flex flex-col overflow-hidden"
+      style={{
+        height: "100%",
+        background: "hsl(var(--wa-bg))",
+      }}
     >
       {/* ── WhatsApp-style Header ── */}
       <div
         className="flex items-center gap-2 px-3 py-3 shrink-0 z-10"
-        style={{ background: "hsl(var(--wa-header))" }}
+        style={{ background: "hsl(var(--wa-header))", borderBottom: "1px solid hsl(var(--border))" }}
       >
         {/* Back button — mobile only */}
         {onBack && (
           <button
             onClick={onBack}
-            className="sm:hidden p-1.5 rounded-full hover:bg-black/10 transition-colors mr-1 shrink-0"
+            className="sm:hidden p-1.5 rounded-full transition-colors mr-1 shrink-0"
             style={{ color: "hsl(var(--wa-text))" }}
           >
             <ArrowLeft className="h-5 w-5" />
@@ -363,8 +374,8 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
           {[Video, Phone, MoreVertical].map((Icon, i) => (
             <button
               key={i}
-              className="p-2 rounded-full hover:bg-black/10 transition-colors"
-              style={{ color: "hsl(var(--wa-text) / 0.7)" }}
+              className="p-2 rounded-full transition-colors"
+              style={{ color: "hsl(var(--wa-text) / 0.6)" }}
             >
               <Icon className="h-5 w-5" />
             </button>
@@ -390,7 +401,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
               🔒 Messages are private between you two
             </div>
             <div className="mt-6 text-4xl">💌</div>
-            <p className="text-sm font-medium" style={{ color: "hsl(var(--wa-text) / 0.8)" }}>Send your first message</p>
+            <p className="text-sm font-medium" style={{ color: "hsl(var(--wa-text))" }}>Send your first message</p>
           </div>
         ) : (
           <div className="space-y-1 pb-2">
@@ -439,9 +450,9 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                             {!nextSame && (
                               <Avatar className="h-7 w-7">
                                 <AvatarImage src={partnerProfile?.avatar_url ?? undefined} />
-                <AvatarFallback className="text-[10px]" style={{ background: "hsl(var(--wa-avatar))", color: "hsl(var(--wa-bg))" }}>
-                                   {partnerInitials}
-                                 </AvatarFallback>
+                                <AvatarFallback className="text-[10px]" style={{ background: "hsl(var(--wa-avatar))", color: "hsl(var(--wa-bg))" }}>
+                                  {partnerInitials}
+                                </AvatarFallback>
                               </Avatar>
                             )}
                           </div>
@@ -453,7 +464,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                             <div
                               className="text-[11px] px-3 py-1.5 rounded-t-lg mb-0 w-full border-l-[3px] max-w-full"
                               style={{
-                                background: isMe ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.1)",
+                                background: "hsl(var(--wa-system-bubble))",
                                 borderColor: "hsl(var(--wa-online))",
                                 borderBottomLeftRadius: 0,
                                 borderBottomRightRadius: 0,
@@ -462,13 +473,13 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                               <span className="font-semibold block" style={{ color: "hsl(var(--wa-online))" }}>
                                 {repliedMsg.sender_id === user?.id ? "You" : partnerName}
                               </span>
-                              <span className="opacity-70 truncate block">
+                              <span className="truncate block" style={{ color: "hsl(var(--wa-text) / 0.7)" }}>
                                 {repliedMsg.content.slice(0, 60)}{repliedMsg.content.length > 60 ? "…" : ""}
                               </span>
                             </div>
                           )}
 
-                           {/* Bubble */}
+                          {/* Bubble */}
                           <div
                             className={cn(
                               "relative text-sm leading-relaxed break-words shadow-sm",
@@ -477,10 +488,11 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                             style={{
                               background: isMe ? "hsl(var(--wa-bubble-out))" : "hsl(var(--wa-bubble-in))",
                               color: "hsl(var(--wa-text))",
-                              borderRadius: isMe
-                                ? `12px 4px 12px 12px`
-                                : `4px 12px 12px 12px`,
-                              ...(prevSame && { borderRadius: "12px" }),
+                              borderRadius: prevSame
+                                ? "12px"
+                                : isMe
+                                ? "12px 4px 12px 12px"
+                                : "4px 12px 12px 12px",
                             }}
                           >
                             {isVoice && audioUrl ? (
@@ -495,11 +507,8 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                               />
                             ) : (
                               <>
-                                {/* Text + inline time spacer */}
                                 <span className="break-words">{msg.content}</span>
-                                {/* Invisible spacer so time doesn't overlap text */}
                                 <span className="inline-block w-16 h-3 ml-1" aria-hidden />
-                                {/* Time + ticks pinned bottom-right */}
                                 <span
                                   className="absolute bottom-1.5 right-2.5 flex items-center gap-0.5 text-[10px] select-none leading-none whitespace-nowrap"
                                   style={{ color: "hsl(var(--wa-meta))" }}
@@ -520,11 +529,9 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                                   <button
                                     key={emoji}
                                     onClick={() => handleReact(msg, emoji)}
-                                    className={cn(
-                                      "flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs border transition-colors backdrop-blur-sm",
-                                    )}
-                                  style={{
-                                      background: iMine ? "hsl(var(--wa-bubble-out) / 0.3)" : "hsl(var(--wa-system-bubble))",
+                                    className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs border transition-colors"
+                                    style={{
+                                      background: iMine ? "hsl(var(--wa-bubble-out) / 0.5)" : "hsl(var(--wa-system-bubble))",
                                       borderColor: iMine ? "hsl(var(--wa-online) / 0.5)" : "transparent",
                                       color: "hsl(var(--wa-text))",
                                     }}
@@ -548,7 +555,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                             <div className="relative">
                               <button
                                 onClick={e => { e.stopPropagation(); setEmojiPickerId(id => id === msg.id ? null : msg.id); }}
-                                className="p-1.5 rounded-full hover:bg-black/10 transition-colors text-sm"
+                                className="p-1.5 rounded-full transition-colors text-sm"
                                 style={{ color: "hsl(var(--wa-text) / 0.6)" }}
                               >
                                 <Smile className="h-4 w-4" />
@@ -576,7 +583,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                             </div>
                             <button
                               onClick={() => { setReplyTo(msg); inputRef.current?.focus(); }}
-                              className="p-1.5 rounded-full hover:bg-black/10 transition-colors"
+                              className="p-1.5 rounded-full transition-colors"
                               style={{ color: "hsl(var(--wa-text) / 0.6)" }}
                             >
                               <Reply className="h-4 w-4" />
@@ -584,8 +591,8 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                             {isMe && (
                               <button
                                 onClick={() => deleteMessage.mutateAsync(msg.id)}
-                                className="p-1.5 rounded-full hover:text-red-500 hover:bg-black/10 transition-colors"
-                                style={{ color: "hsl(var(--wa-text) / 0.6)" }}
+                                className="p-1.5 rounded-full transition-colors"
+                                style={{ color: "hsl(var(--wa-text) / 0.5)" }}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
@@ -645,14 +652,14 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
             <p className="text-xs font-semibold" style={{ color: "hsl(var(--wa-online))" }}>
               {replyTo.sender_id === user?.id ? "You" : partnerName}
             </p>
-            <p className="text-xs opacity-60 truncate" style={{ color: "hsl(var(--wa-text))" }}>
+            <p className="text-xs truncate" style={{ color: "hsl(var(--wa-text) / 0.7)" }}>
               {replyTo.content.slice(0, 80)}{replyTo.content.length > 80 ? "…" : ""}
             </p>
           </div>
           <button
             onClick={() => setReplyTo(null)}
-            className="hover:opacity-100 opacity-50 transition-opacity shrink-0"
-            style={{ color: "hsl(var(--wa-text))" }}
+            className="transition-opacity shrink-0"
+            style={{ color: "hsl(var(--wa-text) / 0.5)" }}
           >
             <X className="h-4 w-4" />
           </button>
@@ -661,7 +668,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
 
       {/* ── Input Bar ── */}
       <div
-        className="px-3 py-2.5 flex items-end gap-2 shrink-0"
+        className="px-3 py-2.5 flex items-end gap-2 shrink-0 border-t border-border"
         style={{ background: "hsl(var(--wa-bg))" }}
       >
         {voiceMode ? (
@@ -676,12 +683,12 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
           <>
             {/* Text area pill */}
             <div
-              className="flex items-end flex-1 gap-2 rounded-3xl px-4 py-2"
+              className="flex items-end flex-1 gap-2 rounded-3xl px-4 py-2 border border-border"
               style={{ background: "hsl(var(--wa-input-bg))" }}
             >
               <button
-                className="shrink-0 mb-0.5 hover:opacity-70 transition-opacity"
-                style={{ color: "hsl(var(--wa-text) / 0.5)" }}
+                className="shrink-0 mb-0.5 transition-opacity"
+                style={{ color: "hsl(var(--wa-text) / 0.45)" }}
               >
                 <Smile className="h-5 w-5" />
               </button>
@@ -692,7 +699,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                 onKeyDown={handleKeyDown}
                 placeholder={replyTo ? "Write a reply…" : "Message…"}
                 rows={1}
-                className="flex-1 bg-transparent border-0 outline-none resize-none text-sm leading-relaxed py-0.5 max-h-28 overflow-y-auto"
+                className="flex-1 bg-transparent border-0 outline-none resize-none text-sm leading-relaxed py-0.5 max-h-28 overflow-y-auto placeholder:text-muted-foreground"
                 style={{
                   color: "hsl(var(--wa-text))",
                   minHeight: "24px",
@@ -700,8 +707,8 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                 autoComplete="off"
               />
               <button
-                className="shrink-0 mb-0.5 hover:opacity-70 transition-opacity"
-                style={{ color: "hsl(var(--wa-text) / 0.5)" }}
+                className="shrink-0 mb-0.5 transition-opacity"
+                style={{ color: "hsl(var(--wa-text) / 0.45)" }}
               >
                 <Paperclip className="h-5 w-5" />
               </button>
