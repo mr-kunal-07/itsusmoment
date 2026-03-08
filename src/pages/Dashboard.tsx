@@ -169,6 +169,7 @@ export default function Dashboard() {
     : selectedView === "billing" ? "Billing & Plan"
     : selectedView === "settings" ? "Settings"
     : selectedView === "love-story" ? "Love Story"
+    : selectedView === "travel-map" ? "Travel Map"
     : currentFolder?.name || "Folder";
 
   const avatarUrl = profile?.avatar_url ?? null;
