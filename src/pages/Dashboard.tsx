@@ -21,6 +21,7 @@ import { Slideshow } from "@/components/Slideshow";
 import { PartnerBanner } from "@/components/PartnerBanner";
 import { ChatView } from "@/components/ChatView";
 import { ActivityFeed } from "@/components/ActivityFeed";
+import { BillingView } from "@/components/BillingView";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,7 @@ function loadPref<T>(key: string, fallback: T): T {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
 }
 
-const SPECIAL_VIEWS = ["all", "unfiled", "starred", "recent", "timeline", "on-this-day", "anniversaries", "chat", "activity"];
+const SPECIAL_VIEWS = ["all", "unfiled", "starred", "recent", "timeline", "on-this-day", "anniversaries", "chat", "activity", "billing"];
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -158,6 +159,7 @@ export default function Dashboard() {
     : selectedView === "anniversaries" ? "Anniversaries & Milestones"
     : selectedView === "chat" ? "Chat with Partner 💬"
     : selectedView === "activity" ? "Activity Feed"
+    : selectedView === "billing" ? "Billing & Plan"
     : currentFolder?.name || "Folder";
 
   const avatarUrl = profile?.avatar_url ?? null;
@@ -190,7 +192,7 @@ export default function Dashboard() {
 
   const sortLabel = { created_at: "Date", title: "Name", file_size: "Size" }[sortKey] + (sortDir === "asc" ? " ↑" : " ↓");
 
-  const isGridView = selectedView !== "timeline" && selectedView !== "anniversaries" && selectedView !== "chat" && selectedView !== "activity";
+  const isGridView = selectedView !== "timeline" && selectedView !== "anniversaries" && selectedView !== "chat" && selectedView !== "activity" && selectedView !== "billing";
 
   return (
     <SidebarProvider>
@@ -347,6 +349,8 @@ export default function Dashboard() {
               <ChatView />
             ) : selectedView === "activity" ? (
               <ActivityFeed />
+            ) : selectedView === "billing" ? (
+              <BillingView />
             ) : (
               <MediaGrid
                 media={media}
