@@ -1,29 +1,98 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { toPng } from "html-to-image";
-import { Download, Instagram, Share2, Palette, Loader2, Heart, Sparkles } from "lucide-react";
+import {
+  Download, Share2, Palette, Loader2, Heart, Sparkles,
+  Settings2, Eye, Save, Check, ChevronDown, ChevronUp,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useProfile, useAllProfiles } from "@/hooks/useProfile";
 import { useMyCouple } from "@/hooks/useCouple";
 import { useAuth } from "@/hooks/useAuth";
 import { useMilestones } from "@/hooks/useMilestones";
 import { useMedia } from "@/hooks/useMedia";
 import { useMessages } from "@/hooks/useMessages";
-import { LoveStoryCard, THEMES, CardTheme } from "@/components/LoveStoryCard";
+import {
+  LoveStoryCard,
+  TemplateId, Customization, DEFAULT_CUSTOMIZATION,
+  PALETTES, TEMPLATE_META,
+} from "@/components/LoveStoryCard";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-const THEME_COLORS: Record<CardTheme, string> = {
-  rose: "bg-gradient-to-br from-rose-300 to-pink-400",
-  violet: "bg-gradient-to-br from-violet-300 to-purple-400",
-  peach: "bg-gradient-to-br from-orange-300 to-amber-400",
-  midnight: "bg-gradient-to-br from-slate-700 to-purple-900",
-  sage: "bg-gradient-to-br from-teal-300 to-emerald-400",
-};
+const STORAGE_PREFIX = "ourvault_love_story_";
+const ALL_TEMPLATES: TemplateId[] = ["eternal", "polaroid", "bold", "cinema", "bloom"];
 
+function loadCustomization(templateId: TemplateId): Customization {
+  try {
+    const raw = localStorage.getItem(STORAGE_PREFIX + templateId);
+    if (raw) return { ...DEFAULT_CUSTOMIZATION, ...JSON.parse(raw) };
+  } catch {}
+  return { ...DEFAULT_CUSTOMIZATION, paletteId: PALETTES[templateId][0].id };
+}
+
+function saveCustomization(templateId: TemplateId, c: Customization) {
+  localStorage.setItem(STORAGE_PREFIX + templateId, JSON.stringify(c));
+}
+
+// ── Template Thumbnail ───────────────────────────────────────────────────────
+function TemplateThumbnail({ templateId, isActive, onClick }: { templateId: TemplateId; isActive: boolean; onClick: () => void }) {
+  const meta = TEMPLATE_META[templateId];
+  const palette = PALETTES[templateId][0];
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "relative flex flex-col items-center gap-2 p-2 rounded-2xl transition-all border-2 group",
+        isActive
+          ? "border-primary shadow-lg scale-[1.02]"
+          : "border-transparent hover:border-border hover:bg-muted/30"
+      )}
+    >
+      {/* Mini card preview */}
+      <div
+        className="w-full rounded-xl overflow-hidden relative"
+        style={{ height: 100, background: palette.bg }}
+      >
+        {/* Mini hearts */}
+        {[{ top: "15%", left: "10%", sz: 8 }, { top: "30%", right: "8%", sz: 10 }].map((h, i) => (
+          <div key={i} style={{ position: "absolute", top: h.top, left: "left" in h ? h.left : "auto", right: "right" in h ? (h as any).right : "auto", opacity: 0.4 }}>
+            <Heart fill={palette.accent} color="transparent" style={{ width: h.sz, height: h.sz }} />
+          </div>
+        ))}
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
+          <span style={{ fontSize: 22 }}>{meta.emoji}</span>
+          <div style={{ width: 40, height: 3, borderRadius: 2, background: palette.accent, opacity: 0.6 }} />
+          <div style={{ width: 28, height: 2, borderRadius: 2, background: palette.accent, opacity: 0.3 }} />
+          <div style={{ width: 32, height: 2, borderRadius: 2, background: palette.accent, opacity: 0.25 }} />
+        </div>
+        {isActive && (
+          <div className="absolute inset-0 ring-2 ring-primary ring-inset rounded-xl" />
+        )}
+      </div>
+
+      {/* Label */}
+      <div className="text-center">
+        <p className={cn("text-xs font-semibold leading-none", isActive ? "text-primary" : "text-foreground")}>
+          {meta.label}
+        </p>
+        <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight hidden sm:block">{meta.description.split(",")[0]}</p>
+      </div>
+
+      {isActive && (
+        <div className="absolute top-1.5 right-1.5 h-4 w-4 bg-primary rounded-full flex items-center justify-center">
+          <Check className="h-2.5 w-2.5 text-primary-foreground" />
+        </div>
+      )}
+    </button>
+  );
+}
+
+// ── Main View ────────────────────────────────────────────────────────────────
 export function LoveStoryView() {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [theme, setTheme] = useState<CardTheme>("rose");
-  const [exporting, setExporting] = useState(false);
   const { toast } = useToast();
 
   const { user } = useAuth();
@@ -34,195 +103,276 @@ export function LoveStoryView() {
   const { data: media = [] } = useMedia();
   const { data: messages = [] } = useMessages();
 
+  const [activeTemplate, setActiveTemplate] = useState<TemplateId>("eternal");
+  const [customizations, setCustomizations] = useState<Record<TemplateId, Customization>>(() => ({
+    eternal:  loadCustomization("eternal"),
+    polaroid: loadCustomization("polaroid"),
+    bold:     loadCustomization("bold"),
+    cinema:   loadCustomization("cinema"),
+    bloom:    loadCustomization("bloom"),
+  }));
+  const [saved, setSaved] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [showCustomize, setShowCustomize] = useState(true);
+
   const partnerId = couple?.status === "active"
-    ? (couple.user1_id === user?.id ? couple.user2_id : couple.user1_id)
-    : null;
+    ? (couple.user1_id === user?.id ? couple.user2_id : couple.user1_id) : null;
   const partnerProfile = partnerId ? profiles.find(p => p.user_id === partnerId) ?? null : null;
 
-  const tripCount = milestones.length;
-  const photoCount = media.length;
-  const messageCount = messages.length;
-  const coupleStartDate = couple?.created_at ?? null;
+  const custom = customizations[activeTemplate];
 
-  const exportCard = useCallback(async (format: "story" | "post" | "png") => {
+  const setCustom = (patch: Partial<Customization>) => {
+    setCustomizations(prev => ({
+      ...prev,
+      [activeTemplate]: { ...prev[activeTemplate], ...patch },
+    }));
+    setSaved(false);
+  };
+
+  const handleSave = () => {
+    saveCustomization(activeTemplate, custom);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+    toast({ title: "✅ Saved!", description: "Your customization has been saved." });
+  };
+
+  const handleSelectTemplate = (t: TemplateId) => {
+    setActiveTemplate(t);
+    setSaved(false);
+  };
+
+  const exportCard = useCallback(async (mode: "png" | "story" | "post") => {
     if (!cardRef.current) return;
     setExporting(true);
     try {
-      // For story (9:16) vs post (1:1), we adjust the scale
-      const node = cardRef.current;
-
-      const dataUrl = await toPng(node, {
+      const dataUrl = await toPng(cardRef.current, {
         cacheBust: true,
         pixelRatio: 3,
-        backgroundColor: "transparent",
         style: { borderRadius: "28px" },
       });
 
-      if (format === "png") {
+      if (mode === "png") {
         const link = document.createElement("a");
-        link.download = `ourvault-love-story.png`;
+        link.download = `ourvault-love-story-${activeTemplate}.png`;
         link.href = dataUrl;
         link.click();
-        toast({ title: "💾 Downloaded!", description: "Your Love Story card is saved." });
+        toast({ title: "💾 Downloaded!", description: "High-res PNG saved." });
         return;
       }
 
-      // For Instagram: open native share sheet or copy image
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], "love-story.png", { type: "image/png" });
 
       if (navigator.share && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: "Our Love Story",
-          text: "Check out our Love Story on OurVault! 💕",
-        });
-        toast({ title: "Shared!", description: "Opening share sheet…" });
+        await navigator.share({ files: [file], title: "Our Love Story ❤️", text: "Check out our Love Story on OurVault 💕" });
+        toast({ title: "Shared!" });
       } else {
-        // Fallback: download and tell user to share
         const link = document.createElement("a");
-        link.download = format === "story" ? "love-story-story.png" : "love-story-post.png";
+        link.download = mode === "story" ? "love-story-story.png" : "love-story-post.png";
         link.href = dataUrl;
         link.click();
         toast({
           title: "Downloaded for Instagram",
-          description: format === "story"
-            ? "Open Instagram, tap + → Story, and select this image."
-            : "Open Instagram, tap + → Post, and select this image.",
+          description: mode === "story"
+            ? "Open Instagram → Story → select this image."
+            : "Open Instagram → Post → select this image.",
         });
       }
     } catch {
-      toast({ title: "Export failed", description: "Please try again.", variant: "destructive" });
+      toast({ title: "Export failed", variant: "destructive" });
     } finally {
       setExporting(false);
     }
-  }, [toast]);
+  }, [activeTemplate, toast]);
+
+  const palettes = PALETTES[activeTemplate];
+  const myName = myProfile?.display_name ?? "You";
+  const partnerName = partnerProfile?.display_name ?? "Partner";
+  const defaultTitle = `${myName} ❤️ ${partnerName}`;
 
   return (
     <div className="min-h-full bg-background">
-      {/* Page header */}
-      <div className="px-4 pt-2 pb-6 max-w-2xl mx-auto">
+      {/* Header */}
+      <div className="px-4 sm:px-6 pt-2 pb-5 max-w-6xl mx-auto">
         <div className="flex items-center gap-2 mb-1">
           <Sparkles className="h-5 w-5 text-primary" />
-          <h1 className="text-2xl font-bold font-heading tracking-tight text-foreground">Love Story</h1>
+          <h1 className="text-2xl font-bold font-heading tracking-tight text-foreground">Love Story Card</h1>
         </div>
-        <p className="text-sm text-muted-foreground">
-          A shareable card that captures your journey together. Export for Instagram Stories or Posts.
-        </p>
+        <p className="text-sm text-muted-foreground">Choose a template, customize it, and export for Instagram.</p>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 pb-24 sm:pb-10 flex flex-col lg:flex-row gap-8 items-start">
-
-        {/* ── Card Preview ─────────────────────────────────────────────── */}
-        <div className="flex-1 flex flex-col items-center">
-          <div
-            className="relative animate-scale-in"
-            style={{ filter: "drop-shadow(0 24px 48px rgba(0,0,0,0.15))" }}
-          >
-            <LoveStoryCard
-              ref={cardRef}
-              theme={theme}
-              myProfile={myProfile ?? null}
-              partnerProfile={partnerProfile}
-              coupleStartDate={coupleStartDate}
-              milestones={milestones}
-              photoCount={photoCount}
-              messageCount={messageCount}
-              tripCount={tripCount}
-            />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-28 sm:pb-10">
+        {/* ── Template Gallery ─────────────────────────────────────────── */}
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
+            <Eye className="h-3.5 w-3.5" /> Choose Template
+          </p>
+          <div className="grid grid-cols-5 gap-2 sm:gap-3">
+            {ALL_TEMPLATES.map(t => (
+              <TemplateThumbnail
+                key={t}
+                templateId={t}
+                isActive={activeTemplate === t}
+                onClick={() => handleSelectTemplate(t)}
+              />
+            ))}
           </div>
         </div>
 
-        {/* ── Controls ─────────────────────────────────────────────────── */}
-        <div className="w-full lg:w-64 flex flex-col gap-5 shrink-0">
+        {/* ── Main 2-column layout ──────────────────────────────────────── */}
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
 
-          {/* Theme picker */}
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <Palette className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-semibold text-foreground">Theme</span>
+          {/* Card Preview */}
+          <div className="flex-1 flex flex-col items-center gap-4 min-w-0">
+            <div
+              className="animate-scale-in"
+              style={{ filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.15))", maxWidth: "100%", overflowX: "auto" }}
+            >
+              <LoveStoryCard
+                ref={cardRef}
+                templateId={activeTemplate}
+                customization={custom}
+                myProfile={myProfile ?? null}
+                partnerProfile={partnerProfile}
+                coupleStartDate={couple?.created_at ?? null}
+                milestones={milestones}
+                photoCount={media.length}
+                messageCount={messages.length}
+              />
             </div>
-            <div className="grid grid-cols-5 gap-2">
-              {(Object.keys(THEMES) as CardTheme[]).map(t => (
-                <button
-                  key={t}
-                  onClick={() => setTheme(t)}
-                  title={THEMES[t].label}
-                  className={cn(
-                    "h-9 w-full rounded-xl transition-all",
-                    THEME_COLORS[t],
-                    theme === t
-                      ? "ring-2 ring-primary ring-offset-2 scale-105 shadow-md"
-                      : "opacity-70 hover:opacity-100 hover:scale-105"
-                  )}
+
+            {/* Export buttons below card */}
+            <div className="flex flex-wrap gap-2 justify-center">
+              <Button onClick={() => exportCard("png")} disabled={exporting} size="sm" className="gap-2">
+                {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                Download PNG
+              </Button>
+              <Button onClick={() => exportCard("story")} disabled={exporting} variant="outline" size="sm" className="gap-2">
+                {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
+                Instagram Story
+              </Button>
+              <Button onClick={() => exportCard("post")} disabled={exporting} variant="outline" size="sm" className="gap-2">
+                {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
+                Instagram Post
+              </Button>
+            </div>
+          </div>
+
+          {/* ── Customization Panel ──────────────────────────────────── */}
+          <div className="w-full lg:w-72 shrink-0 space-y-4">
+
+            {/* Collapse toggle on mobile */}
+            <button
+              onClick={() => setShowCustomize(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-border bg-card shadow-sm text-sm font-semibold text-foreground lg:hidden"
+            >
+              <span className="flex items-center gap-2"><Settings2 className="h-4 w-4 text-muted-foreground" /> Customize</span>
+              {showCustomize ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+            </button>
+
+            <div className={cn("space-y-4", !showCustomize && "hidden lg:block")}>
+
+              {/* Color Palette */}
+              <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <Palette className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-semibold text-foreground">Color Palette</span>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {palettes.map(palette => (
+                    <button
+                      key={palette.id}
+                      onClick={() => setCustom({ paletteId: palette.id })}
+                      title={palette.label}
+                      className={cn(
+                        "h-9 w-9 rounded-xl transition-all border-2",
+                        (custom.paletteId || palettes[0].id) === palette.id
+                          ? "border-primary scale-110 shadow-md"
+                          : "border-transparent hover:scale-105 hover:border-border"
+                      )}
+                      style={{ background: palette.swatch }}
+                    />
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {palettes.find(x => x.id === (custom.paletteId || palettes[0].id))?.label}
+                </p>
+              </div>
+
+              {/* Text */}
+              <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-3">
+                <span className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Heart className="h-4 w-4 text-primary fill-primary" /> Text
+                </span>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Couple Title</Label>
+                  <Input
+                    value={custom.title}
+                    onChange={e => setCustom({ title: e.target.value })}
+                    placeholder={defaultTitle}
+                    className="h-9 text-sm"
+                  />
+                  <p className="text-[10px] text-muted-foreground">Leave blank to use partner names</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Tagline / Quote</Label>
+                  <Input
+                    value={custom.tagline}
+                    onChange={e => setCustom({ tagline: e.target.value })}
+                    placeholder="Forever and always ❤️"
+                    className="h-9 text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Date */}
+              <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-2">
+                <span className="text-sm font-semibold text-foreground">Together Since</span>
+                <input
+                  type="date"
+                  value={custom.startDate || couple?.created_at?.slice(0, 10) || ""}
+                  onChange={e => setCustom({ startDate: e.target.value })}
+                  className="w-full h-9 rounded-lg border border-border bg-background text-foreground text-sm px-3 focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
-              ))}
+                <p className="text-[10px] text-muted-foreground">Override the "Together since" date shown on the card</p>
+              </div>
+
+              {/* Sections */}
+              <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-3">
+                <span className="text-sm font-semibold text-foreground">Sections</span>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-foreground">Stats</p>
+                    <p className="text-xs text-muted-foreground">Days, photos, messages</p>
+                  </div>
+                  <Switch checked={custom.showStats} onCheckedChange={v => setCustom({ showStats: v })} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-foreground">Timeline</p>
+                    <p className="text-xs text-muted-foreground">Milestones & anniversaries</p>
+                  </div>
+                  <Switch checked={custom.showTimeline} onCheckedChange={v => setCustom({ showTimeline: v })} />
+                </div>
+              </div>
+
+              {/* Save */}
+              <Button
+                onClick={handleSave}
+                className="w-full gap-2"
+                variant={saved ? "secondary" : "default"}
+              >
+                {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+                {saved ? "Saved!" : "Save Customization"}
+              </Button>
+
+              <p className="text-[10px] text-muted-foreground text-center">
+                Each template saves separately. Your customizations persist across sessions.
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground mt-2 text-center">{THEMES[theme].label}</p>
           </div>
-
-          {/* Stats summary */}
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-2">
-            <span className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Heart className="h-4 w-4 text-primary fill-primary" /> Your Stats
-            </span>
-            <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Milestones</span>
-                <span className="font-medium text-foreground">{milestones.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Photos & Videos</span>
-                <span className="font-medium text-foreground">{photoCount}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Messages</span>
-                <span className="font-medium text-foreground">{messageCount}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Export buttons */}
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm space-y-2">
-            <span className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Share2 className="h-4 w-4 text-muted-foreground" /> Export
-            </span>
-
-            <Button
-              onClick={() => exportCard("png")}
-              disabled={exporting}
-              className="w-full gap-2 h-10"
-              variant="default"
-            >
-              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              Download PNG
-            </Button>
-
-            <Button
-              onClick={() => exportCard("story")}
-              disabled={exporting}
-              className="w-full gap-2 h-10"
-              variant="outline"
-            >
-              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Instagram className="h-4 w-4" />}
-              Instagram Story
-            </Button>
-
-            <Button
-              onClick={() => exportCard("post")}
-              disabled={exporting}
-              className="w-full gap-2 h-10"
-              variant="outline"
-            >
-              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Instagram className="h-4 w-4" />}
-              Instagram Post
-            </Button>
-
-            <p className="text-[10px] text-muted-foreground text-center leading-relaxed pt-1">
-              On mobile, tapping Instagram buttons opens the native share sheet.
-            </p>
-          </div>
-
         </div>
       </div>
     </div>
