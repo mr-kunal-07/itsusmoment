@@ -38,15 +38,15 @@ function useInView(threshold = 0.07) {
   return { ref, vis };
 }
 
-function Reveal({ children, delay = 0, className = "" }: {
-  children: React.ReactNode; delay?: number; className?: string;
+function Reveal({ children, delay = 0, className = "", style }: {
+  children: React.ReactNode; delay?: number; className?: string; style?: React.CSSProperties;
 }) {
   const { ref, vis } = useInView();
   return (
     <div
       ref={ref}
       className={`transition-all duration-700 ease-out ${vis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"} ${className}`}
-      style={{ transitionDelay: `${delay}ms` }}
+      style={{ transitionDelay: `${delay}ms`, ...style }}
     >
       {children}
     </div>
