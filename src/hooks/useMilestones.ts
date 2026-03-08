@@ -1,0 +1,68 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+
+export interface Milestone {
+  id: string;
+  title: string;
+  date: string;
+  description: string | null;
+  type: "anniversary" | "milestone";
+  media_id: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export function useMilestones() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["milestones"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("milestones")
+        .select("*")
+        .order("date", { ascending: true });
+      if (error) throw error;
+      return data as Milestone[];
+    },
+    enabled: !!user,
+  });
+}
+
+export function useAddMilestone() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (values: { title: string; date: string; description?: string; type: "anniversary" | "milestone"; media_id?: string | null }) => {
+      const { error } = await supabase.from("milestones").insert({
+        ...values,
+        created_by: user!.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["milestones"] }),
+  });
+}
+
+export function useUpdateMilestone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...values }: Partial<Milestone> & { id: string }) => {
+      const { error } = await supabase.from("milestones").update(values).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["milestones"] }),
+  });
+}
+
+export function useDeleteMilestone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("milestones").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["milestones"] }),
+  });
+}
