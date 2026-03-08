@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Heart, Image, MessageCircle, Mic, Star, Lock, Zap, Calendar,
-  ArrowRight, Check, ChevronDown, Sparkles, Camera, Gift,
-  Shield, Users, Infinity, Play, Quote, Vault, KeyRound
+  Heart, GalleryVerticalEnd, MessagesSquare, AudioWaveform, CalendarHeart,
+  ArrowRight, Check, ChevronDown, Sparkles, ImagePlay, Gift,
+  ShieldCheck, UserPlus, Infinity, PlayCircle, Quote, LockKeyhole,
+  HeartHandshake, Clapperboard, Zap, Star, Film, Gem
 } from "lucide-react";
 import heroBg from "@/assets/hero-couple.jpg";
 
@@ -151,18 +152,18 @@ const MEMORY_CARDS = [
 ];
 
 const FEATURES: { icon: React.ElementType; title: string; desc: string; tag: string }[] = [
-  { icon: Camera, title: "Shared Memory Vault", desc: "Upload photos & videos together — private, beautiful, forever yours. No algorithm, no ads, no noise.", tag: "Core" },
-  { icon: MessageCircle, title: "Private Chat", desc: "A dedicated space just for the two of you. React with emojis, reply to messages, feel every word.", tag: "Connect" },
-  { icon: Mic, title: "Voice Messages", desc: "Send your voice, your laugh, your 'I miss you' — audio messages that feel like a warm hug.", tag: "Soulmate" },
-  { icon: Calendar, title: "Milestones & Anniversaries", desc: "Never forget a special date. Your timeline of firsts — first kiss, first trip, first everything.", tag: "Core" },
-  { icon: Heart, title: "Love Notes", desc: "Attach a handwritten note to any photo. Words that stay forever, tied to your best memories.", tag: "Connect" },
-  { icon: Star, title: "Slideshow & Highlights", desc: "Relive your journey with a cinematic slideshow of your starred memories. Pure magic.", tag: "Core" },
+  { icon: GalleryVerticalEnd, title: "Shared Memory Vault", desc: "Upload photos & videos together — private, beautiful, forever yours. No algorithm, no ads, no noise.", tag: "Core" },
+  { icon: MessagesSquare, title: "Private Chat", desc: "A dedicated space just for the two of you. React with emojis, reply to messages, feel every word.", tag: "Connect" },
+  { icon: AudioWaveform, title: "Voice Messages", desc: "Send your voice, your laugh, your 'I miss you' — audio messages that feel like a warm hug.", tag: "Soulmate" },
+  { icon: CalendarHeart, title: "Milestones & Anniversaries", desc: "Never forget a special date. Your timeline of firsts — first kiss, first trip, first everything.", tag: "Core" },
+  { icon: HeartHandshake, title: "Love Notes", desc: "Attach a handwritten note to any photo. Words that stay forever, tied to your best memories.", tag: "Connect" },
+  { icon: Clapperboard, title: "Slideshow & Highlights", desc: "Relive your journey with a cinematic slideshow of your starred memories. Pure magic.", tag: "Core" },
 ];
 
 const STEPS: { step: string; icon: React.ElementType; title: string; desc: string }[] = [
-  { step: "01", icon: Users, title: "Create your account", desc: "Sign up free — no credit card required. Takes under a minute." },
-  { step: "02", icon: Heart, title: "Invite your partner", desc: "Share a unique link. They join, you're linked — your private world is live." },
-  { step: "03", icon: Image, title: "Start building memories", desc: "Upload photos, chat, add milestones. Your story, finally in one place." },
+  { step: "01", icon: UserPlus, title: "Create your account", desc: "Sign up free — no credit card required. Takes under a minute." },
+  { step: "02", icon: HeartHandshake, title: "Invite your partner", desc: "Share a unique link. They join, you're linked — your private world is live." },
+  { step: "03", icon: ImagePlay, title: "Start building memories", desc: "Upload photos, chat, add milestones. Your story, finally in one place." },
 ];
 
 const TESTIMONIALS = [
@@ -247,7 +248,7 @@ export default function Index() {
         <div className="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-glow">
-              <Vault className="w-4 h-4 text-primary-foreground" strokeWidth={2} />
+              <LockKeyhole className="w-4 h-4 text-primary-foreground" strokeWidth={2} />
             </div>
             <span className="font-heading font-semibold text-lg text-foreground">OurVault</span>
           </div>
@@ -320,7 +321,7 @@ export default function Index() {
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
             <a href="#features" className="flex items-center gap-2.5 border border-border bg-card/40 backdrop-blur-sm text-foreground px-7 py-4 rounded-xl font-medium text-base hover:bg-accent transition-colors">
-              <Play className="w-4 h-4 fill-foreground" />
+              <PlayCircle className="w-4 h-4" />
               See how it works
             </a>
           </div>
@@ -405,7 +406,7 @@ export default function Index() {
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
               <div className="inline-flex items-center gap-2 bg-card border border-border px-3 py-1.5 rounded-full text-xs text-muted-foreground mb-6">
-                <Lock className="w-3 h-3 text-primary" /> 100% private
+                <LockKeyhole className="w-3 h-3 text-primary" /> 100% private
               </div>
               <h2 className="font-heading text-4xl md:text-5xl font-bold mb-6 leading-tight">
                 A chat room<br /><span className="gradient-text">nobody else sees.</span>
@@ -485,7 +486,7 @@ export default function Index() {
               {/* Text */}
               <div className="order-1 lg:order-2">
                 <div className="inline-flex items-center gap-2 bg-card border border-border px-3 py-1.5 rounded-full text-xs text-muted-foreground mb-6">
-                  <Image className="w-3 h-3 text-primary" /> Memory Vault
+                  <GalleryVerticalEnd className="w-3 h-3 text-primary" /> Memory Vault
                 </div>
                 <h2 className="font-heading text-4xl md:text-5xl font-bold mb-6 leading-tight">
                   Every photo tells<br /><span className="gradient-text">your story.</span>
@@ -495,9 +496,9 @@ export default function Index() {
                 </p>
                 <div className="grid grid-cols-2 gap-4">
                   {[
-                    { icon: Shield, title: "100% Private", sub: "Only you two can see" },
+                    { icon: ShieldCheck, title: "100% Private", sub: "Only you two can see" },
                     { icon: Gift, title: "Love Notes", sub: "Attach words to memories" },
-                    { icon: Star, title: "Starred Albums", sub: "Your best moments" },
+                    { icon: Film, title: "Starred Albums", sub: "Your best moments" },
                     { icon: Infinity, title: "Unlimited*", sub: "On Soulmate plan" },
                   ].map((item, i) => {
                     const Icon = item.icon;
@@ -577,7 +578,7 @@ export default function Index() {
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <p className="text-sm text-muted-foreground flex items-center gap-2">
-                <Shield className="w-4 h-4" />
+                <ShieldCheck className="w-4 h-4" />
                 No credit card · 100% private · Always free tier
               </p>
             </div>
@@ -590,7 +591,7 @@ export default function Index() {
         <div className="max-w-7xl mx-auto px-5 md:px-8 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-xl bg-primary flex items-center justify-center shadow-glow">
-              <Vault className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={2} />
+              <LockKeyhole className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={2} />
             </div>
             <span className="font-heading font-semibold text-foreground">OurVault</span>
           </div>
