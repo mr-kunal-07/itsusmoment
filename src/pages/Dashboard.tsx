@@ -200,7 +200,7 @@ export default function Dashboard() {
   const isChat = selectedView === "chat";
 
   return (
-    <SidebarProvider defaultOpen={typeof window !== "undefined" && window.innerWidth >= 768}>
+    <SidebarProvider defaultOpen={typeof window !== "undefined" && window.innerWidth >= 1024}>
       <div className="flex h-dvh w-full overflow-hidden bg-background">
         <AppSidebar
           selectedView={selectedView}
