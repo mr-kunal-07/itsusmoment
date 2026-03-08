@@ -323,11 +323,11 @@ export default function Dashboard() {
             onDragLeave={() => setDragOverMain(false)}
             onDrop={handleMainDrop}
           >
-            <div className={cn(selectedView === "chat" ? "mb-0" : "mb-4 sm:mb-6")}>
+            <div className={cn(selectedView === "chat" || selectedView === "billing" ? "mb-0" : "mb-4 sm:mb-6")}>
               {!isSpecialView && (
                 <FolderBreadcrumb folderId={selectedView} folders={folders} onNavigate={setSelectedView} />
               )}
-              {selectedView !== "chat" && (
+              {selectedView !== "chat" && selectedView !== "billing" && (
                 <h1 className="text-xl sm:text-2xl font-bold font-heading tracking-tight">{pageTitle}</h1>
               )}
 
