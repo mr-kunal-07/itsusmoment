@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Play, MoreVertical, Pencil, Trash2, Star, Image as ImageIcon, FolderInput, X, CheckSquare } from "lucide-react";
+import { Play, MoreVertical, Pencil, Trash2, Star, Image as ImageIcon, FolderInput, X, CheckSquare, FolderOpen } from "lucide-react";
 import { Media, getPublicUrl, useDeleteMedia, useUpdateMedia, useToggleStar, useBulkDeleteMedia, useBulkMoveMedia } from "@/hooks/useMedia";
 import { useFolders } from "@/hooks/useFolders";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,11 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [deleteItem, setDeleteItem] = useState<Media | null>(null);
+
+  // Single file move
+  const [moveItem, setMoveItem] = useState<Media | null>(null);
+  const [singleMoveFolderId, setSingleMoveFolderId] = useState<string>("__none__");
+  const moveMedia = useBulkMoveMedia();
 
   // Bulk selection
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -141,6 +146,18 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
       toast({ title: `Moved ${ids.length} file${ids.length !== 1 ? "s" : ""}` });
     } catch {
       toast({ title: "Error moving files", variant: "destructive" });
+    }
+  };
+
+  const handleSingleMove = async () => {
+    if (!moveItem) return;
+    const folderId = singleMoveFolderId === "__none__" ? null : singleMoveFolderId;
+    try {
+      await moveMedia.mutateAsync({ ids: [moveItem.id], folderId });
+      setMoveItem(null);
+      toast({ title: "Moved to folder" });
+    } catch {
+      toast({ title: "Error moving file", variant: "destructive" });
     }
   };
 
@@ -285,6 +302,9 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
                           <Star className={cn("h-4 w-4 mr-2", item.is_starred && "fill-yellow-400 text-yellow-400")} />
                           {item.is_starred ? "Unstar" : "Star"}
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setSingleMoveFolderId(item.folder_id ?? "__none__"); setMoveItem(item); }}>
+                          <FolderOpen className="h-4 w-4 mr-2" /> Move to folder
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setDeleteItem(item)} className="text-destructive">
                           <Trash2 className="h-4 w-4 mr-2" /> Delete
                         </DropdownMenuItem>
@@ -350,6 +370,9 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
                         <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
                           <Pencil className="h-4 w-4 mr-2" /> Edit
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={e => { e.stopPropagation(); setSingleMoveFolderId(item.folder_id ?? "__none__"); setMoveItem(item); }}>
+                          <FolderOpen className="h-4 w-4 mr-2" /> Move to folder
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteItem(item); }} className="text-destructive">
                           <Trash2 className="h-4 w-4 mr-2" /> Delete
                         </DropdownMenuItem>
@@ -408,6 +431,31 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Single Move Dialog */}
+      <Dialog open={!!moveItem} onOpenChange={open => !open && setMoveItem(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Move "{moveItem?.title}"</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label>Destination folder</Label>
+            <Select value={singleMoveFolderId} onValueChange={setSingleMoveFolderId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose folder…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">No folder (root)</SelectItem>
+                {folders.map(f => (
+                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMoveItem(null)}>Cancel</Button>
+            <Button onClick={handleSingleMove} disabled={moveMedia.isPending}>Move</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Bulk Move Dialog */}
       <Dialog open={bulkMoveOpen} onOpenChange={setBulkMoveOpen}>
