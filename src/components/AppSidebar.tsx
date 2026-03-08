@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Hash, Heart, CalendarHeart, Trophy, Link2, MessageCircleHeart, Crown, ShieldCheck, Settings, Activity } from "lucide-react";
+import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Hash, Heart, CalendarHeart, Trophy, Link2, MessageCircleHeart, Crown, ShieldCheck, Settings, Activity, Sparkles } from "lucide-react";
 import { usePlan, getStorageLimit, formatStorageLimit } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { DaysTogether } from "@/components/DaysTogether";
@@ -110,6 +110,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
     { id: "chat" as const, label: "Chat with Partner", icon: MessageCircleHeart, badge: unreadCount },
     { id: "timeline" as const, label: "Memories Timeline", icon: CalendarHeart },
     { id: "anniversaries" as const, label: "Anniversaries", icon: Trophy },
+    { id: "love-story" as const, label: "Love Story Card", icon: Sparkles },
     { id: "activity" as const, label: "Activity Feed", icon: Activity },
     { id: "recently-deleted" as const, label: "Recently Deleted", icon: Trash2, badge: 0 },
   ];

@@ -26,6 +26,7 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { BillingView } from "@/components/BillingView";
 import { SettingsView } from "@/components/SettingsView";
 import { RecentlyDeletedView } from "@/components/RecentlyDeletedView";
+import { LoveStoryView } from "@/components/LoveStoryView";
 
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
@@ -53,7 +54,7 @@ function loadPref<T>(key: string, fallback: T): T {
 const SPECIAL_VIEWS = [
   "all", "starred", "recently-deleted",
   "timeline", "on-this-day", "anniversaries",
-  "chat", "activity", "billing", "settings",
+  "chat", "activity", "billing", "settings", "love-story",
 ];
 
 function tabToView(tab?: string): ViewType {
@@ -166,6 +167,7 @@ export default function Dashboard() {
     : selectedView === "activity" ? "Activity Feed"
     : selectedView === "billing" ? "Billing & Plan"
     : selectedView === "settings" ? "Settings"
+    : selectedView === "love-story" ? "Love Story"
     : currentFolder?.name || "Folder";
 
   const avatarUrl = profile?.avatar_url ?? null;
@@ -196,7 +198,7 @@ export default function Dashboard() {
 
   const sortLabel = { created_at: "Date", title: "Name", file_size: "Size" }[sortKey] + (sortDir === "asc" ? " ↑" : " ↓");
 
-  const NON_GRID_VIEWS = ["timeline", "anniversaries", "chat", "activity", "billing", "settings", "recently-deleted"];
+  const NON_GRID_VIEWS = ["timeline", "anniversaries", "chat", "activity", "billing", "settings", "recently-deleted", "love-story"];
   const isGridView = !NON_GRID_VIEWS.includes(selectedView);
   const isChat = selectedView === "chat";
 
@@ -361,6 +363,8 @@ export default function Dashboard() {
                 }} />
               ) : selectedView === "anniversaries" ? (
                 <AnniversariesView />
+              ) : selectedView === "love-story" ? (
+                <LoveStoryView />
               ) : selectedView === "activity" ? (
                 <ActivityFeed />
               ) : selectedView === "billing" ? (
