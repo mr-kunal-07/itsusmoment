@@ -28,6 +28,26 @@ export default defineConfig(({ mode }) => ({
             handler: "CacheFirst",
             options: { cacheName: "google-fonts-cache", expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 } },
           },
+          {
+            // Cache Supabase storage media files (images, videos, audio)
+            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "supabase-media-cache",
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // Network-first for Supabase API calls (fresh data, fallback to cache)
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "supabase-api-cache",
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 5 },
+              networkTimeoutSeconds: 5,
+            },
+          },
         ],
       },
       manifest: {

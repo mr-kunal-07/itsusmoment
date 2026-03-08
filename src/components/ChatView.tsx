@@ -9,6 +9,8 @@ import { useMessages, Message } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyCouple } from "@/hooks/useCouple";
 import { useAllProfiles, useProfile } from "@/hooks/useProfile";
+import { useTyping } from "@/hooks/useTyping";
+import { VoiceRecorder, MicButton } from "@/components/VoiceRecorder";
 import { cn } from "@/lib/utils";
 
 const EMOJI_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
@@ -37,7 +39,7 @@ function groupReactions(reactions: Message["reactions"]) {
   return Object.entries(map);
 }
 
-function ReadReceipt({ msg, isMe, partnerId }: { msg: Message; isMe: boolean; partnerId: string | null }) {
+function ReadReceipt({ msg, isMe }: { msg: Message; isMe: boolean }) {
   if (!isMe) return null;
   if (msg.read_at) return (
     <span className="flex items-center gap-0.5 text-primary" title={`Seen ${format(new Date(msg.read_at), "h:mm a")}`}>
@@ -48,6 +50,15 @@ function ReadReceipt({ msg, isMe, partnerId }: { msg: Message; isMe: boolean; pa
     <span className="flex items-center gap-0.5 text-muted-foreground/50" title="Sent">
       <Check className="h-3 w-3" />
     </span>
+  );
+}
+
+function AudioBubble({ url, duration }: { url: string; duration?: string }) {
+  return (
+    <div className="flex items-center gap-2 min-w-[160px]">
+      <audio controls src={url} className="h-8 w-36 sm:w-44" preload="metadata" />
+      {duration && <span className="text-[10px] opacity-70 shrink-0">{duration}</span>}
+    </div>
   );
 }
 
@@ -62,13 +73,16 @@ export function ChatView() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [emojiPickerId, setEmojiPickerId] = useState<string | null>(null);
+  const [voiceMode, setVoiceMode] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const coupleId = couple?.status === "active" ? couple.id : null;
   const partnerId = couple?.status === "active"
     ? (couple.user1_id === user?.id ? couple.user2_id : couple.user1_id)
     : null;
   const partnerProfile = partnerId ? profiles.find(p => p.user_id === partnerId) : null;
+  const { partnerTyping, sendTyping } = useTyping(coupleId, user?.id);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -87,12 +101,24 @@ export function ChatView() {
     setText("");
     const replyId = replyTo?.id ?? null;
     setReplyTo(null);
-    await sendMessage.mutateAsync({ content: trimmed, replyToId: replyId });
+    await sendMessage.mutateAsync({ content: trimmed, replyToId: replyId, messageType: "text" });
+  };
+
+  const handleVoiceSend = async (audioUrl: string, duration: string) => {
+    setVoiceMode(false);
+    const replyId = replyTo?.id ?? null;
+    setReplyTo(null);
+    await sendMessage.mutateAsync({ content: duration, replyToId: replyId, messageType: "voice", audioUrl });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
     if (e.key === "Escape") setReplyTo(null);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setText(e.target.value);
+    if (e.target.value) sendTyping();
   };
 
   const handleReact = (msg: Message, emoji: string) => {
@@ -124,7 +150,7 @@ export function ChatView() {
   return (
     <div className="flex flex-col h-[calc(100dvh-7rem)] sm:h-[calc(100vh-8rem)] max-h-[900px]">
       {/* Chat header */}
-      <div className="flex items-center gap-3 pb-4 border-b mb-2">
+      <div className="flex items-center gap-3 pb-4 border-b mb-2 shrink-0">
         <div className="flex items-center -space-x-2">
           <Avatar className="h-9 w-9 ring-2 ring-background">
             <AvatarImage src={myProfile?.avatar_url ?? undefined} />
@@ -162,7 +188,6 @@ export function ChatView() {
           <div className="space-y-4 pb-2">
             {groups.map(group => (
               <div key={group.day}>
-                {/* Day divider */}
                 <div className="flex items-center gap-3 my-3">
                   <div className="flex-1 h-px bg-border" />
                   <span className="text-[11px] text-muted-foreground font-medium px-2">
@@ -178,13 +203,15 @@ export function ChatView() {
                     const nextSame = i < group.messages.length - 1 && group.messages[i + 1].sender_id === msg.sender_id;
                     const reactions = groupReactions(msg.reactions);
                     const repliedMsg = msg.reply_to_id ? msgMap[msg.reply_to_id] : null;
+                    const isVoice = (msg as any).message_type === "voice";
+                    const audioUrl = (msg as any).audio_url;
 
                     return (
                       <div
                         key={msg.id}
                         className={cn("flex items-end gap-2 group relative", isMe ? "flex-row-reverse" : "flex-row")}
                         onMouseEnter={() => setHoveredId(msg.id)}
-                        onMouseLeave={() => { setHoveredId(null); }}
+                        onMouseLeave={() => setHoveredId(null)}
                       >
                         {/* Avatar */}
                         <div className="w-7 shrink-0">
@@ -205,8 +232,7 @@ export function ChatView() {
                           )}
                         </div>
 
-                        {/* Bubble + reactions */}
-                        <div className={cn("flex flex-col max-w-[68%]", isMe ? "items-end" : "items-start")}>
+                        <div className={cn("flex flex-col max-w-[72%] sm:max-w-[68%]", isMe ? "items-end" : "items-start")}>
                           {/* Reply preview */}
                           {repliedMsg && (
                             <div className={cn(
@@ -229,10 +255,14 @@ export function ChatView() {
                               prevSame && !isMe && "rounded-tl-md"
                             )}
                           >
-                            {msg.content}
+                            {isVoice && audioUrl ? (
+                              <AudioBubble url={audioUrl} duration={msg.content} />
+                            ) : (
+                              msg.content
+                            )}
                           </div>
 
-                          {/* Emoji reactions */}
+                          {/* Reactions */}
                           {reactions.length > 0 && (
                             <div className="flex gap-1 mt-0.5 flex-wrap">
                               {reactions.map(([emoji, count]) => {
@@ -261,17 +291,13 @@ export function ChatView() {
                             hoveredId === msg.id ? "opacity-100" : "opacity-0"
                           )}>
                             {format(new Date(msg.created_at), "h:mm a")}
-                            <ReadReceipt msg={msg} isMe={isMe} partnerId={partnerId} />
+                            <ReadReceipt msg={msg} isMe={isMe} />
                           </div>
                         </div>
 
                         {/* Hover actions */}
                         {hoveredId === msg.id && (
-                          <div className={cn(
-                            "flex items-center gap-0.5 shrink-0",
-                            isMe ? "flex-row" : "flex-row-reverse"
-                          )}>
-                            {/* Emoji picker toggle */}
+                          <div className={cn("flex items-center gap-0.5 shrink-0", isMe ? "flex-row" : "flex-row-reverse")}>
                             <div className="relative">
                               <button
                                 onClick={e => { e.stopPropagation(); setEmojiPickerId(id => id === msg.id ? null : msg.id); }}
@@ -300,8 +326,6 @@ export function ChatView() {
                                 </div>
                               )}
                             </div>
-
-                            {/* Reply */}
                             <button
                               onClick={() => { setReplyTo(msg); inputRef.current?.focus(); }}
                               className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -309,8 +333,6 @@ export function ChatView() {
                             >
                               <Reply className="h-3.5 w-3.5" />
                             </button>
-
-                            {/* Delete (own only) */}
                             {isMe && (
                               <button
                                 onClick={() => deleteMessage.mutateAsync(msg.id)}
@@ -333,9 +355,25 @@ export function ChatView() {
         )}
       </ScrollArea>
 
+      {/* Typing indicator */}
+      {partnerTyping && (
+        <div className="flex items-center gap-2 px-2 py-1.5">
+          <Avatar className="h-5 w-5">
+            <AvatarImage src={partnerProfile?.avatar_url ?? undefined} />
+            <AvatarFallback className="text-[8px] bg-muted">{partnerInitials}</AvatarFallback>
+          </Avatar>
+          <div className="flex items-center gap-0.5 bg-muted rounded-full px-3 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
+            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
+            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
+          </div>
+          <span className="text-[11px] text-muted-foreground">{partnerProfile?.display_name ?? "Partner"} is typing…</span>
+        </div>
+      )}
+
       {/* Reply banner */}
       {replyTo && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg mx-0 mt-2 border-l-2 border-primary">
+        <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg mt-2 border-l-2 border-primary shrink-0">
           <Reply className="h-3.5 w-3.5 text-primary shrink-0" />
           <p className="text-xs text-muted-foreground flex-1 truncate">
             <span className="font-medium text-foreground">
@@ -350,25 +388,36 @@ export function ChatView() {
       )}
 
       {/* Input */}
-      <div className="pt-3 border-t mt-2">
+      <div className="pt-3 border-t mt-2 shrink-0">
         <form onSubmit={e => { e.preventDefault(); handleSend(); }} className="flex items-center gap-2">
-          <Input
-            ref={inputRef}
-            value={text}
-            onChange={e => setText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={replyTo ? "Write a reply…" : `Message ${partnerProfile?.display_name ?? "your partner"}…`}
-            className="flex-1 rounded-full bg-muted border-0 focus-visible:ring-1 focus-visible:ring-primary/40 px-4"
-            autoComplete="off"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            className="rounded-full h-9 w-9 shrink-0"
-            disabled={!text.trim() || sendMessage.isPending}
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          {voiceMode ? (
+            <VoiceRecorder
+              onSend={handleVoiceSend}
+              onCancel={() => setVoiceMode(false)}
+              disabled={sendMessage.isPending}
+            />
+          ) : (
+            <>
+              <MicButton onClick={() => setVoiceMode(true)} disabled={sendMessage.isPending} />
+              <Input
+                ref={inputRef}
+                value={text}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder={replyTo ? "Write a reply…" : `Message ${partnerProfile?.display_name ?? "your partner"}…`}
+                className="flex-1 rounded-full bg-muted border-0 focus-visible:ring-1 focus-visible:ring-primary/40 px-4"
+                autoComplete="off"
+              />
+              <Button
+                type="submit"
+                size="icon"
+                className="rounded-full h-9 w-9 shrink-0"
+                disabled={!text.trim() || sendMessage.isPending}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </>
+          )}
         </form>
         <p className="text-[10px] text-muted-foreground/50 text-center mt-1.5">
           🔒 End-to-end private between you two

@@ -1,4 +1,4 @@
-import { Home, CalendarHeart, Trophy, MessageCircleHeart, Upload } from "lucide-react";
+import { Home, CalendarHeart, Trophy, MessageCircleHeart, Upload, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ViewType } from "@/components/AppSidebar";
 
@@ -11,24 +11,23 @@ interface Props {
 const navItems = [
   { id: "all" as ViewType, label: "Files", icon: Home },
   { id: "timeline" as ViewType, label: "Memories", icon: CalendarHeart },
-  { id: "anniversaries" as ViewType, label: "Milestones", icon: Trophy },
+  { id: "activity" as ViewType, label: "Activity", icon: Activity },
   { id: "chat" as ViewType, label: "Chat", icon: MessageCircleHeart },
 ];
 
 export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-background/95 backdrop-blur-md border-t border-border safe-area-bottom">
-      <div className="flex items-center justify-around px-2 h-16">
+      <div className="flex items-center justify-around px-1 h-16">
         {navItems.map((item, index) => {
-          // Insert Upload button in the center (after Memories)
           const isActive = selectedView === item.id;
+          // Insert Upload button in the center (after index 1)
           const showUploadBefore = index === 2;
 
           return (
-            <>
+            <div key={item.id} className="contents">
               {showUploadBefore && (
                 <button
-                  key="upload"
                   onClick={onUpload}
                   className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2"
                 >
@@ -38,7 +37,6 @@ export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props)
                 </button>
               )}
               <button
-                key={item.id}
                 onClick={() => onSelectView(item.id)}
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors",
@@ -48,7 +46,7 @@ export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props)
                 <item.icon className={cn("h-5 w-5 transition-transform", isActive && "scale-110")} />
                 <span className="text-[10px] font-medium">{item.label}</span>
               </button>
-            </>
+            </div>
           );
         })}
       </div>
