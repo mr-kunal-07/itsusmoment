@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoveNotes, useAddLoveNote, useDeleteLoveNote, useMediaReactions, useToggleReaction } from "@/hooks/useLoveNotes";
 import { useAllProfiles } from "@/hooks/useProfile";
+import { sendNotification } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,6 +30,8 @@ export function LoveNotesPanel({ mediaId }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const profileMap = Object.fromEntries(profiles.map(p => [p.user_id, p.display_name ?? "You"]));
+  const allUserIds = profiles.map(p => p.user_id);
+  const myName = profileMap[user?.id ?? ""] ?? "Your partner";
 
   // Group reactions by emoji
   const reactionCounts: Record<string, { count: number; mine: boolean }> = {};
@@ -40,9 +43,20 @@ export function LoveNotesPanel({ mediaId }: Props) {
 
   const handleSubmit = async () => {
     if (!text.trim()) return;
+    const content = text.trim();
     try {
-      await addNote.mutateAsync({ mediaId, content: text.trim() });
+      await addNote.mutateAsync({ mediaId, content });
       setText("");
+      // Notify partner
+      if (user && allUserIds.length > 1) {
+        await sendNotification({
+          actorId: user.id,
+          allUserIds,
+          type: "love_note",
+          mediaId,
+          message: `${myName} left a love note 💌: "${content.slice(0, 60)}${content.length > 60 ? "…" : ""}"`,
+        });
+      }
     } catch {
       toast({ title: "Couldn't add note", variant: "destructive" });
     }
@@ -57,8 +71,19 @@ export function LoveNotesPanel({ mediaId }: Props) {
   };
 
   const handleReaction = async (emoji: string) => {
+    const wasReacted = reactionCounts[emoji]?.mine;
     try {
       await toggleReaction.mutateAsync({ mediaId, emoji });
+      // Notify only when adding (not removing)
+      if (!wasReacted && user && allUserIds.length > 1) {
+        await sendNotification({
+          actorId: user.id,
+          allUserIds,
+          type: "reaction",
+          mediaId,
+          message: `${myName} reacted ${emoji} to a photo`,
+        });
+      }
     } catch {
       toast({ title: "Couldn't react", variant: "destructive" });
     }
