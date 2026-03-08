@@ -31,7 +31,6 @@ export type ViewType = "all" | "starred" | "recently-deleted" | "timeline" | "on
 interface Props {
   selectedView: ViewType;
   onSelectView: (view: ViewType) => void;
-  onStartSlideshow?: () => void;
 }
 
 export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Props) {
