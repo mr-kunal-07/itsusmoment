@@ -182,8 +182,8 @@ export const LoveStoryCard = forwardRef<HTMLDivElement, Props>(({
           <div className="flex items-center gap-0">
             {/* My avatar */}
             <div
-              className="h-16 w-16 rounded-full ring-4 overflow-hidden flex-shrink-0"
-              style={{ ringColor: "white", boxShadow: isDark ? "0 0 0 4px rgba(255,255,255,0.15)" : "0 0 0 4px white" }}
+            className="h-16 w-16 rounded-full overflow-hidden flex-shrink-0"
+              style={{ boxShadow: isDark ? "0 0 0 4px rgba(255,255,255,0.15)" : "0 0 0 4px white" }}
             >
               {myProfile?.avatar_url ? (
                 <img src={myProfile.avatar_url} alt={myName} className="h-full w-full object-cover" />
