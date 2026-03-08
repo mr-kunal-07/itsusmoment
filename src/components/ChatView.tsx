@@ -152,6 +152,53 @@ function AudioBubble({
   );
 }
 
+/** Swipeable wrapper: swipe right → trigger reply (mobile only) */
+function SwipeableMessage({
+  children, onSwipeReply, isMe,
+}: {
+  children: React.ReactNode;
+  onSwipeReply: () => void;
+  isMe: boolean;
+}) {
+  const startXRef = useRef<number | null>(null);
+  const [offset, setOffset] = useState(0);
+  const triggered = useRef(false);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    startXRef.current = e.touches[0].clientX;
+    triggered.current = false;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (startXRef.current === null) return;
+    const dx = e.touches[0].clientX - startXRef.current;
+    // Only allow rightward swipe, cap at 60px
+    if (dx > 0) {
+      setOffset(Math.min(dx, 60));
+      if (dx > 50 && !triggered.current) {
+        triggered.current = true;
+        onSwipeReply();
+      }
+    }
+  };
+
+  const onTouchEnd = () => {
+    startXRef.current = null;
+    setOffset(0);
+  };
+
+  return (
+    <div
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      style={{ transform: `translateX(${offset}px)`, transition: offset === 0 ? "transform 0.2s ease" : "none" }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function ChatView({ onBack }: { onBack?: () => void }) {
   const { user } = useAuth();
   const { data: couple } = useMyCouple();
