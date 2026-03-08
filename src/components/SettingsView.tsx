@@ -412,12 +412,6 @@ export function SettingsView({ onNavigateBilling }: Props) {
   );
 }
 
-  useEffect(() => {
-    const standalone = window.matchMedia("(display-mode: standalone)").matches
-      || (window.navigator as any).standalone === true;
-    setIsInstalled(standalone);
-    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e as BeforeInstallPromptEvent); };
-    window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
