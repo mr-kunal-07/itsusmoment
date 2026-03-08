@@ -81,7 +81,7 @@ export function AnniversariesView() {
   const mediaImages = allMedia.filter(m => m.file_type === "image");
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
