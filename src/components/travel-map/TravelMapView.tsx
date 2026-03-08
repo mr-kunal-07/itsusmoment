@@ -80,7 +80,7 @@ function HeatmapLegend({ locations }: { locations: TravelLocation[] }) {
 
 const VIEW_TABS: { id: ViewMode; label: string; icon: typeof Map }[] = [
   { id: "map", label: "Map", icon: Map },
-  { id: "heatmap", label: "Heatmap", icon: Globe },
+  { id: "heatmap", label: "Heatmap", icon: Globe2 },
   { id: "timeline", label: "Timeline", icon: List },
 ];
 
