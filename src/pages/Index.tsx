@@ -248,7 +248,7 @@ export default function Index() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden font-sans">
+    <div className="landing min-h-screen bg-background text-foreground overflow-x-hidden font-sans">
 
       {/* ══ NAV ══ */}
       <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrollY > 40 ? "bg-background/95 backdrop-blur-xl border-b border-border shadow-card" : "bg-transparent"}`}>
@@ -293,12 +293,12 @@ export default function Index() {
         {/* Parallax bg */}
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroBg})`, transform: `translateY(${scrollY * 0.25}px)`, filter: "brightness(0.2)" }}
+          style={{ backgroundImage: `url(${heroBg})`, transform: `translateY(${scrollY * 0.25}px)`, filter: "brightness(0.35) saturate(0.6)" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-transparent to-background" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/50 via-transparent to-background/50" />
-        {/* Warm radial glow */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 55% at 50% 38%, hsl(42 20% 88% / 0.07) 0%, transparent 65%)" }} />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/20 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/60 via-transparent to-background/60" />
+        {/* Pink-green radial glow */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 55% at 50% 38%, hsl(338 80% 56% / 0.08) 0%, hsl(152 55% 45% / 0.05) 50%, transparent 75%)" }} />
 
         <div className="relative z-10 max-w-6xl mx-auto px-5 md:px-8 pt-28 pb-24 flex flex-col items-center text-center">
 
@@ -390,7 +390,7 @@ export default function Index() {
       </section>
 
       {/* ══ HOW IT WORKS ══ */}
-      <section id="how-it-works" className="bg-card/25 border-y border-border py-28">
+      <section id="how-it-works" className="bg-secondary/40 border-y border-border py-28">
         <div className="max-w-5xl mx-auto px-5 md:px-8">
           <FadeIn className="text-center mb-16">
             <h2 className="font-heading text-4xl md:text-5xl font-bold mb-4">
@@ -470,7 +470,7 @@ export default function Index() {
       </section>
 
       {/* ══ SPOTLIGHT: Memory Vault ══ */}
-      <section className="bg-card/20 border-y border-border py-28">
+      <section className="bg-accent/30 border-y border-border py-28">
         <div className="max-w-7xl mx-auto px-5 md:px-8">
           <FadeIn>
             <div className="grid lg:grid-cols-2 gap-16 items-center">
@@ -546,7 +546,7 @@ export default function Index() {
       </section>
 
       {/* ══ PRICING ══ */}
-      <section id="pricing" className="bg-card/20 border-y border-border py-28">
+      <section id="pricing" className="bg-secondary/30 border-y border-border py-28">
         <div className="max-w-5xl mx-auto px-5 md:px-8">
           <FadeIn className="text-center mb-16">
             <div className="inline-flex items-center gap-2 bg-card border border-border px-3 py-1.5 rounded-full text-xs text-muted-foreground mb-5">
@@ -566,8 +566,8 @@ export default function Index() {
       </section>
 
       {/* ══ FINAL CTA ══ */}
-      <section className="relative py-36 overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 60% at 50% 50%, hsl(42 20% 88% / 0.06) 0%, transparent 65%)" }} />
+      <section className="relative py-36 overflow-hidden bg-gradient-to-b from-background to-secondary/20">
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 60% at 50% 50%, hsl(338 80% 56% / 0.06) 0%, hsl(152 55% 45% / 0.04) 50%, transparent 75%)" }} />
         <div className="relative z-10 max-w-3xl mx-auto px-5 md:px-8 text-center">
           <FadeIn>
             <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-8">

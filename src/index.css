@@ -113,7 +113,54 @@
     --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.5), 0 2px 12px hsl(0 0% 0% / 0.3);
     --shadow-popover: 0 8px 32px hsl(0 0% 0% / 0.6), 0 2px 8px hsl(0 0% 0% / 0.4);
   }
+
+  /* ── Landing page: light pink-green couple theme ─────────────────────
+     Scoped to .landing wrapper — does NOT affect the dark app dashboard.
+  ──────────────────────────────────────────────────────────────────────── */
+  .landing {
+    /* Warm creamy white base */
+    --background:  340 20% 98%;        /* near white with a blush hint   */
+    --foreground:  330 15% 15%;        /* deep rose-black text            */
+
+    --card:        0 0% 100%;          /* pure white cards                */
+    --card-foreground: 330 15% 15%;
+
+    --popover:     0 0% 100%;
+    --popover-foreground: 330 15% 15%;
+
+    /* Pink as primary */
+    --primary:        338 80% 56%;     /* vibrant rose-pink #e83d78       */
+    --primary-foreground: 0 0% 100%;
+
+    /* Sage green as secondary/accent */
+    --secondary:      152 35% 94%;     /* very light mint bg              */
+    --secondary-foreground: 152 40% 28%;
+
+    --muted:          340 20% 95%;
+    --muted-foreground: 330 10% 48%;
+
+    --accent:         152 45% 90%;     /* mint accent background          */
+    --accent-foreground: 152 45% 25%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border:         338 30% 90%;     /* soft pink border                */
+    --input:          338 30% 90%;
+    --ring:           338 80% 56%;
+
+    /* Pink-green gradient text */
+    --gradient-text: linear-gradient(135deg, hsl(338 80% 52%), hsl(152 55% 38%));
+    --gradient-primary: linear-gradient(135deg, hsl(338 80% 56%), hsl(152 55% 45%));
+
+    --glass-bg:   hsl(338 30% 98% / 0.85);
+    --glass-border: hsl(338 40% 86% / 0.7);
+
+    --shadow-card: 0 2px 12px hsl(338 60% 60% / 0.08), 0 1px 4px hsl(0 0% 0% / 0.05);
+    --shadow-popover: 0 8px 30px hsl(338 60% 60% / 0.14);
+  }
 }
+
 
 @layer base {
   * {
