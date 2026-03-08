@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Heart, Loader2, Mail, Lock, User, ArrowRight, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Heart, Loader2, Mail, Lock, User, ArrowRight, ArrowLeft, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+
+const PARTNER_CODE_KEY = "pending_partner_code";
 
 type Mode = "signin" | "signup" | "forgot";
 
@@ -23,6 +26,19 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [partnerCode, setPartnerCode] = useState("");
+
+  // Once user is logged in, auto-accept any pending partner code
+  useEffect(() => {
+    if (!user) return;
+    const code = sessionStorage.getItem(PARTNER_CODE_KEY);
+    if (!code) return;
+    sessionStorage.removeItem(PARTNER_CODE_KEY);
+    supabase.rpc("accept_couple_invite", { _invite_code: code.trim().toUpperCase() }).then(({ data, error }) => {
+      if (error || (data as any)?.error) return; // silently ignore if invalid
+      toast({ title: "💕 Connected with your partner!", description: "You now share the vault together." });
+    });
+  }, [user, toast]);
 
   if (loading) {
     return (
@@ -59,13 +75,23 @@ export default function Auth() {
       toast({ title: "Password too short", description: "Must be at least 6 characters.", variant: "destructive" });
       return;
     }
+    // Save partner code to sessionStorage before signup so we can use it after auth confirms
+    if (partnerCode.trim()) {
+      sessionStorage.setItem(PARTNER_CODE_KEY, partnerCode.trim().toUpperCase());
+    }
     setSubmitting(true);
     const { error } = await signUp(email, password, displayName);
     setSubmitting(false);
     if (error) {
+      sessionStorage.removeItem(PARTNER_CODE_KEY);
       toast({ title: "Sign up failed", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Account created!", description: "Check your email to verify your account." });
+      toast({
+        title: "Account created! 🎉",
+        description: partnerCode.trim()
+          ? "Verify your email — your partner will be linked automatically."
+          : "Check your email to verify your account.",
+      });
       setMode("signin");
     }
   };
@@ -163,7 +189,7 @@ export default function Auth() {
                 <p className="text-sm text-muted-foreground mt-1">Join the private vault</p>
               </div>
               <form onSubmit={handleSignUp} className="space-y-4">
-                <Field label="Display Name" id="displayName">
+                <Field label="Your Name" id="displayName">
                   <InputWithIcon
                     icon={<User className="h-4 w-4" />}
                     id="displayName" type="text" placeholder="Your name"
@@ -201,8 +227,35 @@ export default function Auth() {
                   />
                 </Field>
 
+                {/* Partner code — optional */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="partnerCode" className="text-sm font-medium flex items-center gap-1.5">
+                      <Heart className="h-3.5 w-3.5 text-primary" />
+                      Partner's Invite Code
+                    </Label>
+                    <span className="text-[10px] text-muted-foreground">Optional</span>
+                  </div>
+                  <InputWithIcon
+                    icon={<Link2 className="h-4 w-4" />}
+                    id="partnerCode"
+                    type="text"
+                    placeholder="e.g. AB12CD34"
+                    value={partnerCode}
+                    onChange={e => setPartnerCode(e.target.value.toUpperCase())}
+                    maxLength={8}
+                    className="font-mono tracking-widest uppercase"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Have a code from your partner? Enter it here to connect instantly on signup.
+                  </p>
+                </div>
+
                 <Button type="submit" className="w-full gap-2 glow-primary mt-2" disabled={submitting}>
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Create account <ArrowRight className="h-4 w-4" /></>}
+                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>
+                    {partnerCode.trim() ? <Heart className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
+                    {partnerCode.trim() ? "Create & Connect" : "Create account"}
+                  </>}
                 </Button>
               </form>
               <div className="mt-5 text-center">
