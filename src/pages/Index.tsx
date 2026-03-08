@@ -597,7 +597,7 @@ export default function Index() {
                     </div>
                   )}
                   <div className="mb-6">
-                    <p className="text-[11px] font-extrabold uppercase tracking-widest mb-1" style={{ color: T.muted }}>{plan.name}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: T.muted }}>{plan.name}</p>
                     <div className="flex items-baseline gap-1 mb-1">
                       <span style={{ ...displayFont, fontSize: 42, letterSpacing: "-0.03em", color: T.dark }}>{plan.price}</span>
                       <span className="text-sm" style={{ color: T.muted }}>/month</span>
