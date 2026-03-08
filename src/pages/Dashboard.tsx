@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, Upload, LogOut, Moon, Sun, LayoutGrid, List, ArrowUpDown, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useMedia, useStarredMedia, useRecentMedia, useMoveMedia } from "@/hooks/useMedia";
 import { useFolders } from "@/hooks/useFolders";
 import { useTheme } from "@/hooks/useTheme";
-import { useProfile } from "@/hooks/useProfile";
+import { useProfile, useAllProfiles } from "@/hooks/useProfile";
 import { useOnThisDay } from "@/hooks/useMemories";
+import { useMyCouple } from "@/hooks/useCouple";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar, ViewType } from "@/components/AppSidebar";
 import { MediaGrid, ViewMode } from "@/components/MediaGrid";
@@ -17,6 +18,7 @@ import { MemoriesTimeline } from "@/components/MemoriesView";
 import { AnniversariesView } from "@/components/AnniversariesView";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { Slideshow } from "@/components/Slideshow";
+import { PartnerBanner } from "@/components/PartnerBanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,6 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 type FileTypeFilter = "all" | "image" | "video";
 type SortKey = "created_at" | "title" | "file_size";
