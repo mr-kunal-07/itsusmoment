@@ -108,28 +108,74 @@ const PLANS = [
 ];
 
 /* ── App mockup visuals ─────────────────────────────────── */
+// Photo gradient colours that simulate warm couple photos
+const PHOTO_GRADIENTS = [
+  "linear-gradient(135deg, #c97b4b 0%, #8b4513 60%, #5c2d0e 100%)",
+  "linear-gradient(135deg, #d4845a 0%, #a0522d 50%, #6b3320 100%)",
+  "linear-gradient(135deg, #7c9e7a 0%, #4a7c59 50%, #2d5a3d 100%)",
+  "linear-gradient(135deg, #b08a6e 0%, #8b6550 50%, #5c3d2a 100%)",
+];
+
 function MemoriesCard() {
   return (
-    <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
-      <div style={{ padding: "10px 14px", background: T.surface, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={{ width: 22, height: 22, borderRadius: 8, background: T.ink, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Heart className="w-3 h-3 text-white fill-white" />
+    <div style={{ background: "#171717", borderRadius: 20, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.28)", border: "1px solid rgba(255,255,255,0.08)" }}>
+      {/* Header */}
+      <div style={{ padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 26, height: 26, borderRadius: 8, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Heart style={{ width: 13, height: 13, fill: "#0a0a0a", color: "#0a0a0a" }} />
         </div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: T.ink }}>Our Memories</span>
-        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, color: T.muted, background: T.surface, border: `1px solid ${T.border}`, padding: "2px 8px", borderRadius: 99 }}>47 photos</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>Our Memories</span>
+        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.08)", padding: "3px 10px", borderRadius: 99 }}>47 photos</span>
       </div>
-      <div style={{ padding: 12 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginBottom: 10 }}>
-          {["🌅", "🎂", "🌿", "✈️", "🍽️", "🌙"].map((e, i) =>
-            <div key={i} style={{ aspectRatio: "1", background: i % 2 === 0 ? T.surface : "#f0f0f1", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>{e}</div>
-          )}
+
+      {/* Month separator */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px 8px" }}>
+        <div style={{ height: 1, flex: 1, background: "rgba(255,255,255,0.1)" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 12px", borderRadius: 99, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.05)" }}>
+          <Heart style={{ width: 10, height: 10, fill: "#e11d48", color: "#e11d48" }} />
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>March 2026</span>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <div style={{ flex: 1, background: T.surface, borderRadius: 10, padding: "8px 12px", fontSize: 11, color: T.muted, border: `1px solid ${T.border}` }}>Write a love note…</div>
-          <button style={{ width: 34, height: 34, borderRadius: 10, background: T.ink, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-            <Heart className="w-3.5 h-3.5 text-white fill-white" />
-          </button>
+        <div style={{ height: 1, flex: 1, background: "rgba(255,255,255,0.1)" }} />
+      </div>
+
+      {/* Day header */}
+      <div style={{ padding: "4px 16px 10px", display: "flex", alignItems: "baseline", gap: 8 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Sunday, March 8</span>
+        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>4 memories</span>
+      </div>
+
+      {/* Photo grid — 1 large + 3 small (matches screenshot layout) */}
+      <div style={{ padding: "0 12px 12px", display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "auto auto", gap: 5 }}>
+        {/* Large hero photo */}
+        <div style={{
+          gridRow: "span 2",
+          borderRadius: 12,
+          overflow: "hidden",
+          aspectRatio: "3/4",
+          background: PHOTO_GRADIENTS[0],
+          position: "relative"
+        }}>
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: 36 }}>💑</span>
+          </div>
+          <div style={{ position: "absolute", top: 8, right: 8 }}>
+            <Star style={{ width: 13, height: 13, fill: "#facc15", color: "#facc15", filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.5))" }} />
+          </div>
         </div>
+        {/* 3 smaller photos */}
+        {[PHOTO_GRADIENTS[1], PHOTO_GRADIENTS[2], PHOTO_GRADIENTS[3]].map((g, i) => (
+          <div key={i} style={{ borderRadius: 10, overflow: "hidden", aspectRatio: "4/3", background: g, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: 22 }}>{["🌅", "🌿", "✈️"][i]}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Love note input */}
+      <div style={{ padding: "8px 12px 14px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", gap: 8 }}>
+        <div style={{ flex: 1, background: "rgba(255,255,255,0.06)", borderRadius: 10, padding: "9px 13px", fontSize: 12, color: "rgba(255,255,255,0.35)", border: "1px solid rgba(255,255,255,0.08)" }}>Write a love note…</div>
+        <button style={{ width: 36, height: 36, borderRadius: 10, background: "#fff", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+          <Heart style={{ width: 14, height: 14, fill: "#0a0a0a", color: "#0a0a0a" }} />
+        </button>
       </div>
     </div>
   );
