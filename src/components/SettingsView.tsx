@@ -156,7 +156,7 @@ export function SettingsView({ onNavigateBilling }: Props) {
     disableLock();
     setLockEnabled(false);
     setBiometricEnabled(false);
-    localStorage.removeItem("ourvault_biometric");
+    localStorage.removeItem(LOCK_KEYS.biometric);
     toast({ title: "App lock disabled" });
   };
 
