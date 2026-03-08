@@ -372,6 +372,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   const partnerName = partnerProfile?.display_name ?? "Partner";
 
   return (
+    <SwipeBackWrapper onBack={onBack}>
     <div
       className="flex flex-col h-full"
       style={{
