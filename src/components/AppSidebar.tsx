@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart, CalendarHeart, BarChart3, Play, Trophy } from "lucide-react";
+import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart, CalendarHeart, Play, Trophy } from "lucide-react";
 import { useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, Folder } from "@/hooks/useFolders";
 import { useMedia } from "@/hooks/useMedia";
 import { useStorageUsage } from "@/hooks/useProfile";
@@ -89,7 +89,6 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
   const specialItems = [
     { id: "timeline" as const, label: "Memories Timeline", icon: CalendarHeart, count: null },
     { id: "anniversaries" as const, label: "Anniversaries", icon: Trophy, count: null },
-    { id: "stats" as const, label: "Our Stats", icon: BarChart3, count: null },
   ];
 
   return (

@@ -13,7 +13,7 @@ import { MediaGrid, ViewMode } from "@/components/MediaGrid";
 import { UploadDialog } from "@/components/UploadDialog";
 import { MediaPreview } from "@/components/MediaPreview";
 import { FolderBreadcrumb } from "@/components/FolderBreadcrumb";
-import { MemoriesTimeline, RelationshipStats } from "@/components/MemoriesView";
+import { MemoriesTimeline } from "@/components/MemoriesView";
 import { AnniversariesView } from "@/components/AnniversariesView";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { Slideshow } from "@/components/Slideshow";
@@ -38,7 +38,7 @@ function loadPref<T>(key: string, fallback: T): T {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
 }
 
-const SPECIAL_VIEWS = ["all", "unfiled", "starred", "recent", "timeline", "stats", "on-this-day", "anniversaries"];
+const SPECIAL_VIEWS = ["all", "unfiled", "starred", "recent", "timeline", "on-this-day", "anniversaries"];
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -101,7 +101,6 @@ export default function Dashboard() {
     : selectedView === "starred" ? "Starred"
     : selectedView === "recent" ? "Recent"
     : selectedView === "timeline" ? "Memories Timeline"
-    : selectedView === "stats" ? "Our Story"
     : selectedView === "on-this-day" ? `On This Day · ${format(new Date(), "MMMM d")}`
     : selectedView === "anniversaries" ? "Anniversaries & Milestones"
     : currentFolder?.name || "Folder";
@@ -136,7 +135,7 @@ export default function Dashboard() {
 
   const sortLabel = { created_at: "Date", title: "Name", file_size: "Size" }[sortKey] + (sortDir === "asc" ? " ↑" : " ↓");
 
-  const isGridView = selectedView !== "timeline" && selectedView !== "stats" && selectedView !== "anniversaries";
+  const isGridView = selectedView !== "timeline" && selectedView !== "anniversaries";
 
   return (
     <SidebarProvider>
@@ -279,8 +278,6 @@ export default function Dashboard() {
                 setSelectedView("all");
                 setTimeout(() => setPreviewIndex(idx >= 0 ? idx : 0), 100);
               }} />
-            ) : selectedView === "stats" ? (
-              <RelationshipStats />
             ) : selectedView === "anniversaries" ? (
               <AnniversariesView />
             ) : (
