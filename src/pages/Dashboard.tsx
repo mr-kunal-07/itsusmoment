@@ -345,6 +345,8 @@ export default function Dashboard() {
               <AnniversariesView />
             ) : selectedView === "chat" ? (
               <ChatView />
+            ) : selectedView === "activity" ? (
+              <ActivityFeed />
             ) : (
               <MediaGrid
                 media={media}
