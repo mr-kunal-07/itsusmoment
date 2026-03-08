@@ -26,6 +26,23 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, formatSize } from "@/lib/utils";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip, TooltipContent, TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+export type ViewMode = "grid" | "list";
+
+interface Props {
+  media: Media[];
+  loading: boolean;
+  onPreview: (m: Media) => void;
+  viewMode: ViewMode;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+}
 
 function downloadFile(url: string, filename: string) {
   const a = document.createElement("a");
