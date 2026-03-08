@@ -61,6 +61,21 @@
     --glass-border: hsl(0 0% 88% / 0.9);
     --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.08), 0 1px 8px hsl(0 0% 0% / 0.04);
     --shadow-popover: 0 8px 30px hsl(0 0% 0% / 0.12), 0 2px 8px hsl(0 0% 0% / 0.06);
+
+    /* ── Chat tokens — light mode ── */
+    --wa-bg:            0 0% 94%;          /* light grey chat bg */
+    --wa-header:        0 0% 96%;          /* slightly off-white header */
+    --wa-bubble-out:    152 45% 88%;       /* soft green sent bubble */
+    --wa-bubble-in:     0 0% 100%;         /* white received bubble */
+    --wa-input-bg:      0 0% 100%;         /* white input */
+    --wa-online:        142 69% 38%;       /* green accent */
+    --wa-tick-blue:     207 90% 50%;
+    --wa-meta:          0 0% 45%;          /* grey timestamps */
+    --wa-system-bubble: 0 0% 88%;
+    --wa-avatar:        152 35% 55%;
+    --wa-voice-thumb:   199 98% 45%;
+    --wa-text:          0 0% 10%;          /* main text in light mode */
+    --wa-text-meta:     0 0% 40%;
   }
 
   .dark {
@@ -113,18 +128,20 @@
     --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.5), 0 2px 12px hsl(0 0% 0% / 0.3);
     --shadow-popover: 0 8px 32px hsl(0 0% 0% / 0.6), 0 2px 8px hsl(0 0% 0% / 0.4);
 
-    /* ── WhatsApp-style Chat tokens (dark mode) ── */
-    --wa-bg:            40 3% 9%;         /* #171716 plain dark bg — NO pattern */
+    /* ── Chat tokens — dark mode ── */
+    --wa-bg:            40 3% 9%;         /* #171716 plain dark bg */
     --wa-header:        0 0% 7%;          /* #121212 darker header */
-    --wa-bubble-out:    166 52% 18%;      /* #0d5045 sent bubble deep WA green */
-    --wa-bubble-in:     200 13% 16%;      /* #202c33 received bubble */
+    --wa-bubble-out:    166 52% 18%;      /* deep WA green sent */
+    --wa-bubble-in:     200 13% 16%;      /* received bubble */
     --wa-input-bg:      200 13% 14%;      /* input pill bg */
-    --wa-online:        142 69% 43%;      /* #25d366 WA green accent */
-    --wa-tick-blue:     207 90% 65%;      /* double-tick blue */
-    --wa-meta:          0 0% 52%;         /* #858585 timestamps */
-    --wa-system-bubble: 40 4% 12%;        /* date divider */
-    --wa-avatar:        166 52% 22%;      /* default avatar bg */
-    --wa-voice-thumb:   199 98% 60%;      /* #53d8fb voice playhead */
+    --wa-online:        142 69% 43%;      /* #25d366 WA green */
+    --wa-tick-blue:     207 90% 65%;
+    --wa-meta:          0 0% 52%;         /* timestamps */
+    --wa-system-bubble: 40 4% 12%;
+    --wa-avatar:        166 52% 22%;
+    --wa-voice-thumb:   199 98% 60%;
+    --wa-text:          0 0% 92%;         /* main text dark */
+    --wa-text-meta:     0 0% 52%;
   }
 
   /* ── Landing page: light pink-green couple theme ─────────────────────
