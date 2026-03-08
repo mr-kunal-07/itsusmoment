@@ -19,7 +19,6 @@ import { FolderBreadcrumb } from "@/components/FolderBreadcrumb";
 import { MemoriesTimeline } from "@/components/MemoriesView";
 import { AnniversariesView } from "@/components/AnniversariesView";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
-import { Slideshow } from "@/components/Slideshow";
 import { PartnerBanner } from "@/components/PartnerBanner";
 import { UpgradeBanner } from "@/components/UpgradeBanner";
 import { ChatView } from "@/components/ChatView";
@@ -91,7 +90,7 @@ export default function Dashboard() {
   const [fileTypeFilter, setFileTypeFilter] = useState<FileTypeFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>(() => loadPref<SortKey>(STORAGE_KEY_SORT + "_key", "created_at"));
   const [sortDir, setSortDir] = useState<SortDir>(() => loadPref<SortDir>(STORAGE_KEY_SORT + "_dir", "desc"));
-  const [slideshowOpen, setSlideshowOpen] = useState(false);
+  
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const moveMedia = useMoveMedia();
@@ -207,7 +206,6 @@ export default function Dashboard() {
         <AppSidebar
           selectedView={selectedView}
           onSelectView={setSelectedView}
-          onStartSlideshow={() => setSlideshowOpen(true)}
         />
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -285,15 +283,16 @@ export default function Dashboard() {
 
                 <NotificationsPanel />
 
-                <Button onClick={() => setUploadOpen(true)} size="sm" className="gap-1.5 h-9 px-2 sm:px-3">
+                {/* Upload — desktop only (mobile has bottom nav FAB) */}
+                <Button onClick={() => setUploadOpen(true)} size="sm" className="gap-1.5 h-9 px-2 sm:px-3 hidden sm:flex">
                   <Upload className="h-4 w-4" />
                   <span className="hidden sm:inline">Upload</span>
                 </Button>
 
-                {/* Profile chip — desktop only */}
+                {/* Profile — always visible; desktop shows name+plan too */}
                 <button
                   onClick={() => navigate("/profile")}
-                  className="hidden sm:flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-accent transition-colors shrink-0"
+                  className="flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-accent transition-colors shrink-0"
                   aria-label="Go to profile"
                 >
                   <Avatar className="h-7 w-7 ring-2 ring-border">
@@ -396,14 +395,6 @@ export default function Dashboard() {
             open={previewIndex >= 0}
             onOpenChange={(open) => { if (!open) setPreviewIndex(-1); }}
             onNavigate={setPreviewIndex}
-          />
-        )}
-
-        {slideshowOpen && (
-          <Slideshow
-            media={media}
-            open={slideshowOpen}
-            onClose={() => setSlideshowOpen(false)}
           />
         )}
 

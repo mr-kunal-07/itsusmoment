@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Hash, Heart, CalendarHeart, Play, Trophy, Link2, MessageCircleHeart, Crown, ShieldCheck, Settings, Activity } from "lucide-react";
+import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Hash, Heart, CalendarHeart, Trophy, Link2, MessageCircleHeart, Crown, ShieldCheck, Settings, Activity } from "lucide-react";
 import { usePlan, getStorageLimit, formatStorageLimit } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { DaysTogether } from "@/components/DaysTogether";
@@ -31,10 +31,9 @@ export type ViewType = "all" | "starred" | "recently-deleted" | "timeline" | "on
 interface Props {
   selectedView: ViewType;
   onSelectView: (view: ViewType) => void;
-  onStartSlideshow?: () => void;
 }
 
-export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Props) {
+export function AppSidebar({ selectedView, onSelectView }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { setOpenMobile } = useSidebar();
@@ -242,14 +241,6 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
                 </SidebarMenuItem>
               )}
 
-              {onStartSlideshow && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => { setOpenMobile(false); onStartSlideshow?.(); }} className="text-primary hover:text-primary">
-                    <Play className="h-4 w-4 mr-2 fill-primary" />
-                    <span>Slideshow</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
