@@ -370,6 +370,9 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
                         <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditTitle(item.title); setEditDesc(item.description || ""); setEditItem(item); }}>
                           <Pencil className="h-4 w-4 mr-2" /> Edit
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={e => { e.stopPropagation(); setSingleMoveFolderId(item.folder_id ?? "__none__"); setMoveItem(item); }}>
+                          <FolderOpen className="h-4 w-4 mr-2" /> Move to folder
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteItem(item); }} className="text-destructive">
                           <Trash2 className="h-4 w-4 mr-2" /> Delete
                         </DropdownMenuItem>
