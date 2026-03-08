@@ -109,6 +109,24 @@ export default function Dashboard() {
               />
             </div>
 
+            {/* File type filter */}
+            <div className="hidden sm:flex items-center gap-0.5 p-0.5 rounded-lg bg-muted">
+              {(["all", "image", "video"] as FileTypeFilter[]).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFileTypeFilter(f)}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                    fileTypeFilter === f
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {f === "all" ? "All" : f === "image" ? "Images" : "Videos"}
+                </button>
+              ))}
+            </div>
+
             <div className="flex items-center gap-1 ml-auto">
               {/* View mode toggle */}
               <Button
