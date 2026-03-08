@@ -26,7 +26,7 @@ import {
 import { cn, formatSize } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
-export type ViewType = "all" | "starred" | "recently-deleted" | "timeline" | "stats" | "on-this-day" | "anniversaries" | "chat" | "activity" | "billing" | "settings" | "bucket-list" | string;
+export type ViewType = "all" | "starred" | "recently-deleted" | "timeline" | "on-this-day" | "anniversaries" | "chat" | "activity" | "billing" | "settings" | string;
 
 interface Props {
   selectedView: ViewType;
