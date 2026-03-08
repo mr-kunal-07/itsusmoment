@@ -616,7 +616,7 @@ export default function Index() {
                   </ul>
                   <Link
                     to="/auth"
-                    className="w-full py-3 rounded-xl font-bold text-[14px] text-center block text-white hover:opacity-90 transition-all"
+                    className="w-full py-3 rounded-xl font-semibold text-[14px] text-center block text-white hover:opacity-90 transition-all"
                     style={{ background: plan.accent ? T.accent : T.dark }}>
                     {plan.cta}
                   </Link>
