@@ -13,8 +13,6 @@ function formatSize(bytes: number) {
   return (bytes / 1073741824).toFixed(1) + " GB";
 }
 
-const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
 interface TimelineProps {
   onPreview: (mediaId: string) => void;
 }
@@ -40,6 +38,7 @@ export function MemoriesTimeline({ onPreview }: TimelineProps) {
       .finally(() => setScanning(false));
   }, [groups]); // eslint-disable-line
 
+  // Sort day keys descending (newest day first)
   const sortedKeys = useMemo(() => {
     if (!groups) return [];
     return Object.keys(groups).sort((a, b) => b.localeCompare(a));
@@ -47,11 +46,11 @@ export function MemoriesTimeline({ onPreview }: TimelineProps) {
 
   if (isLoading) return (
     <div className="space-y-8">
-      {[1,2,3].map(i => (
+      {[1, 2, 3].map(i => (
         <div key={i} className="space-y-3">
-          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-5 w-48" />
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-            {Array.from({length: 6}).map((_,j) => <Skeleton key={j} className="aspect-square rounded-xl" />)}
+            {Array.from({ length: 6 }).map((_, j) => <Skeleton key={j} className="aspect-square rounded-xl" />)}
           </div>
         </div>
       ))}
@@ -67,7 +66,7 @@ export function MemoriesTimeline({ onPreview }: TimelineProps) {
   );
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       {/* Scanning indicator */}
       {scanning && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted text-muted-foreground text-xs w-fit">
@@ -75,35 +74,55 @@ export function MemoriesTimeline({ onPreview }: TimelineProps) {
           Reading photo dates from your images…
         </div>
       )}
-      {sortedKeys.map(key => {
-        const [year, monthStr] = key.split("-");
-        const monthName = MONTH_NAMES[parseInt(monthStr) - 1];
+
+      {sortedKeys.map((key, idx) => {
+        const dayDate = new Date(key + "T12:00:00"); // noon to avoid tz shift
         const media = groups[key];
+
+        // Show month/year banner when the month changes vs previous entry
+        const prevKey = sortedKeys[idx - 1];
+        const prevMonth = prevKey ? prevKey.slice(0, 7) : null;
+        const thisMonth = key.slice(0, 7);
+        const showMonthBanner = idx === 0 || prevMonth !== thisMonth;
+
         return (
-          <section key={key}>
-            {/* Month header */}
-            <div className="flex items-center gap-3 mb-4 sticky top-0 bg-background/90 backdrop-blur-sm py-2 z-10">
-              <div className="h-px flex-1 bg-border/50" />
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-border/60 bg-card">
-                <Heart className="h-3 w-3 text-primary fill-primary" />
-                <span className="text-sm font-semibold font-heading">{monthName} {year}</span>
-                <span className="text-xs text-muted-foreground">{media.length} {media.length === 1 ? "memory" : "memories"}</span>
+          <div key={key}>
+            {/* Month / Year separator — shown once per month */}
+            {showMonthBanner && (
+              <div className="flex items-center gap-3 mb-5 mt-2">
+                <div className="h-px flex-1 bg-border/40" />
+                <div className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-border/60 bg-card shadow-sm">
+                  <Heart className="h-3 w-3 text-primary fill-primary" />
+                  <span className="text-sm font-bold font-heading tracking-wide">
+                    {format(dayDate, "MMMM yyyy")}
+                  </span>
+                </div>
+                <div className="h-px flex-1 bg-border/40" />
               </div>
-              <div className="h-px flex-1 bg-border/50" />
+            )}
+
+            {/* Day header — "Sunday, March 8" */}
+            <div className="flex items-baseline gap-3 mb-3 sticky top-0 z-10 bg-background/90 backdrop-blur-sm py-1.5 px-1">
+              <span className="text-base font-semibold font-heading text-foreground">
+                {format(dayDate, "EEEE, MMMM d")}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {media.length} {media.length === 1 ? "memory" : "memories"}
+              </span>
             </div>
 
             {/* Photo grid */}
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-              {media.map((item, idx) => {
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-1.5">
+              {media.map((item, itemIdx) => {
                 const photoDate = new Date((item as any).taken_at ?? item.created_at);
                 const hasTakenAt = !!(item as any).taken_at;
                 return (
                   <div
                     key={item.id}
                     className={cn(
-                      "relative aspect-square rounded-xl overflow-hidden cursor-pointer group",
+                      "relative aspect-square rounded-lg overflow-hidden cursor-pointer group",
                       "hover:ring-2 hover:ring-primary/60 transition-all duration-200",
-                      idx === 0 && media.length > 2 ? "col-span-2 row-span-2" : ""
+                      itemIdx === 0 && media.length > 3 ? "col-span-2 row-span-2" : ""
                     )}
                     onClick={() => onPreview(item.id)}
                   >
@@ -115,15 +134,20 @@ export function MemoriesTimeline({ onPreview }: TimelineProps) {
                         </div>
                       </>
                     ) : (
-                      <img src={getPublicUrl(item.file_path)} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                      <img
+                        src={getPublicUrl(item.file_path)}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <p className="text-white text-xs font-medium truncate drop-shadow">{item.title}</p>
                       <p className="text-white/80 text-[10px] flex items-center gap-1 mt-0.5">
                         {hasTakenAt
-                          ? <><Camera className="h-2.5 w-2.5" />{format(photoDate, "MMM d, yyyy · h:mm a")}</>
-                          : <><Clock className="h-2.5 w-2.5" />{format(photoDate, "MMM d, yyyy")}</>
+                          ? <><Camera className="h-2.5 w-2.5" />{format(photoDate, "h:mm a")}</>
+                          : <><Clock className="h-2.5 w-2.5" />{format(photoDate, "h:mm a")}</>
                         }
                       </p>
                     </div>
@@ -141,7 +165,7 @@ export function MemoriesTimeline({ onPreview }: TimelineProps) {
                 );
               })}
             </div>
-          </section>
+          </div>
         );
       })}
     </div>
@@ -153,7 +177,7 @@ export function RelationshipStats() {
 
   if (isLoading) return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      {Array.from({length:4}).map((_,i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}
+      {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}
     </div>
   );
 
@@ -168,7 +192,6 @@ export function RelationshipStats() {
 
   return (
     <div className="space-y-4">
-      {/* Days together banner */}
       {stats.firstDate && (
         <div className="glass-card p-5 flex items-center gap-4">
           <div className="h-12 w-12 rounded-2xl bg-primary/15 flex items-center justify-center shrink-0">
@@ -183,8 +206,6 @@ export function RelationshipStats() {
           </div>
         </div>
       )}
-
-      {/* Stat grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {items.map(item => (
           <div key={item.label} className="glass-card p-4 flex flex-col gap-2">
@@ -194,8 +215,6 @@ export function RelationshipStats() {
           </div>
         ))}
       </div>
-
-      {/* Total memories */}
       <div className="glass-card p-4 flex items-center gap-3">
         <Heart className="h-5 w-5 text-primary fill-primary shrink-0" />
         <p className="text-sm text-muted-foreground">
