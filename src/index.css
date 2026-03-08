@@ -61,6 +61,21 @@
     --glass-border: hsl(0 0% 88% / 0.9);
     --shadow-card: 0 1px 3px hsl(0 0% 0% / 0.08), 0 1px 8px hsl(0 0% 0% / 0.04);
     --shadow-popover: 0 8px 30px hsl(0 0% 0% / 0.12), 0 2px 8px hsl(0 0% 0% / 0.06);
+
+    /* ── Chat tokens — light mode ── */
+    --wa-bg:            0 0% 94%;          /* light grey chat bg */
+    --wa-header:        0 0% 96%;          /* slightly off-white header */
+    --wa-bubble-out:    152 45% 88%;       /* soft green sent bubble */
+    --wa-bubble-in:     0 0% 100%;         /* white received bubble */
+    --wa-input-bg:      0 0% 100%;         /* white input */
+    --wa-online:        142 69% 38%;       /* green accent */
+    --wa-tick-blue:     207 90% 50%;
+    --wa-meta:          0 0% 45%;          /* grey timestamps */
+    --wa-system-bubble: 0 0% 88%;
+    --wa-avatar:        152 35% 55%;
+    --wa-voice-thumb:   199 98% 45%;
+    --wa-text:          0 0% 10%;          /* main text in light mode */
+    --wa-text-meta:     0 0% 40%;
   }
 
   .dark {
