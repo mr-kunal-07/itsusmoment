@@ -1,58 +1,57 @@
 
-# Media Hub — Team Media Management App
+## Plan: Rewrite README.md with Full Product Documentation
 
-## Overview
-A clean, minimal web app where team members can upload, organize, and manage shared media files (images & videos) in a collaborative workspace.
+The current README is a generic Lovable template with placeholder URLs. The user wants it replaced with proper OurVault product documentation covering all features, tech stack, and setup instructions discovered from the codebase.
 
-## 1. Authentication
-- **Sign up / Login / Logout** with email and password via Supabase Auth
-- User profiles with display name and avatar
-- Protected routes — unauthenticated users redirected to login
+### What I'll write in README.md
 
-## 2. Dashboard
-- Clean landing page showing recent uploads across the team
-- Top navigation bar with search, user menu, and upload button
-- Sidebar with folder tree navigation
+**Sections:**
 
-## 3. Folder System
-- Create, rename, and delete folders
-- Nested folder support with breadcrumb navigation
-- Folder view shows all media inside with file count
-- All team members can see and manage shared folders
+1. **Header** — OurVault name, tagline, live URL badge
+2. **Overview** — What the product is (couples-only private vault)
+3. **Features** (full list from codebase):
+   - Authentication & Partner Linking (email/password, invite codes, couple linking/unlinking)
+   - Media Vault (upload photos/videos up to 500MB, EXIF metadata, folders, grid/list, sort, search, star, soft-delete with 14-day trash, bulk actions, move between folders)
+   - Media Preview (lightbox, video player, swipe nav, keyboard nav, download, copy link, love notes, tags)
+   - Memories (Timeline view, On This Day, Anniversaries & Milestones with countdown rings, Milestone Calendar)
+   - Bucket List (categories, due dates, completion photos, emoji reactions)
+   - Chat (E2E AES-256-GCM encrypted, real-time, voice messages, typing indicators, online presence, read receipts, reply-to, reactions via long-press/hover, select & delete multiple, partner can delete both sides, auto-purge daily at 3AM UTC)
+   - Activity Feed (uploads, notes, reactions, milestones)
+   - Notifications (real-time partner alerts)
+   - Days Together widget
+   - App Lock (PIN + WebAuthn biometric, locks after 15s in background)
+   - Billing (3 plans via Razorpay — Single free, Dating, Soulmate; shared storage pools)
+   - Settings (profile, avatar, theme, app lock, PWA install)
+   - Admin Panel (user management, plan changes, audit log)
+   - PWA (installable, offline-ready)
+   - Dark / Light theme
 
-## 4. Media Upload
-- Drag-and-drop upload zone + file picker button
-- Supported formats: JPG, PNG, WebP (images), MP4, MOV, WebM (videos)
-- File size validation up to 500 MB
-- Upload progress indicator
-- Each file requires a title and optional description
-- Upload date auto-generated
+4. **Tech Stack** (full list):
+   - Frontend: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui + Radix UI primitives
+   - State / Data: TanStack React Query v5
+   - Routing: React Router v6
+   - Forms: React Hook Form + Zod
+   - Charts: Recharts
+   - Dates: date-fns
+   - Media: exifr (EXIF extraction), embla-carousel, Vaul (drawer)
+   - Backend: Supabase (PostgreSQL, Auth, Storage, Realtime, Edge Functions)
+   - Automation: pg_cron (3AM message purge, media purge)
+   - Payments: Razorpay (Indian payment gateway)
+   - Security: AES-256-GCM client-side E2E encryption, PBKDF2 key derivation, WebAuthn biometrics
+   - PWA: vite-plugin-pwa
 
-## 5. Media Library & Grid View
-- Responsive grid layout with thumbnail previews
-- Video thumbnails with play icon overlay
-- Toggle between grid and list view
-- Sort by date, name, or file size
-- Search by title or filter by folder
+5. **Database Tables** (from types.ts):
+   - bucket_list, bucket_list_reactions, couples, folders, love_notes, media, media_reactions, media_tags, message_reactions, messages, milestones, notifications, plan_audit_log, profiles, subscriptions, tags, user_roles
 
-## 6. Media Preview & Playback
-- Click to open full-size image preview in a modal/lightbox
-- Built-in video player for video files
-- Display file details: title, description, upload date, uploader, file size
+6. **Subscription Plans** table
 
-## 7. Media Management
-- Edit title and description inline
-- Delete files with confirmation dialog
-- Move files between folders
+7. **Security Architecture** section (E2E encryption details, RLS, App Lock)
 
-## 8. Design & UX
-- Clean, minimal design with lots of white space (Google Drive-inspired)
-- Light theme with subtle shadows and borders
-- Responsive layout — works on desktop, tablet, and mobile
-- Smooth animations and loading states
+8. **Local Development** setup instructions
 
-## Backend (Supabase)
-- **Auth**: Supabase Auth for email/password authentication
-- **Database**: Tables for profiles, folders, and media metadata
-- **Storage**: Supabase Storage bucket for file uploads (public bucket for team access)
-- **RLS**: Row-level security ensuring only authenticated team members can access data
+9. **Edge Functions** list
+
+10. **Live URLs** (preview + published)
+
+### File to change
+- `README.md` — full rewrite (single file, no DB/code changes needed)
