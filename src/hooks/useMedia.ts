@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Tables } from "@/integrations/supabase/types";
@@ -6,10 +6,14 @@ import { QK, invalidateMedia } from "@/lib/queryKeys";
 
 export type Media = Tables<"media"> & { uploader_name?: string | null; taken_at?: string | null; deleted_at?: string | null };
 
+/** Page size for paginated media queries */
+const PAGE_SIZE = 50;
+
 export function useMedia(folderId?: string | null, search?: string) {
   const { user } = useAuth();
   return useQuery({
     queryKey: QK.media(folderId, search),
+    staleTime: 30_000, // media lists: 30s stale
     queryFn: async () => {
       let query = supabase.from("media").select("*").is("deleted_at", null);
       if (folderId !== undefined) {
@@ -19,10 +23,39 @@ export function useMedia(folderId?: string | null, search?: string) {
       if (search) {
         query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
       }
-      const { data, error } = await query.order("created_at", { ascending: false });
+      const { data, error } = await query
+        .order("created_at", { ascending: false })
+        .limit(500); // hard cap — prevents runaway queries
       if (error) throw error;
       return data as Media[];
     },
+    enabled: !!user,
+  });
+}
+
+/** Infinite-scroll version of media — use for large vaults */
+export function useMediaInfinite(folderId?: string | null, search?: string) {
+  const { user } = useAuth();
+  return useInfiniteQuery({
+    queryKey: [...QK.mediaInfinite(), folderId, search],
+    staleTime: 30_000,
+    initialPageParam: 0,
+    queryFn: async ({ pageParam = 0 }) => {
+      let query = supabase.from("media").select("*").is("deleted_at", null);
+      if (folderId !== undefined) {
+        if (folderId) query = query.eq("folder_id", folderId);
+        else query = query.is("folder_id", null);
+      }
+      if (search) {
+        query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+      }
+      const { data, error } = await query
+        .order("created_at", { ascending: false })
+        .range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1);
+      if (error) throw error;
+      return { items: data as Media[], nextPage: data.length === PAGE_SIZE ? pageParam + 1 : undefined };
+    },
+    getNextPageParam: (last) => last.nextPage,
     enabled: !!user,
   });
 }
@@ -31,6 +64,7 @@ export function useRecentlyDeletedMedia() {
   const { user } = useAuth();
   return useQuery({
     queryKey: QK.mediaDeleted(),
+    staleTime: 60_000,
     queryFn: async () => {
       const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
       const { data, error } = await supabase
@@ -38,7 +72,8 @@ export function useRecentlyDeletedMedia() {
         .select("*")
         .not("deleted_at", "is", null)
         .gt("deleted_at", cutoff)
-        .order("deleted_at", { ascending: false });
+        .order("deleted_at", { ascending: false })
+        .limit(200);
       if (error) throw error;
       return data as Media[];
     },
@@ -50,13 +85,15 @@ export function useStarredMedia() {
   const { user } = useAuth();
   return useQuery({
     queryKey: QK.mediaStarred(),
+    staleTime: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("media")
         .select("*")
         .eq("is_starred", true)
         .is("deleted_at", null)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(200);
       if (error) throw error;
       return data as Media[];
     },
@@ -130,19 +167,26 @@ export function useBackfillExifDates() {
       const exifr = (await import("exifr")).default;
       const results: { id: string; taken_at: string }[] = [];
 
-      for (const item of items) {
-        try {
-          const { data: urlData } = supabase.storage.from("media").getPublicUrl(item.file_path);
-          const parsed = await exifr.parse(urlData.publicUrl, ["DateTimeOriginal", "CreateDate", "DateTime"]);
-          const raw = parsed?.DateTimeOriginal ?? parsed?.CreateDate ?? parsed?.DateTime;
-          if (raw instanceof Date && !isNaN(raw.getTime())) {
-            results.push({ id: item.id, taken_at: raw.toISOString() });
-          }
-        } catch {
-          // skip files without EXIF
-        }
+      // Process in batches of 10 to avoid overwhelming the network
+      for (let i = 0; i < items.length; i += 10) {
+        const batch = items.slice(i, i + 10);
+        await Promise.all(
+          batch.map(async (item) => {
+            try {
+              const { data: urlData } = supabase.storage.from("media").getPublicUrl(item.file_path);
+              const parsed = await exifr.parse(urlData.publicUrl, ["DateTimeOriginal", "CreateDate", "DateTime"]);
+              const raw = parsed?.DateTimeOriginal ?? parsed?.CreateDate ?? parsed?.DateTime;
+              if (raw instanceof Date && !isNaN(raw.getTime())) {
+                results.push({ id: item.id, taken_at: raw.toISOString() });
+              }
+            } catch {
+              // skip files without EXIF
+            }
+          })
+        );
       }
 
+      // Write in batches of 5
       for (let i = 0; i < results.length; i += 5) {
         const batch = results.slice(i, i + 5);
         await Promise.all(

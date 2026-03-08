@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { QK } from "@/lib/queryKeys";
 
 export interface Couple {
   id: string;
@@ -18,7 +19,8 @@ export function useMyCouple() {
   const qc = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["my-couple"],
+    queryKey: QK.myCouple(),
+    staleTime: 5 * 60_000, // couple data changes rarely
     queryFn: async () => {
       const { data, error } = await supabase
         .from("couples")
@@ -35,12 +37,16 @@ export function useMyCouple() {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel("couple-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "couples" }, () => {
-        qc.invalidateQueries({ queryKey: ["my-couple"] });
-        // Also refresh media/folders once linked
-        qc.invalidateQueries({ queryKey: ["media"] });
-        qc.invalidateQueries({ queryKey: ["folders"] });
+      .channel(`couple:${user.id}`) // scoped per user to avoid broadcast storms
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "couples",
+        filter: `user1_id=eq.${user.id}`,
+      }, () => {
+        qc.invalidateQueries({ queryKey: QK.myCouple() });
+        qc.invalidateQueries({ queryKey: QK.mediaAll() });
+        qc.invalidateQueries({ queryKey: QK.folders() });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -71,7 +77,7 @@ export function useCreateInvite() {
       if (error) throw error;
       return data as Couple;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-couple"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.myCouple() }),
   });
 }
 
@@ -89,9 +95,9 @@ export function useAcceptInvite() {
       return result;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["my-couple"] });
-      qc.invalidateQueries({ queryKey: ["media"] });
-      qc.invalidateQueries({ queryKey: ["folders"] });
+      qc.invalidateQueries({ queryKey: QK.myCouple() });
+      qc.invalidateQueries({ queryKey: QK.mediaAll() });
+      qc.invalidateQueries({ queryKey: QK.folders() });
     },
   });
 }
@@ -105,8 +111,8 @@ export function useUnlinkPartner() {
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["my-couple"] });
-      qc.invalidateQueries({ queryKey: ["media"] });
+      qc.invalidateQueries({ queryKey: QK.myCouple() });
+      qc.invalidateQueries({ queryKey: QK.mediaAll() });
     },
   });
 }

@@ -15,7 +15,27 @@ import Join from "./pages/Join";
 import Admin from "./pages/Admin";
 import Index from "./pages/Index";
 
-const queryClient = new QueryClient();
+/**
+ * Scalability-tuned QueryClient:
+ * - staleTime: 60s  — avoids refetching on every re-render / mount
+ * - gcTime: 5 min   — keeps inactive cache alive to serve instant navigations
+ * - retry: 1        — don't hammer the DB on transient failures
+ * - refetchOnWindowFocus: false — avoids thundering-herd when 100K users tab-switch
+ */
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,          // 1 minute
+      gcTime: 5 * 60_000,         // 5 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+    },
+    mutations: {
+      retry: 0,
+    },
+  },
+});
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
