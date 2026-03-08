@@ -157,6 +157,7 @@ export default function Dashboard() {
     : selectedView === "on-this-day" ? `On This Day · ${format(new Date(), "MMMM d")}`
     : selectedView === "anniversaries" ? "Anniversaries & Milestones"
     : selectedView === "chat" ? "Chat with Partner 💬"
+    : selectedView === "activity" ? "Activity Feed"
     : currentFolder?.name || "Folder";
 
   const avatarUrl = profile?.avatar_url ?? null;
