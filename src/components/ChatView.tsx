@@ -232,35 +232,10 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
     return () => document.removeEventListener("click", handler);
   }, [emojiPickerId]);
 
-  // Fix mobile keyboard: track visualViewport and shift the wrapper up
-  // so the input bar stays just above the software keyboard.
+  // Scroll to bottom on new messages
   useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const onViewportChange = () => {
-      if (!chatWrapRef.current) return;
-      // Offset from the bottom of the layout viewport to the top of the keyboard
-      const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
-      chatWrapRef.current.style.transform = `translateY(${-Math.max(keyboardHeight, 0)}px)`;
-      chatWrapRef.current.style.height = `${vv.height + vv.offsetTop}px`;
-      // Keep newest message visible
-      bottomRef.current?.scrollIntoView({ behavior: "instant" });
-    };
-
-    vv.addEventListener("resize", onViewportChange);
-    vv.addEventListener("scroll", onViewportChange);
-
-    return () => {
-      vv.removeEventListener("resize", onViewportChange);
-      vv.removeEventListener("scroll", onViewportChange);
-      // Reset on unmount
-      if (chatWrapRef.current) {
-        chatWrapRef.current.style.transform = "";
-        chatWrapRef.current.style.height = "";
-      }
-    };
-  }, []);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length]);
 
   const handleSend = async () => {
     const trimmed = text.trim();
@@ -268,10 +243,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
     setText("");
     const replyId = replyTo?.id ?? null;
     setReplyTo(null);
-    // Reset textarea height
-    if (inputRef.current) {
-      inputRef.current.style.height = "auto";
-    }
+    if (inputRef.current) inputRef.current.style.height = "auto";
     await sendMessage.mutateAsync({ content: trimmed, replyToId: replyId, messageType: "text" });
   };
 
@@ -290,7 +262,6 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
     if (e.target.value) sendTyping();
-    // auto-resize
     e.target.style.height = "auto";
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
   };
@@ -324,13 +295,11 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
 
   return (
     <div
-      ref={chatWrapRef}
-      className="flex flex-col overflow-hidden"
+      className="flex flex-col"
       style={{
-        height: "100%",
+        height: "100dvh",
+        maxHeight: "100dvh",
         background: "hsl(var(--wa-bg))",
-        transformOrigin: "top left",
-        willChange: "transform, height",
       }}
     >
       {/* ── WhatsApp-style Header ── */}
