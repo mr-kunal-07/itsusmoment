@@ -135,7 +135,7 @@ export default function Dashboard() {
 
   const sortLabel = { created_at: "Date", title: "Name", file_size: "Size" }[sortKey] + (sortDir === "asc" ? " ↑" : " ↓");
 
-  const isGridView = selectedView !== "timeline" && selectedView !== "stats" && selectedView !== "anniversaries";
+  const isGridView = selectedView !== "timeline" && selectedView !== "anniversaries";
 
   return (
     <SidebarProvider>
