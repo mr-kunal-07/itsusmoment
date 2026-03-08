@@ -5,6 +5,7 @@ import {
   Menu, X as XIcon, Camera, MessageCircle, Calendar,
   Sparkles, Image, Mic, Bell, Users, ChevronRight } from "lucide-react";
 import dashboardImg from "@/assets/dashboard-preview.png";
+import memoriesTimelineImg from "@/assets/memories-timeline.png";
 
 /* ── Design Tokens ─────────────────────────────────────── */
 const T = {
