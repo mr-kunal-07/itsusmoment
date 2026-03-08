@@ -176,6 +176,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
       </SidebarHeader>
 
       <SidebarContent>
+        {/* ── Primary nav: All Files, Starred ── */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -206,8 +207,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {specialItems.map(item => (
-                // Hide Chat & Timeline on mobile — they live in the bottom nav
+              {specialItems.filter(i => i.id !== "recently-deleted").map(item => (
                 <SidebarMenuItem key={item.id} className={cn((item.id === "chat" || item.id === "timeline") && "sm:flex hidden")}>
                   <SidebarMenuButton
                     onClick={() => selectView(item.id)}
@@ -240,7 +240,6 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
-
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -295,9 +294,11 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* ── Footer ──────────────────────────────────────────────── */}
-      <SidebarFooter className="p-4 border-t space-y-3">
-        <div className="space-y-1.5">
+      {/* ── Footer: Storage → Days Together → Settings/Billing/Admin/Recently Deleted ── */}
+      <SidebarFooter className="p-3 border-t space-y-2">
+        <DaysTogether />
+
+        <div className="space-y-1.5 pt-1">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <Hash className="h-3 w-3" />
@@ -314,45 +315,58 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
               style={{ width: `${Math.min((storageBytes / storageLimit) * 100, 100)}%` }}
             />
           </div>
-          <p className="text-xs text-muted-foreground/60">
+          <p className="text-[10px] text-muted-foreground/60">
             of {storageLabel}{couple?.status === "active" ? " shared between you two" : ""}
           </p>
         </div>
 
-        <SidebarMenuButton
-          onClick={() => selectView("settings")}
-          className={cn(
-            "w-full justify-start gap-2 text-xs text-muted-foreground hover:text-foreground",
-            selectedView === "settings" && "bg-accent text-accent-foreground"
-          )}
-        >
-          <Settings className="h-3.5 w-3.5 shrink-0" />
-          Settings
-        </SidebarMenuButton>
-
-        <SidebarMenuButton
-          onClick={() => selectView("billing")}
-          className={cn(
-            "w-full justify-start gap-2 text-xs",
-            plan === "soulmate" ? "text-primary hover:text-primary" : "text-muted-foreground hover:text-foreground",
-            selectedView === "billing" && "bg-accent text-accent-foreground"
-          )}
-        >
-          <Crown className="h-3.5 w-3.5 shrink-0" />
-          {plan === "soulmate" ? "Soulmate plan active" : plan === "dating" ? "Dating plan active" : "Upgrade plan"}
-        </SidebarMenuButton>
-
-        {isAdmin && (
+        <div className="flex items-center gap-1 pt-0.5">
           <SidebarMenuButton
-            onClick={() => { setOpenMobile(false); navigate("/admin"); }}
-            className="w-full justify-start gap-2 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => selectView("settings")}
+            className={cn(
+              "flex-1 justify-start gap-1.5 text-xs text-muted-foreground hover:text-foreground",
+              selectedView === "settings" && "bg-accent text-accent-foreground"
+            )}
           >
-            <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
-            Admin panel
+            <Settings className="h-3.5 w-3.5 shrink-0" />
+            Settings
           </SidebarMenuButton>
-        )}
 
-        <DaysTogether />
+          <SidebarMenuButton
+            onClick={() => selectView("billing")}
+            className={cn(
+              "flex-1 justify-start gap-1.5 text-xs",
+              plan === "soulmate" ? "text-primary hover:text-primary" : "text-muted-foreground hover:text-foreground",
+              selectedView === "billing" && "bg-accent text-accent-foreground"
+            )}
+          >
+            <Crown className="h-3.5 w-3.5 shrink-0" />
+            {plan === "soulmate" ? "Soulmate" : plan === "dating" ? "Dating" : "Upgrade"}
+          </SidebarMenuButton>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <SidebarMenuButton
+            onClick={() => selectView("recently-deleted")}
+            className={cn(
+              "flex-1 justify-start gap-1.5 text-xs text-muted-foreground hover:text-foreground",
+              selectedView === "recently-deleted" && "bg-accent text-accent-foreground"
+            )}
+          >
+            <Trash2 className="h-3.5 w-3.5 shrink-0" />
+            Trash
+          </SidebarMenuButton>
+
+          {isAdmin && (
+            <SidebarMenuButton
+              onClick={() => { setOpenMobile(false); navigate("/admin"); }}
+              className="flex-1 justify-start gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
+              Admin
+            </SidebarMenuButton>
+          )}
+        </div>
       </SidebarFooter>
 
       <AlertDialog open={!!deletingFolder} onOpenChange={open => !open && setDeletingFolder(null)}>
