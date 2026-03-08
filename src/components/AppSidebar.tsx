@@ -188,8 +188,8 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
             <SidebarMenu>
               {navItems.map(item => (
                 <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    onClick={() => onSelectView(item.id)}
+                   <SidebarMenuButton
+                    onClick={() => selectView(item.id)}
                     className={cn("justify-between", selectedView === item.id && "bg-accent text-accent-foreground")}
                   >
                     <span className="flex items-center">
