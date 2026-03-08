@@ -101,10 +101,19 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
             <Heart className="h-4 w-4 text-primary-foreground fill-primary-foreground" />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <h2 className="text-sm font-bold font-heading tracking-tight gradient-text">Kunal & Kalyani</h2>
             <p className="text-[10px] text-muted-foreground">Media Vault</p>
           </div>
+          {couple?.status === "active" ? (
+            <span title="Partner linked" className="h-5 w-5 flex items-center justify-center rounded-full bg-primary/15 shrink-0">
+              <Heart className="h-2.5 w-2.5 text-primary fill-primary" />
+            </span>
+          ) : (
+            <span title="No partner linked" className="h-5 w-5 flex items-center justify-center rounded-full bg-muted shrink-0">
+              <Link2 className="h-2.5 w-2.5 text-muted-foreground" />
+            </span>
+          )}
         </div>
       </SidebarHeader>
       <SidebarContent>
