@@ -21,6 +21,7 @@ import { Slideshow } from "@/components/Slideshow";
 import { PartnerBanner } from "@/components/PartnerBanner";
 import { ChatView } from "@/components/ChatView";
 import { ActivityFeed } from "@/components/ActivityFeed";
+import { BillingView } from "@/components/BillingView";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { Button } from "@/components/ui/button";
