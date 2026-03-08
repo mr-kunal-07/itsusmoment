@@ -5,6 +5,7 @@ import {
   Menu, X as XIcon, Camera, MessageCircle, Calendar,
   Sparkles, Image, Mic, Bell, Users, ChevronRight,
 } from "lucide-react";
+import dashboardImg from "@/assets/dashboard-preview.png";
 
 /* ── Design Tokens — Black & White ──────────────────────── */
 const T = {
@@ -353,8 +354,8 @@ export default function Index() {
 
         {/* App mockup — browser frame */}
         <Reveal delay={260} className="max-w-5xl mx-auto px-6 md:px-10 pb-0">
-          <div style={{ borderRadius: "16px 16px 0 0", overflow: "hidden", border: `1px solid ${T.border}`, borderBottom: "none", boxShadow: "0 -4px 40px rgba(0,0,0,0.08)" }}>
-            {/* Chrome bar */}
+          <div style={{ borderRadius: "16px 16px 0 0", overflow: "hidden", border: `1px solid ${T.border}`, borderBottom: "none", boxShadow: "0 -4px 48px rgba(0,0,0,0.10)" }}>
+            {/* Browser chrome bar */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", background: T.surface, borderBottom: `1px solid ${T.border}` }}>
               <div style={{ display: "flex", gap: 6 }}>
                 <div style={{ width: 11, height: 11, borderRadius: "50%", background: "#fca5a5" }} />
@@ -362,66 +363,15 @@ export default function Index() {
                 <div style={{ width: 11, height: 11, borderRadius: "50%", background: "#86efac" }} />
               </div>
               <div style={{ flex: 1, maxWidth: 260, margin: "0 auto", background: T.white, border: `1px solid ${T.border}`, borderRadius: 6, padding: "5px 12px", fontSize: 11, color: T.muted, textAlign: "center" }}>
-                app.ourvault.in/memories
+                app.ourvault.in/dashboard
               </div>
             </div>
-            {/* App interior */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 3fr", background: T.white, minHeight: 300 }}>
-              {/* Sidebar */}
-              <div style={{ background: "#fafafa", borderRight: `1px solid ${T.border}`, padding: 16, display: "flex", flexDirection: "column", gap: 4 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                  <div style={{ width: 22, height: 22, borderRadius: 7, background: T.ink, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Heart className="w-3 h-3 text-white fill-white" />
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: T.ink }}>OurVault</span>
-                </div>
-                {["Memories", "Chat", "Milestones", "Notes", "Settings"].map((item, i) => (
-                  <div key={i} style={{ fontSize: 11, padding: "6px 10px", borderRadius: 8, fontWeight: 500, background: i === 0 ? T.ink : "transparent", color: i === 0 ? "#fff" : T.muted }}>
-                    {item}
-                  </div>
-                ))}
-                <div style={{ marginTop: "auto", paddingTop: 16, display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: T.surface, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>💑</div>
-                  <div>
-                    <p style={{ fontSize: 9, fontWeight: 600, color: T.ink, margin: 0 }}>You & Priya</p>
-                    <p style={{ fontSize: 8, color: T.muted, margin: 0 }}>● Online</p>
-                  </div>
-                </div>
-              </div>
-              {/* Content */}
-              <div style={{ padding: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                  <div>
-                    <h3 style={{ fontSize: 13, fontWeight: 600, color: T.ink, margin: 0 }}>Our Memories</h3>
-                    <p style={{ fontSize: 10, color: T.muted, margin: 0 }}>47 photos · last added 2h ago</p>
-                  </div>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: T.ink, background: T.surface, border: `1px solid ${T.border}`, padding: "4px 10px", borderRadius: 8 }}>+ Add memory</div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 7, marginBottom: 12 }}>
-                  {[
-                    { bg: T.surface, e: "🌅", l: "Goa Trip" },
-                    { bg: "#f5f5f5", e: "🎂", l: "Birthday" },
-                    { bg: T.surface, e: "🌿", l: "Forest" },
-                    { bg: "#f5f5f5", e: "✈️", l: "Mumbai" },
-                    { bg: T.surface, e: "🍽️", l: "Date Night" },
-                    { bg: "#f5f5f5", e: "💑", l: "1 Year!" },
-                    { bg: T.surface, e: "🌊", l: "Beach" },
-                    { bg: "#f5f5f5", e: "☕", l: "Morning" },
-                  ].map((t, i) => (
-                    <div key={i} style={{ aspectRatio: "1", background: t.bg, borderRadius: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, border: `1px solid ${T.border}` }}>
-                      <span style={{ fontSize: 16 }}>{t.e}</span>
-                      <span style={{ fontSize: 8, fontWeight: 500, color: T.muted }}>{t.l}</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: T.surface, border: `1px solid ${T.border}`, borderRadius: 10 }}>
-                  <p style={{ flex: 1, fontSize: 11, color: T.muted, margin: 0 }}>Write a love note on this memory…</p>
-                  <div style={{ width: 26, height: 26, borderRadius: 8, background: T.ink, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Heart className="w-3 h-3 text-white fill-white" />
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Real dashboard screenshot */}
+            <img
+              src={dashboardImg}
+              alt="OurVault dashboard — private memory vault for couples"
+              style={{ width: "100%", display: "block", objectFit: "cover", objectPosition: "top" }}
+            />
           </div>
         </Reveal>
       </section>
