@@ -398,14 +398,6 @@ export default function Dashboard() {
           />
         )}
 
-        {slideshowOpen && (
-          <Slideshow
-            media={media}
-            open={slideshowOpen}
-            onClose={() => setSlideshowOpen(false)}
-          />
-        )}
-
         {!isChat && (
           <MobileBottomNav
             selectedView={selectedView}
