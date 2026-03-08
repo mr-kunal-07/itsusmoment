@@ -149,6 +149,18 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
     }
   };
 
+  const handleSingleMove = async () => {
+    if (!moveItem) return;
+    const folderId = singleMoveFolderId === "__none__" ? null : singleMoveFolderId;
+    try {
+      await moveMedia.mutateAsync({ ids: [moveItem.id], folderId });
+      setMoveItem(null);
+      toast({ title: "Moved to folder" });
+    } catch {
+      toast({ title: "Error moving file", variant: "destructive" });
+    }
+  };
+
   const handleDragStart = (e: React.DragEvent, item: Media) => {
     e.dataTransfer.setData("media-id", item.id);
     e.dataTransfer.effectAllowed = "move";
