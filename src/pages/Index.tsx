@@ -246,7 +246,7 @@ export default function Index() {
 
           <div className="hidden md:flex items-center gap-2 shrink-0">
             <Link to="/auth" className="text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors" style={{ color: T.body }}>Log in</Link>
-            <Link to="/auth" className="text-sm font-bold text-white px-5 py-2.5 rounded-xl hover:opacity-90 transition-all" style={{ background: T.accent }}>
+            <Link to="/auth" className="text-sm font-semibold text-white px-5 py-2.5 rounded-xl hover:opacity-90 transition-all" style={{ background: T.accent }}>
               Sign up free →
             </Link>
           </div>
