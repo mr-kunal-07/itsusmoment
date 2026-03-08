@@ -13,7 +13,7 @@ import { MediaGrid, ViewMode } from "@/components/MediaGrid";
 import { UploadDialog } from "@/components/UploadDialog";
 import { MediaPreview } from "@/components/MediaPreview";
 import { FolderBreadcrumb } from "@/components/FolderBreadcrumb";
-import { MemoriesTimeline, RelationshipStats } from "@/components/MemoriesView";
+import { MemoriesTimeline } from "@/components/MemoriesView";
 import { AnniversariesView } from "@/components/AnniversariesView";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { Slideshow } from "@/components/Slideshow";
