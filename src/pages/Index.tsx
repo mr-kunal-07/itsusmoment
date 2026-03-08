@@ -481,7 +481,7 @@ export default function Index() {
                       </li>
                     ))}
                   </ul>
-                  <Link to="/auth" className="inline-flex items-center gap-1.5 text-sm font-bold hover:underline underline-offset-4" style={{ color: T.accent }}>
+                  <Link to="/auth" className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline underline-offset-4" style={{ color: T.accent }}>
                     Get started free <ChevronRight className="w-4 h-4" />
                   </Link>
                 </Reveal>
