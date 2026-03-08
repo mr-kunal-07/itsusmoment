@@ -204,6 +204,39 @@
   ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.4); }
 }
 
+/* ── Mobile performance: strip heavy effects on small screens ── */
+@media (max-width: 640px) {
+  * {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+
+  /* Keep only essential animations */
+  .animate-spin {
+    animation-duration: 700ms !important;
+  }
+
+  /* Kill backdrop-blur — very expensive on mobile */
+  .backdrop-blur-md,
+  .backdrop-blur-sm,
+  [class*="backdrop-blur"] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Strip heavy shadows */
+  .shadow-lg, .shadow-xl, .shadow-2xl,
+  [class*="shadow-"] {
+    box-shadow: none !important;
+  }
+
+  /* Simpler glass card on mobile */
+  .glass-card {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
 @layer utilities {
   .gradient-text {
     background: var(--gradient-text);
