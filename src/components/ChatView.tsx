@@ -414,66 +414,92 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
         transition: "padding-bottom 0.15s ease",
       }}
     >
-      {/* ── WhatsApp-style Header ── */}
-      <div
-        className="flex items-center gap-2 px-3 py-3 shrink-0 z-10"
-        style={{ background: "hsl(var(--wa-header))", borderBottom: "1px solid hsl(var(--border))" }}
-      >
-        {/* Back button — mobile only */}
-        {onBack && (
+      {/* ── Header: normal mode OR select mode ── */}
+      {selectMode ? (
+        <div
+          className="flex items-center gap-3 px-3 py-3 shrink-0 z-10"
+          style={{ background: "hsl(var(--wa-header))", borderBottom: "1px solid hsl(var(--border))" }}
+        >
           <button
-            onClick={onBack}
-            className="sm:hidden p-1.5 rounded-full transition-colors mr-1 shrink-0"
+            onClick={clearSelect}
+            className="p-1.5 rounded-full shrink-0"
             style={{ color: "hsl(var(--wa-text))" }}
           >
-            <ArrowLeft className="h-5 w-5" />
+            <X className="h-5 w-5" />
           </button>
-        )}
-        <div className="relative">
-          <Avatar className="h-10 w-10 ring-2 ring-border">
-            <AvatarImage src={partnerProfile?.avatar_url ?? undefined} />
-            <AvatarFallback className="text-sm font-semibold" style={{ background: "hsl(var(--wa-avatar))", color: "hsl(var(--wa-bg))" }}>
-              {partnerInitials}
-            </AvatarFallback>
-          </Avatar>
-          <span
-            className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 transition-colors"
-            style={{
-              borderColor: "hsl(var(--wa-header))",
-              background: partnerOnline ? "hsl(var(--wa-online))" : "hsl(var(--wa-meta))"
-            }}
-          />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold leading-none truncate" style={{ color: "hsl(var(--wa-text))" }}>{partnerName}</p>
-          <p className="text-[10px] flex items-center gap-1 mt-0.5" style={{ color: "hsl(var(--wa-meta))" }}>
-            <Lock className="h-2.5 w-2.5 inline-block" />
-            <span>End-to-end encrypted</span>
-          </p>
-          <p className="text-xs truncate" style={{ color: "hsl(var(--wa-meta))" }}>
-            {partnerTyping ? (
-              <span style={{ color: "hsl(var(--wa-online))" }}>typing…</span>
-            ) : partnerOnline ? (
-              <span style={{ color: "hsl(var(--wa-online))" }}>online</span>
-            ) : partnerLastSeen ? (
-              <span>last seen {formatDistanceToNow(partnerLastSeen, { addSuffix: true })}</span>
-            ) : (
-              <span>offline</span>
-            )}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-1">
+          <span className="flex-1 text-sm font-semibold" style={{ color: "hsl(var(--wa-text))" }}>
+            {selectedIds.size} selected
+          </span>
           <button
-            className="p-2 rounded-full transition-colors"
-            style={{ color: "hsl(var(--wa-text) / 0.6)" }}
-            title="More options"
+            onClick={handleDeleteSelected}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            style={{ background: "hsl(var(--destructive) / 0.12)", color: "hsl(var(--destructive))" }}
           >
-            <MoreVertical className="h-5 w-5" />
+            <Trash2 className="h-4 w-4" />
+            Delete
           </button>
         </div>
-      </div>
+      ) : (
+        /* ── WhatsApp-style Header ── */
+        <div
+          className="flex items-center gap-2 px-3 py-3 shrink-0 z-10"
+          style={{ background: "hsl(var(--wa-header))", borderBottom: "1px solid hsl(var(--border))" }}
+        >
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="sm:hidden p-1.5 rounded-full transition-colors mr-1 shrink-0"
+              style={{ color: "hsl(var(--wa-text))" }}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+          )}
+          <div className="relative">
+            <Avatar className="h-10 w-10 ring-2 ring-border">
+              <AvatarImage src={partnerProfile?.avatar_url ?? undefined} />
+              <AvatarFallback className="text-sm font-semibold" style={{ background: "hsl(var(--wa-avatar))", color: "hsl(var(--wa-bg))" }}>
+                {partnerInitials}
+              </AvatarFallback>
+            </Avatar>
+            <span
+              className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 transition-colors"
+              style={{
+                borderColor: "hsl(var(--wa-header))",
+                background: partnerOnline ? "hsl(var(--wa-online))" : "hsl(var(--wa-meta))"
+              }}
+            />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold leading-none truncate" style={{ color: "hsl(var(--wa-text))" }}>{partnerName}</p>
+            <p className="text-[10px] flex items-center gap-1 mt-0.5" style={{ color: "hsl(var(--wa-meta))" }}>
+              <Lock className="h-2.5 w-2.5 inline-block" />
+              <span>End-to-end encrypted</span>
+            </p>
+            <p className="text-xs truncate" style={{ color: "hsl(var(--wa-meta))" }}>
+              {partnerTyping ? (
+                <span style={{ color: "hsl(var(--wa-online))" }}>typing…</span>
+              ) : partnerOnline ? (
+                <span style={{ color: "hsl(var(--wa-online))" }}>online</span>
+              ) : partnerLastSeen ? (
+                <span>last seen {formatDistanceToNow(partnerLastSeen, { addSuffix: true })}</span>
+              ) : (
+                <span>offline</span>
+              )}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              className="p-2 rounded-full transition-colors"
+              style={{ color: "hsl(var(--wa-text) / 0.6)" }}
+              title="More options"
+            >
+              <MoreVertical className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Messages area ── */}
       <div
