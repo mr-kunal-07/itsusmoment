@@ -230,9 +230,9 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
               {/* On This Day — only if we have past memories */}
               {onThisDayMedia.length > 0 && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => onSelectView("on-this-day")}
-                    className={cn("justify-between", selectedView === "on-this-day" && "bg-accent text-accent-foreground")}
+                   <SidebarMenuButton
+                     onClick={() => selectView("on-this-day")}
+                     className={cn("justify-between", selectedView === "on-this-day" && "bg-accent text-accent-foreground")}
                   >
                     <span className="flex items-center">
                       <span className="text-base mr-2">🗓️</span>
