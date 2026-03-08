@@ -522,6 +522,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                           </div>
                         )}
                       </div>
+                      </SwipeableMessage>
                     );
                   })}
                 </div>
