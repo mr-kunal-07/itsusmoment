@@ -152,18 +152,18 @@ const MEMORY_CARDS = [
 ];
 
 const FEATURES: { icon: React.ElementType; title: string; desc: string; tag: string }[] = [
-  { icon: Camera, title: "Shared Memory Vault", desc: "Upload photos & videos together — private, beautiful, forever yours. No algorithm, no ads, no noise.", tag: "Core" },
-  { icon: MessageCircle, title: "Private Chat", desc: "A dedicated space just for the two of you. React with emojis, reply to messages, feel every word.", tag: "Connect" },
-  { icon: Mic, title: "Voice Messages", desc: "Send your voice, your laugh, your 'I miss you' — audio messages that feel like a warm hug.", tag: "Soulmate" },
-  { icon: Calendar, title: "Milestones & Anniversaries", desc: "Never forget a special date. Your timeline of firsts — first kiss, first trip, first everything.", tag: "Core" },
-  { icon: Heart, title: "Love Notes", desc: "Attach a handwritten note to any photo. Words that stay forever, tied to your best memories.", tag: "Connect" },
-  { icon: Star, title: "Slideshow & Highlights", desc: "Relive your journey with a cinematic slideshow of your starred memories. Pure magic.", tag: "Core" },
+  { icon: GalleryVerticalEnd, title: "Shared Memory Vault", desc: "Upload photos & videos together — private, beautiful, forever yours. No algorithm, no ads, no noise.", tag: "Core" },
+  { icon: MessagesSquare, title: "Private Chat", desc: "A dedicated space just for the two of you. React with emojis, reply to messages, feel every word.", tag: "Connect" },
+  { icon: AudioWaveform, title: "Voice Messages", desc: "Send your voice, your laugh, your 'I miss you' — audio messages that feel like a warm hug.", tag: "Soulmate" },
+  { icon: CalendarHeart, title: "Milestones & Anniversaries", desc: "Never forget a special date. Your timeline of firsts — first kiss, first trip, first everything.", tag: "Core" },
+  { icon: HeartHandshake, title: "Love Notes", desc: "Attach a handwritten note to any photo. Words that stay forever, tied to your best memories.", tag: "Connect" },
+  { icon: Clapperboard, title: "Slideshow & Highlights", desc: "Relive your journey with a cinematic slideshow of your starred memories. Pure magic.", tag: "Core" },
 ];
 
 const STEPS: { step: string; icon: React.ElementType; title: string; desc: string }[] = [
-  { step: "01", icon: Users, title: "Create your account", desc: "Sign up free — no credit card required. Takes under a minute." },
-  { step: "02", icon: Heart, title: "Invite your partner", desc: "Share a unique link. They join, you're linked — your private world is live." },
-  { step: "03", icon: Image, title: "Start building memories", desc: "Upload photos, chat, add milestones. Your story, finally in one place." },
+  { step: "01", icon: UserPlus, title: "Create your account", desc: "Sign up free — no credit card required. Takes under a minute." },
+  { step: "02", icon: HeartHandshake, title: "Invite your partner", desc: "Share a unique link. They join, you're linked — your private world is live." },
+  { step: "03", icon: ImagePlay, title: "Start building memories", desc: "Upload photos, chat, add milestones. Your story, finally in one place." },
 ];
 
 const TESTIMONIALS = [
