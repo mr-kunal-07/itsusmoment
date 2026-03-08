@@ -38,7 +38,7 @@ function loadPref<T>(key: string, fallback: T): T {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
 }
 
-const SPECIAL_VIEWS = ["all", "unfiled", "starred", "recent", "timeline", "stats", "on-this-day"];
+const SPECIAL_VIEWS = ["all", "unfiled", "starred", "recent", "timeline", "stats", "on-this-day", "anniversaries"];
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
