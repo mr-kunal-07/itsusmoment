@@ -404,7 +404,7 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
     <div
       ref={mapRef}
       className="w-full h-full"
-      style={{ minHeight: "70vh", cursor: showHeatmap ? "default" : "crosshair" }}
+      style={{ minHeight: "70vh", cursor: showHeatmap ? "default" : "crosshair", isolation: "isolate" }}
     />
   );
 }
