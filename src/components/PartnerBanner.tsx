@@ -12,7 +12,7 @@ export function PartnerBanner() {
   if (isLoading || dismissed || couple?.status === "active") return null;
 
   return (
-    <div className="mx-6 mt-4 mb-0 flex items-center gap-3 rounded-xl border border-primary/25 bg-primary/8 px-4 py-3">
+    <div className="mx-3 sm:mx-6 mt-3 mb-0 flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
       <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
         <Link2 className="h-4 w-4 text-primary" />
       </div>

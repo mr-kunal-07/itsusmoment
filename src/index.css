@@ -63,15 +63,15 @@
     --shadow-popover: 0 8px 30px hsl(0 0% 0% / 0.12), 0 2px 8px hsl(0 0% 0% / 0.06);
 
     /* ── Chat tokens — light mode ── */
-    --wa-bg:            0 0% 94%;          /* light grey chat bg */
-    --wa-header:        0 0% 96%;          /* slightly off-white header */
-    --wa-bubble-out:    152 45% 88%;       /* soft green sent bubble */
+    --wa-bg:            0 0% 92%;          /* light grey chat bg */
+    --wa-header:        0 0% 100%;         /* white header */
+    --wa-bubble-out:    152 40% 84%;       /* soft green sent bubble */
     --wa-bubble-in:     0 0% 100%;         /* white received bubble */
     --wa-input-bg:      0 0% 100%;         /* white input */
     --wa-online:        142 69% 38%;       /* green accent */
     --wa-tick-blue:     207 90% 50%;
-    --wa-meta:          0 0% 45%;          /* grey timestamps */
-    --wa-system-bubble: 0 0% 88%;
+    --wa-meta:          0 0% 40%;          /* grey timestamps */
+    --wa-system-bubble: 0 0% 84%;
     --wa-avatar:        152 35% 55%;
     --wa-voice-thumb:   199 98% 45%;
     --wa-text:          0 0% 10%;          /* main text in light mode */
@@ -223,28 +223,12 @@
 
 /* ── Mobile performance: strip heavy effects on small screens ── */
 @media (max-width: 640px) {
-  * {
-    transition-duration: 0ms !important;
-    animation-duration: 0ms !important;
-  }
-
-  /* Keep only essential animations */
-  .animate-spin {
-    animation-duration: 700ms !important;
-  }
-
   /* Kill backdrop-blur — very expensive on mobile */
   .backdrop-blur-md,
   .backdrop-blur-sm,
   [class*="backdrop-blur"] {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-  }
-
-  /* Strip heavy shadows */
-  .shadow-lg, .shadow-xl, .shadow-2xl,
-  [class*="shadow-"] {
-    box-shadow: none !important;
   }
 
   /* Simpler glass card on mobile */

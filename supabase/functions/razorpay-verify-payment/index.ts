@@ -65,7 +65,11 @@ serve(async (req) => {
       });
     }
 
-    // Verify signature
+    // Validate plan
+    const validPlans = ["dating", "soulmate"];
+    const activePlan = validPlans.includes(plan) ? plan : "dating";
+
+    // Verify Razorpay signature
     const message = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expectedSignature = await hmacSHA256(RAZORPAY_KEY_SECRET, message);
 
@@ -76,23 +80,18 @@ serve(async (req) => {
       });
     }
 
-    // Determine plan period
+    // Set subscription period (1 month)
     const now = new Date();
-    const isYearly = plan === "pro_yearly";
     const periodEnd = new Date(now);
-    if (isYearly) {
-      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-    } else {
-      periodEnd.setMonth(periodEnd.getMonth() + 1);
-    }
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
 
-    // Upsert subscription as pro
+    // Upsert subscription with the correct plan name (dating / soulmate)
     const { error: upsertError } = await supabase
       .from("subscriptions")
       .upsert(
         {
           user_id: user.id,
-          plan: "pro",
+          plan: activePlan,
           status: "active",
           razorpay_order_id,
           razorpay_payment_id,
@@ -104,16 +103,14 @@ serve(async (req) => {
       );
 
     if (upsertError) {
-      console.error("Subscription upsert error:", upsertError);
       throw new Error(`Failed to activate subscription: ${upsertError.message}`);
     }
 
     return new Response(
-      JSON.stringify({ success: true, plan: "pro", period_end: periodEnd.toISOString() }),
+      JSON.stringify({ success: true, plan: activePlan, period_end: periodEnd.toISOString() }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    console.error("razorpay-verify-payment error:", err);
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

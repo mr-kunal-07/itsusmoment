@@ -51,10 +51,10 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/join" element={<Join />} />
 
-            {/* Dashboard with routed tabs */}
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/dashboard/:tab" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            {/* Dashboard with routed tabs — folder route must come before :tab */}
             <Route path="/dashboard/folder/:folderId" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/:tab" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
             {/* Other protected */}
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
