@@ -9,6 +9,7 @@ import { AppSidebar, ViewType } from "@/components/AppSidebar";
 import { MediaGrid, ViewMode } from "@/components/MediaGrid";
 import { UploadDialog } from "@/components/UploadDialog";
 import { MediaPreview } from "@/components/MediaPreview";
+import { FolderBreadcrumb } from "@/components/FolderBreadcrumb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -176,6 +177,13 @@ export default function Dashboard() {
             onDrop={handleMainDrop}
           >
             <div className="mb-6">
+              {!isSpecialView && (
+                <FolderBreadcrumb
+                  folderId={selectedView}
+                  folders={folders}
+                  onNavigate={setSelectedView}
+                />
+              )}
               <h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
               {!isLoading && <p className="text-sm text-muted-foreground mt-1">{media.length} file{media.length !== 1 ? "s" : ""}</p>}
             </div>
