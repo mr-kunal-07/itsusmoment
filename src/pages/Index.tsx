@@ -166,7 +166,7 @@ const STEPS: { step: string; icon: React.ElementType; title: string; desc: strin
 ];
 
 const TESTIMONIALS = [
-  { quote: "We live in different cities. KunalKalyani is the only app where we actually feel close. The voice messages make it real.", name: "Priya & Arjun", days: "Together 487 days", avatar: "💑" },
+  { quote: "We live in different cities. OurVault is the only app where we actually feel close. The voice messages make it real.", name: "Priya & Arjun", days: "Together 487 days", avatar: "💑" },
   { quote: "The memory vault is incredible. Every trip, every date, every note — all in one beautiful place just for us.", name: "Sneha & Rahul", days: "Together 1,204 days", avatar: "🌹" },
   { quote: "I uploaded our first photo on the app and added a love note. She cried. Best ₹9 I've ever spent.", name: "Rohan", days: "Dating plan", avatar: "💌" },
 ];
