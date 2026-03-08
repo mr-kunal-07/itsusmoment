@@ -145,8 +145,11 @@ export function SettingsView({ onNavigateBilling }: Props) {
           authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
           timeout: 60000,
         },
-      });
+      }) as PublicKeyCredential | null;
       if (credential) {
+        // Store credential ID so it can be used during unlock assertion
+        const credIdBase64 = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+        localStorage.setItem("ourvault_biometric_cred_id", credIdBase64);
         localStorage.setItem(LOCK_KEY, "biometric");
         setLockMethod("biometric");
         toast({ title: "🔒 Biometric lock enabled" });
@@ -159,6 +162,7 @@ export function SettingsView({ onNavigateBilling }: Props) {
 
   const handleDisableBiometric = () => {
     localStorage.removeItem(LOCK_KEY);
+    localStorage.removeItem("ourvault_biometric_cred_id");
     setLockMethod(null);
     toast({ title: "Biometric lock disabled" });
   };
