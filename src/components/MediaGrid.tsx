@@ -343,9 +343,10 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
           {media.map(item => {
             const isSelected = selected.has(item.id);
             return (
-              <div
-                key={item.id}
-                className={cn(
+              <ContextMenu key={item.id}>
+                <ContextMenuTrigger asChild>
+                <div
+                  className={cn(
                   "flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer group transition-colors",
                   isSelected && "bg-primary/10 hover:bg-primary/15"
                 )}
