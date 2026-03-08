@@ -321,8 +321,14 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
     setText("");
     const replyId = replyTo?.id ?? null;
     setReplyTo(null);
-    if (inputRef.current) inputRef.current.style.height = "auto";
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      // Keep keyboard open — refocus immediately after clearing
+      inputRef.current.focus();
+    }
     await sendMessage.mutateAsync({ content: trimmed, replyToId: replyId, messageType: "text" });
+    // Re-focus again after async to guard against any blur that happens mid-await
+    requestAnimationFrame(() => inputRef.current?.focus());
   };
 
   const handleVoiceSend = async (audioUrl: string, duration: string) => {
