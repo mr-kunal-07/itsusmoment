@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, Upload, LogOut, Moon, Sun, LayoutGrid, List, ArrowUpDown, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useMedia, useStarredMedia, useRecentMedia, useMoveMedia } from "@/hooks/useMedia";
 import { useFolders } from "@/hooks/useFolders";
 import { useTheme } from "@/hooks/useTheme";
-import { useProfile } from "@/hooks/useProfile";
+import { useProfile, useAllProfiles } from "@/hooks/useProfile";
 import { useOnThisDay } from "@/hooks/useMemories";
+import { useMyCouple } from "@/hooks/useCouple";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar, ViewType } from "@/components/AppSidebar";
 import { MediaGrid, ViewMode } from "@/components/MediaGrid";
@@ -17,6 +18,7 @@ import { MemoriesTimeline } from "@/components/MemoriesView";
 import { AnniversariesView } from "@/components/AnniversariesView";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { Slideshow } from "@/components/Slideshow";
+import { PartnerBanner } from "@/components/PartnerBanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,6 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 type FileTypeFilter = "all" | "image" | "video";
 type SortKey = "created_at" | "title" | "file_size";
@@ -58,11 +61,57 @@ export default function Dashboard() {
   const moveMedia = useMoveMedia();
   const { data: profile } = useProfile();
   const { data: onThisDayMedia = [] } = useOnThisDay();
+  const { data: couple } = useMyCouple();
+  const { data: profiles = [] } = useAllProfiles();
+  const seenMediaRef = useRef<Set<string>>(new Set());
 
   // Persist prefs
   useEffect(() => { localStorage.setItem(STORAGE_KEY_VIEW, JSON.stringify(viewMode)); }, [viewMode]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_SORT + "_key", JSON.stringify(sortKey)); }, [sortKey]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_SORT + "_dir", JSON.stringify(sortDir)); }, [sortDir]);
+
+  // Realtime: toast when partner uploads or edits a file
+  useEffect(() => {
+    if (!user || couple?.status !== "active") return;
+
+    const partnerId = couple.user1_id === user.id ? couple.user2_id : couple.user1_id;
+    if (!partnerId) return;
+
+    const partnerProfile = profiles.find(p => p.user_id === partnerId);
+    const partnerName = partnerProfile?.display_name ?? "Your partner";
+
+    const channel = supabase
+      .channel("partner-media-activity")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "media" },
+        (payload) => {
+          const row = payload.new as { uploaded_by: string; id: string; title?: string };
+          if (row.uploaded_by !== partnerId) return;
+          if (seenMediaRef.current.has(row.id)) return;
+          seenMediaRef.current.add(row.id);
+          toast({
+            title: `${partnerName} added a new photo 💕`,
+            description: row.title || undefined,
+          });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "media" },
+        (payload) => {
+          const row = payload.new as { uploaded_by: string; id: string; title?: string };
+          if (row.uploaded_by !== partnerId) return;
+          toast({
+            title: `${partnerName} updated a memory ✏️`,
+            description: row.title || undefined,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, couple, profiles, toast]);
 
   const isSpecialView = SPECIAL_VIEWS.includes(selectedView);
 
@@ -244,6 +293,9 @@ export default function Dashboard() {
               </DropdownMenu>
             </div>
           </header>
+
+          {/* Partner invite banner */}
+          <PartnerBanner />
 
           {/* Content */}
           <main
