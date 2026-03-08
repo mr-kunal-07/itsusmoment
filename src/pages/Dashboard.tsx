@@ -349,6 +349,8 @@ export default function Dashboard() {
               <ChatView />
             ) : selectedView === "activity" ? (
               <ActivityFeed />
+            ) : selectedView === "billing" ? (
+              <BillingView />
             ) : (
               <MediaGrid
                 media={media}
