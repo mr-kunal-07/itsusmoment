@@ -350,15 +350,13 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
         </div>
 
         <div className="flex items-center gap-1">
-          {[Video, Phone, MoreVertical].map((Icon, i) => (
-            <button
-              key={i}
-              className="p-2 rounded-full transition-colors"
-              style={{ color: "hsl(var(--wa-text) / 0.6)" }}
-            >
-              <Icon className="h-5 w-5" />
-            </button>
-          ))}
+          <button
+            className="p-2 rounded-full transition-colors"
+            style={{ color: "hsl(var(--wa-text) / 0.6)" }}
+            title="More options"
+          >
+            <MoreVertical className="h-5 w-5" />
+          </button>
         </div>
       </div>
 
