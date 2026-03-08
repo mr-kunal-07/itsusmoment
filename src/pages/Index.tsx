@@ -295,10 +295,10 @@ export default function Index() {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${heroBg})`, transform: `translateY(${scrollY * 0.25}px)`, filter: "brightness(0.35) saturate(0.6)" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-transparent to-background" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/50 via-transparent to-background/50" />
-        {/* Warm radial glow */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 55% at 50% 38%, hsl(42 20% 88% / 0.07) 0%, transparent 65%)" }} />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/20 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/60 via-transparent to-background/60" />
+        {/* Pink-green radial glow */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 55% at 50% 38%, hsl(338 80% 56% / 0.08) 0%, hsl(152 55% 45% / 0.05) 50%, transparent 75%)" }} />
 
         <div className="relative z-10 max-w-6xl mx-auto px-5 md:px-8 pt-28 pb-24 flex flex-col items-center text-center">
 
