@@ -5,6 +5,7 @@ import {
   Menu, X as XIcon, Camera, MessageCircle, Calendar,
   Sparkles, Image, Mic, Bell, Users, ChevronRight,
 } from "lucide-react";
+import dashboardImg from "@/assets/dashboard-preview.png";
 
 /* ── Design Tokens — Black & White ──────────────────────── */
 const T = {
