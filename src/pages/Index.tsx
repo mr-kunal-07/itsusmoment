@@ -406,7 +406,7 @@ export default function Index() {
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
               <div className="inline-flex items-center gap-2 bg-card border border-border px-3 py-1.5 rounded-full text-xs text-muted-foreground mb-6">
-                <Lock className="w-3 h-3 text-primary" /> 100% private
+                <LockKeyhole className="w-3 h-3 text-primary" /> 100% private
               </div>
               <h2 className="font-heading text-4xl md:text-5xl font-bold mb-6 leading-tight">
                 A chat room<br /><span className="gradient-text">nobody else sees.</span>
