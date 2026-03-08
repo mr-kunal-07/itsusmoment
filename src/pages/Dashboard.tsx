@@ -99,6 +99,8 @@ export default function Dashboard() {
   const { data: onThisDayMedia = [] } = useOnThisDay();
   const { data: couple } = useMyCouple();
   const { data: profiles = [] } = useAllProfiles();
+  const plan = usePlan();
+  const profileInitials = (profile?.display_name ?? user?.email ?? "U").slice(0, 2).toUpperCase();
   const seenMediaRef = useRef<Set<string>>(new Set());
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY_VIEW, JSON.stringify(viewMode)); }, [viewMode]);
