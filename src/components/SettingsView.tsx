@@ -321,14 +321,27 @@ export function SettingsView({ onNavigateBilling }: Props) {
             />
           </div>
 
-          {/* PIN setup (only shown when biometric unavailable and user toggles on) */}
-          {showPinSetup && !biometricAvailable && (
+          {/* Change PIN button (shown when lock is on and PIN exists) */}
+          {lockEnabled && !biometricAvailable && hasSavedPin && !showPinChange && !showPinSetup && (
+            <button
+              onClick={handleChangePinOpen}
+              className="flex items-center gap-2 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+            >
+              <KeyRound className="h-3.5 w-3.5" />
+              Change PIN
+            </button>
+          )}
+
+          {/* PIN setup or change panel */}
+          {(showPinSetup || showPinChange) && !biometricAvailable && (
             <div className="border border-border rounded-xl p-4 bg-muted/30 space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-foreground">
-                  {pinStep === "enter" ? "Set a 4-digit PIN" : "Confirm your PIN"}
+                  {showPinChange
+                    ? (pinStep === "enter" ? "Enter new PIN" : "Confirm new PIN")
+                    : (pinStep === "enter" ? "Set a 4-digit PIN" : "Confirm your PIN")}
                 </p>
-                <button onClick={() => { setShowPinSetup(false); setPinDraft(""); setPinConfirm(""); setPinError(""); }}
+                <button onClick={() => { setShowPinSetup(false); setShowPinChange(false); setPinDraft(""); setPinConfirm(""); setPinError(""); }}
                   className="text-muted-foreground hover:text-foreground">
                   <X className="h-4 w-4" />
                 </button>
