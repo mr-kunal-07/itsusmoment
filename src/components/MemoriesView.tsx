@@ -68,6 +68,13 @@ export function MemoriesTimeline({ onPreview }: TimelineProps) {
 
   return (
     <div className="space-y-10">
+      {/* Scanning indicator */}
+      {scanning && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted text-muted-foreground text-xs w-fit">
+          <ScanLine className="h-3.5 w-3.5 animate-pulse text-primary" />
+          Reading photo dates from your images…
+        </div>
+      )}
       {sortedKeys.map(key => {
         const [year, monthStr] = key.split("-");
         const monthName = MONTH_NAMES[parseInt(monthStr) - 1];
