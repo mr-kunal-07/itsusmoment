@@ -295,7 +295,7 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
       </SidebarContent>
 
       {/* ── Storage usage footer ──────────────────────────────── */}
-      <SidebarFooter className="p-4 border-t">
+      <SidebarFooter className="p-4 border-t space-y-3">
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
@@ -306,12 +306,31 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
           </div>
           <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full bg-primary rounded-full transition-all duration-500"
-              style={{ width: `${Math.min((storageBytes / (500 * 1024 * 1024)) * 100, 100)}%` }}
+              className={cn(
+                "h-full rounded-full transition-all duration-500",
+                storageBytes / storageLimit > 0.9 ? "bg-destructive" : "bg-primary"
+              )}
+              style={{ width: `${Math.min((storageBytes / storageLimit) * 100, 100)}%` }}
             />
           </div>
-          <p className="text-xs text-muted-foreground/60">of 500 MB</p>
+          <p className="text-xs text-muted-foreground/60">of {storageLabel}</p>
         </div>
+
+        {/* Billing shortcut */}
+        <SidebarMenuButton
+          onClick={() => onSelectView("billing")}
+          className={cn(
+            "w-full justify-start gap-2 text-xs",
+            plan === "pro"
+              ? "text-primary hover:text-primary"
+              : "text-muted-foreground hover:text-foreground",
+            selectedView === "billing" && "bg-accent text-accent-foreground"
+          )}
+        >
+          <Crown className="h-3.5 w-3.5 shrink-0" />
+          {plan === "pro" ? "Pro plan active" : "Upgrade to Pro"}
+        </SidebarMenuButton>
+
         <DaysTogether />
       </SidebarFooter>
 
