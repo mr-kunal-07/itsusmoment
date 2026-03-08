@@ -37,15 +37,25 @@ function formatSize(bytes: number) {
 }
 
 export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Props) {
+  const { user } = useAuth();
   const { data: folders = [] } = useFolders();
   const { data: allMedia = [] } = useMedia();
   const { data: storageBytes = 0 } = useStorageUsage();
   const { data: onThisDayMedia = [] } = useOnThisDay();
   const { data: couple } = useMyCouple();
   const { data: profiles = [] } = useAllProfiles();
+  const { data: myProfile } = useProfile();
   const createFolder = useCreateFolder();
   const renameFolder = useRenameFolder();
   const deleteFolder = useDeleteFolder();
+
+  // Derive partner profile when couple is active
+  const partnerId = couple?.status === "active"
+    ? (couple.user1_id === user?.id ? couple.user2_id : couple.user1_id)
+    : null;
+  const partnerProfile = partnerId ? profiles.find(p => p.user_id === partnerId) : null;
+  const myInitials = (myProfile?.display_name ?? user?.email ?? "Me").slice(0, 2).toUpperCase();
+  const partnerInitials = (partnerProfile?.display_name ?? "?").slice(0, 2).toUpperCase();
 
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [creatingInParent, setCreatingInParent] = useState<string | null>(null);
