@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { useAppLock } from "@/hooks/useAppLock";
+import { AppLockScreen } from "@/components/AppLockScreen";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
@@ -17,12 +19,19 @@ const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const { locked, lockMethod, unlock } = useAppLock(!!user);
+
   if (loading) return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
     </div>
   );
   if (!user) return <Navigate to="/auth" replace />;
+
+  if (locked) {
+    return <AppLockScreen lockMethod={lockMethod} onUnlock={unlock} />;
+  }
+
   return <>{children}</>;
 }
 
