@@ -274,6 +274,127 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
   useEffect(() => {
     const map = mapInstanceRef.current;
 
+    if (geofenceLayerRef.current) {
+      geofenceLayerRef.current.remove();
+      geofenceLayerRef.current = null;
+    }
+
+    if (!map || !focusLocation) return;
+
+    const geofenceStyle = {
+      color: "#f472b6",
+      weight: 3,
+      opacity: 1,
+      dashArray: "0",
+      lineCap: "round" as const,
+      lineJoin: "round" as const,
+      fillColor: "#fce7f3",
+      fillOpacity: 0.30,
+    };
+
+    const renderBoundary = (geojson: GeoJSON.Feature | GeoJSON.FeatureCollection) => {
+      if (!mapInstanceRef.current) return;
+      if (geofenceLayerRef.current) {
+        geofenceLayerRef.current.remove();
+      }
+
+      const layer = L.geoJSON(geojson, {
+        style: () => geofenceStyle,
+        onEachFeature: (_f, fl) => {
+          fl.on("mouseover", function (e: L.LeafletMouseEvent) {
+            (e.target as L.Path).setStyle({ fillOpacity: 0.50, weight: 4 });
+          });
+          fl.on("mouseout", function (e: L.LeafletMouseEvent) {
+            (e.target as L.Path).setStyle(geofenceStyle);
+          });
+        },
+      });
+
+      layer.addTo(mapInstanceRef.current);
+      geofenceLayerRef.current = layer;
+
+      const bounds = layer.getBounds();
+      if (bounds.isValid()) {
+        mapInstanceRef.current.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
+      }
+    };
+
+    const hasPolygonGeom = (geomType?: string) =>
+      geomType === "Polygon" || geomType === "MultiPolygon";
+
+    const fetchBoundary = async () => {
+      const { latitude: lat, longitude: lng, location_name, city, country } = focusLocation;
+
+      // ── Strategy 1: Search by name (most accurate — finds the actual place boundary)
+      // Try progressively broader queries
+      const searchQueries = [
+        location_name && city && country ? `${location_name}, ${city}, ${country}` : null,
+        location_name && country ? `${location_name}, ${country}` : null,
+        city && country ? `${city}, ${country}` : null,
+        city ?? null,
+      ].filter(Boolean) as string[];
+
+      for (const q of searchQueries) {
+        try {
+          const url =
+            `https://nominatim.openstreetmap.org/search` +
+            `?q=${encodeURIComponent(q)}&format=geojson&polygon_geojson=1&limit=5` +
+            `&accept-language=en`;
+
+          const res = await fetch(url, {
+            headers: { "User-Agent": "OurVault-App/1.0", "Accept": "application/json" },
+          });
+          if (!res.ok) continue;
+
+          const fc = await res.json() as GeoJSON.FeatureCollection;
+          // Pick the first result that has a real polygon geometry
+          const match = fc.features?.find(f => hasPolygonGeom(f.geometry?.type));
+          if (match && mapInstanceRef.current) {
+            renderBoundary(match);
+            return;
+          }
+        } catch { /* try next */ }
+      }
+
+      // ── Strategy 2: Reverse geocode at multiple zoom levels (suburb → city → district → state)
+      for (const zoom of [14, 12, 10, 8, 6]) {
+        try {
+          const url =
+            `https://nominatim.openstreetmap.org/reverse` +
+            `?lat=${lat}&lon=${lng}&format=geojson&polygon_geojson=1&zoom=${zoom}` +
+            `&accept-language=en`;
+
+          const res = await fetch(url, {
+            headers: { "User-Agent": "OurVault-App/1.0", "Accept": "application/json" },
+          });
+          if (!res.ok) continue;
+
+          const feature = await res.json() as GeoJSON.Feature;
+          if (hasPolygonGeom(feature?.geometry?.type) && mapInstanceRef.current) {
+            renderBoundary(feature);
+            return;
+          }
+        } catch { /* try next */ }
+      }
+
+      // ── No polygon found at all — just fly to the pin, no geofence drawn
+      map.flyTo([lat, lng], 13, { duration: 1.2 });
+    };
+
+    fetchBoundary();
+  }, [focusLocation]);
+
+  return (
+    <div
+      ref={mapRef}
+      className="w-full h-full"
+      style={{ minHeight: "70vh", cursor: showHeatmap ? "default" : "crosshair" }}
+    />
+  );
+}
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+
     // Always remove previous geofence layer
     if (geofenceLayerRef.current) {
       geofenceLayerRef.current.remove();
