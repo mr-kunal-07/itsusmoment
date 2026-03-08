@@ -62,7 +62,7 @@ export default function JoinPage() {
           <Lock className="h-3 w-3 text-primary" />
           This bond is permanent and cannot be undone
         </div>
-        <Button onClick={() => navigate("/")} className="w-full max-w-xs gap-2">
+        <Button onClick={() => navigate("/dashboard")} className="w-full max-w-xs gap-2">
           <Heart className="h-4 w-4" /> Open Our Vault
         </Button>
       </div>
