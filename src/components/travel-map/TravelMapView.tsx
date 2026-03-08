@@ -259,11 +259,11 @@ export function TravelMapView() {
 
               {/* Map container */}
               <div
-                className="relative mx-3 mb-4 rounded-2xl overflow-hidden border border-purple-500/20 shadow-2xl"
+          className="relative mx-3 mb-4 rounded-2xl overflow-hidden border border-pink-200/40 shadow-2xl"
                 style={{
-                  height: "70vh",
-                  background: "linear-gradient(135deg, #0a0520 0%, #130730 100%)",
-                  boxShadow: "0 0 60px hsl(280,60%,20%,0.4), 0 0 120px hsl(280,60%,20%,0.2)",
+                  height: "75vh",
+                  background: "linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)",
+                  boxShadow: "0 0 60px rgba(236,72,153,0.15), 0 8px 40px rgba(168,85,247,0.1)",
                 }}
               >
                 {isLoading ? (
@@ -274,7 +274,12 @@ export function TravelMapView() {
                   <TravelMapCanvas
                     locations={locations}
                     onMapClick={handleMapClick}
-                    onPinClick={loc => { if (mode !== "heatmap") setSelectedLocation(loc); }}
+                    onPinClick={loc => {
+                      if (mode !== "heatmap") {
+                        setSelectedLocation(loc);
+                        setFocusLocation(loc);
+                      }
+                    }}
                     focusLocation={focusLocation}
                     showHeatmap={mode === "heatmap"}
                   />
