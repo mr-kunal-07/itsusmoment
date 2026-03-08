@@ -198,6 +198,72 @@ function SwipeableMessage({
   );
 }
 
+/**
+ * Wraps the full chat screen with a horizontal swipe-left-to-go-back gesture.
+ * Only activates when the swipe starts near the left edge (first 30px) to avoid
+ * conflicting with message-level swipe-to-reply gestures.
+ */
+function SwipeBackWrapper({
+  children, onBack,
+}: {
+  children: React.ReactNode;
+  onBack?: () => void;
+}) {
+  const startXRef = useRef<number | null>(null);
+  const startYRef = useRef<number | null>(null);
+  const [dragX, setDragX] = useState(0);
+  const committed = useRef(false);
+
+  if (!onBack) return <>{children}</>;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    const x = e.touches[0].clientX;
+    // Only begin tracking if starting from left edge (≤ 30px)
+    if (x > 30) return;
+    startXRef.current = x;
+    startYRef.current = e.touches[0].clientY;
+    committed.current = false;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (startXRef.current === null) return;
+    const dx = e.touches[0].clientX - startXRef.current;
+    const dy = Math.abs(e.touches[0].clientY - (startYRef.current ?? 0));
+    // Ignore if mostly vertical
+    if (dy > dx * 1.5) { startXRef.current = null; return; }
+    if (dx > 0) {
+      e.stopPropagation();
+      setDragX(Math.min(dx, 120));
+    }
+  };
+
+  const onTouchEnd = () => {
+    if (dragX > 80 && !committed.current) {
+      committed.current = true;
+      if (navigator.vibrate) navigator.vibrate(15);
+      onBack();
+    }
+    startXRef.current = null;
+    startYRef.current = null;
+    setDragX(0);
+  };
+
+  return (
+    <div
+      className="flex flex-col h-full"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      style={{
+        transform: dragX > 0 ? `translateX(${dragX * 0.4}px)` : undefined,
+        transition: dragX === 0 ? "transform 0.2s ease" : "none",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function ChatView({ onBack }: { onBack?: () => void }) {
   const { user } = useAuth();
   const { data: couple } = useMyCouple();
@@ -306,6 +372,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   const partnerName = partnerProfile?.display_name ?? "Partner";
 
   return (
+    <SwipeBackWrapper onBack={onBack}>
     <div
       className="flex flex-col h-full"
       style={{
@@ -741,5 +808,6 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
         )}
       </div>
     </div>
+    </SwipeBackWrapper>
   );
 }

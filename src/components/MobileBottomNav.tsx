@@ -1,8 +1,9 @@
-import { Home, CalendarHeart, MessageCircleHeart, Upload, Crown } from "lucide-react";
+import { Home, CalendarHeart, MessageCircleHeart, Upload, Crown, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ViewType } from "@/components/AppSidebar";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface Props {
   selectedView: ViewType;
@@ -14,6 +15,10 @@ export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props)
   const { user } = useAuth();
   const { data: messages = [] } = useMessages();
   const unreadCount = messages.filter(m => m.sender_id !== user?.id && !m.read_at).length;
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isProfileActive = location.pathname === "/profile";
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-background border-t border-border safe-area-bottom">
@@ -47,8 +52,25 @@ export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props)
           badge={unreadCount}
         />
 
-        {/* Plan */}
-        <NavBtn id="billing" label="Plan" icon={Crown} selectedView={selectedView} onSelectView={onSelectView} />
+        {/* Profile */}
+        <button
+          onClick={() => navigate("/profile")}
+          aria-label="Profile"
+          className={cn(
+            "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors relative",
+            isProfileActive ? "text-foreground" : "text-muted-foreground"
+          )}
+        >
+          {isProfileActive && (
+            <span className="absolute top-1 left-1/2 -translate-x-1/2 h-1 w-5 rounded-full bg-primary" />
+          )}
+          <span className="mt-1">
+            <UserCircle className={cn("h-5 w-5 transition-transform", isProfileActive && "scale-110")} />
+          </span>
+          <span className={cn("text-[10px] font-medium", isProfileActive ? "text-foreground" : "text-muted-foreground")}>
+            Profile
+          </span>
+        </button>
 
       </div>
     </nav>
