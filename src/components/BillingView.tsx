@@ -19,11 +19,11 @@ interface FeatureRow {
 }
 
 const FEATURES: FeatureRow[] = [
-  { icon: HardDrive, text: "Storage",          single: "1 GB",       dating: "5 GB",        soulmate: "50 GB"      },
-  { icon: Upload,    text: "Monthly uploads",  single: "50",         dating: "200",         soulmate: "Unlimited"  },
+  { icon: HardDrive, text: "Storage",          single: "1 GB",       dating: "10 GB",       soulmate: "50 GB"      },
+  { icon: Upload,    text: "Monthly uploads",  single: "50",         dating: "Unlimited",   soulmate: "Unlimited"  },
   { icon: Heart,     text: "Partner access",   single: true,         dating: true,          soulmate: true         },
-  { icon: Mic,       text: "Voice messages",   single: false,        dating: false,         soulmate: true         },
-  { icon: Zap,       text: "Reactions",        single: false,        dating: false,         soulmate: true         },
+  { icon: Mic,       text: "Voice messages",   single: false,        dating: true,          soulmate: true         },
+  { icon: Zap,       text: "Reactions",        single: false,        dating: true,          soulmate: true         },
   { icon: Sparkles,  text: "All new features", single: false,        dating: false,         soulmate: true         },
   { icon: Crown,     text: "Priority support", single: false,        dating: false,         soulmate: true         },
 ];
