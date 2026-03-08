@@ -58,6 +58,11 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
   const [editDesc, setEditDesc] = useState("");
   const [deleteItem, setDeleteItem] = useState<Media | null>(null);
 
+  // Single file move
+  const [moveItem, setMoveItem] = useState<Media | null>(null);
+  const [singleMoveFolderId, setSingleMoveFolderId] = useState<string>("__none__");
+  const moveMedia = useBulkMoveMedia();
+
   // Bulk selection
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
