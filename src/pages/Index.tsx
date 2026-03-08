@@ -53,7 +53,7 @@ function Reveal({ children, delay = 0, className = "" }: {
 /* ── Typography helpers ─────────────────────────────────── */
 const displayFont: React.CSSProperties = {
   fontFamily: "'Space Grotesk', system-ui, sans-serif",
-  fontWeight: 800,
+  fontWeight: 600,
   letterSpacing: "-0.025em",
 };
 
@@ -246,7 +246,7 @@ export default function Index() {
 
           <div className="hidden md:flex items-center gap-2 shrink-0">
             <Link to="/auth" className="text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors" style={{ color: T.body }}>Log in</Link>
-            <Link to="/auth" className="text-sm font-bold text-white px-5 py-2.5 rounded-xl hover:opacity-90 transition-all" style={{ background: T.accent }}>
+            <Link to="/auth" className="text-sm font-semibold text-white px-5 py-2.5 rounded-xl hover:opacity-90 transition-all" style={{ background: T.accent }}>
               Sign up free →
             </Link>
           </div>
@@ -262,7 +262,7 @@ export default function Index() {
               <a key={href} href={href} onClick={() => setMenu(false)}
                 className="text-sm font-medium py-3" style={{ color: T.body, borderBottom: `1px solid #f3f4f6` }}>{label}</a>
             ))}
-            <Link to="/auth" onClick={() => setMenu(false)} className="mt-3 text-sm font-bold text-white py-3.5 rounded-xl text-center" style={{ background: T.accent }}>
+            <Link to="/auth" onClick={() => setMenu(false)} className="mt-3 text-sm font-semibold text-white py-3.5 rounded-xl text-center" style={{ background: T.accent }}>
               Sign up free →
             </Link>
           </div>
@@ -305,7 +305,7 @@ export default function Index() {
           <Reveal delay={180}>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-9">
               <Link to="/auth"
-                className="inline-flex items-center gap-2 font-bold text-white px-8 py-3.5 rounded-xl hover:opacity-90 transition-all hover:scale-[1.02] shadow-lg text-base"
+                className="inline-flex items-center gap-2 font-semibold text-white px-8 py-3.5 rounded-xl hover:opacity-90 transition-all hover:scale-[1.02] shadow-lg text-base"
                 style={{ background: T.accent }}>
                 Start for free
                 <ArrowRight className="w-4 h-4" />
@@ -351,7 +351,7 @@ export default function Index() {
                   <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: T.accent }}>
                     <Heart className="w-3 h-3 text-white fill-white" />
                   </div>
-                  <span className="text-xs font-bold" style={{ color: T.dark }}>OurVault</span>
+                  <span className="text-xs font-semibold" style={{ color: T.dark }}>OurVault</span>
                 </div>
                 {["Memories","Chat","Milestones","Notes","Settings"].map((item, i) => (
                   <div key={i}
@@ -364,7 +364,7 @@ export default function Index() {
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs">💑</div>
                     <div>
-                      <p className="text-[9px] font-bold" style={{ color: T.dark }}>You & Priya</p>
+                      <p className="text-[9px] font-semibold" style={{ color: T.dark }}>You & Priya</p>
                       <p className="text-[8px]" style={{ color: T.accent }}>● Online</p>
                     </div>
                   </div>
@@ -374,7 +374,7 @@ export default function Index() {
               <div className="col-span-3 p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-sm font-bold" style={{ color: T.dark }}>Our Memories</h3>
+                    <h3 className="text-sm font-semibold" style={{ color: T.dark }}>Our Memories</h3>
                     <p className="text-[11px]" style={{ color: T.muted }}>47 photos · last added 2h ago</p>
                   </div>
                   <div className="text-[10px] px-3 py-1 rounded-full font-semibold" style={{ background: T.accentL, color: T.accent }}>+ Add memory</div>
@@ -420,7 +420,7 @@ export default function Index() {
               { val: "100%",    label: "Private, always" },
             ].map((s, i) => (
               <div key={i} className="text-center px-4 md:px-8 py-2">
-                <div className="text-2xl md:text-3xl font-extrabold mb-0.5" style={{ ...displayFont, color: T.dark }}>{s.val}</div>
+                <div className="text-2xl md:text-3xl font-semibold mb-0.5" style={{ ...displayFont, color: T.dark }}>{s.val}</div>
                 <div className="text-xs font-medium" style={{ color: T.muted }}>{s.label}</div>
               </div>
             ))}
@@ -432,7 +432,7 @@ export default function Index() {
       <section id="features" className="py-24" style={{ background: T.bgWarm }}>
         <div className="max-w-6xl mx-auto px-6 md:px-10">
           <Reveal className="max-w-2xl mb-14">
-            <p className="text-[11px] font-extrabold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>THE FULL PICTURE</p>
+            <p className="text-[11px] font-semibold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>THE FULL PICTURE</p>
             <h2 style={{ ...displayFont, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1, color: T.dark }} className="mb-4">
               Everything a couple needs.<br />Nothing they don't.
             </h2>
@@ -448,7 +448,7 @@ export default function Index() {
                     <Icon className="w-5 h-5" style={{ color: T.accent }} strokeWidth={1.75} />
                   </div>
                   <div>
-                    <h3 className="text-[15px] font-bold mb-1.5" style={{ color: T.dark }}>{f.title}</h3>
+                    <h3 className="text-[15px] font-semibold mb-1.5" style={{ color: T.dark }}>{f.title}</h3>
                     <p className="text-[13.5px] leading-[1.7]" style={{ color: T.body }}>{f.desc}</p>
                   </div>
                 </Reveal>
@@ -466,7 +466,7 @@ export default function Index() {
               <div className={`grid lg:grid-cols-2 gap-16 items-center ${i % 2 === 1 ? "lg:[&>*:first-child]:order-2" : ""}`}>
                 {/* Text */}
                 <Reveal delay={50}>
-                  <p className="text-[11px] font-extrabold tracking-[0.14em] uppercase mb-5" style={{ color: T.accent }}>{s.tag}</p>
+                  <p className="text-[11px] font-semibold tracking-[0.14em] uppercase mb-5" style={{ color: T.accent }}>{s.tag}</p>
                   <h2 style={{ ...displayFont, fontSize: "clamp(24px, 3vw, 38px)", lineHeight: 1.12, color: T.dark }} className="mb-5">
                     {s.title}
                   </h2>
@@ -481,7 +481,7 @@ export default function Index() {
                       </li>
                     ))}
                   </ul>
-                  <Link to="/auth" className="inline-flex items-center gap-1.5 text-sm font-bold hover:underline underline-offset-4" style={{ color: T.accent }}>
+                  <Link to="/auth" className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline underline-offset-4" style={{ color: T.accent }}>
                     Get started free <ChevronRight className="w-4 h-4" />
                   </Link>
                 </Reveal>
@@ -499,7 +499,7 @@ export default function Index() {
       <section id="how-it-works" className="py-24" style={{ background: T.bgWarm, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
         <div className="max-w-5xl mx-auto px-6 md:px-10">
           <Reveal className="text-center mb-16 max-w-xl mx-auto">
-            <p className="text-[11px] font-extrabold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>QUICK START</p>
+            <p className="text-[11px] font-semibold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>QUICK START</p>
             <h2 style={{ ...displayFont, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1, color: T.dark }} className="mb-4">
               Ready in under a minute.
             </h2>
@@ -516,9 +516,9 @@ export default function Index() {
                     <div className="w-[72px] h-[72px] rounded-2xl bg-white flex items-center justify-center shadow-sm" style={{ border: `1px solid ${T.border}` }}>
                       <Icon className="w-8 h-8" style={{ color: T.accent }} strokeWidth={1.5} />
                     </div>
-                    <span className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full text-white text-[10px] font-extrabold flex items-center justify-center" style={{ background: T.dark }}>{s.n}</span>
+                    <span className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full text-white text-[10px] font-semibold flex items-center justify-center" style={{ background: T.dark }}>{s.n}</span>
                   </div>
-                  <h3 className="font-bold text-[15px] mb-2" style={{ color: T.dark }}>{s.title}</h3>
+                  <h3 className="font-semibold text-[15px] mb-2" style={{ color: T.dark }}>{s.title}</h3>
                   <p className="text-sm leading-[1.7]" style={{ color: T.body }}>{s.desc}</p>
                 </Reveal>
               );
@@ -526,7 +526,7 @@ export default function Index() {
           </div>
 
           <Reveal className="text-center mt-14">
-            <Link to="/auth" className="inline-flex items-center gap-2 font-bold text-white px-8 py-3.5 rounded-xl hover:opacity-90 transition-all shadow-md text-sm" style={{ background: T.accent }}>
+            <Link to="/auth" className="inline-flex items-center gap-2 font-semibold text-white px-8 py-3.5 rounded-xl hover:opacity-90 transition-all shadow-md text-sm" style={{ background: T.accent }}>
               Create your vault free <ArrowRight className="w-4 h-4" />
             </Link>
           </Reveal>
@@ -537,7 +537,7 @@ export default function Index() {
       <section id="stories" className="py-24" style={{ background: T.bg }}>
         <div className="max-w-6xl mx-auto px-6 md:px-10">
           <Reveal className="mb-14 max-w-xl">
-            <p className="text-[11px] font-extrabold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>REAL COUPLES</p>
+            <p className="text-[11px] font-semibold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>REAL COUPLES</p>
             <h2 style={{ ...displayFont, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1, color: T.dark }}>
               Loved by couples<br />
               <span style={{ color: T.accent }}>all over India.</span>
@@ -561,7 +561,7 @@ export default function Index() {
                       {t.initial}
                     </div>
                     <div>
-                      <p className="text-sm font-bold" style={{ color: T.dark }}>{t.name}</p>
+                      <p className="text-sm font-semibold" style={{ color: T.dark }}>{t.name}</p>
                       <p className="text-[12px]" style={{ color: T.muted }}>{t.days}</p>
                     </div>
                   </div>
@@ -576,7 +576,7 @@ export default function Index() {
       <section id="pricing" className="py-24" style={{ background: T.bgWarm, borderTop: `1px solid ${T.border}` }}>
         <div className="max-w-5xl mx-auto px-6 md:px-10">
           <Reveal className="text-center mb-14 max-w-xl mx-auto">
-            <p className="text-[11px] font-extrabold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>PRICING</p>
+            <p className="text-[11px] font-semibold tracking-[0.14em] uppercase mb-4" style={{ color: T.accent }}>PRICING</p>
             <h2 style={{ ...displayFont, fontSize: "clamp(28px, 3.5vw, 44px)", lineHeight: 1.1, color: T.dark }} className="mb-4">
               Simple, honest pricing.
             </h2>
@@ -592,12 +592,12 @@ export default function Index() {
                     ? { border: `2px solid ${T.accent}`, transform: "scale(1.03)", boxShadow: `0 12px 48px ${T.accent}1a` }
                     : { border: `1px solid ${T.border}` }}>
                   {plan.accent && (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-white text-[11px] font-extrabold px-4 py-1 rounded-full whitespace-nowrap" style={{ background: T.accent }}>
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-white text-[11px] font-semibold px-4 py-1 rounded-full whitespace-nowrap" style={{ background: T.accent }}>
                       Most popular
                     </div>
                   )}
                   <div className="mb-6">
-                    <p className="text-[11px] font-extrabold uppercase tracking-widest mb-1" style={{ color: T.muted }}>{plan.name}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: T.muted }}>{plan.name}</p>
                     <div className="flex items-baseline gap-1 mb-1">
                       <span style={{ ...displayFont, fontSize: 42, letterSpacing: "-0.03em", color: T.dark }}>{plan.price}</span>
                       <span className="text-sm" style={{ color: T.muted }}>/month</span>
@@ -616,7 +616,7 @@ export default function Index() {
                   </ul>
                   <Link
                     to="/auth"
-                    className="w-full py-3 rounded-xl font-bold text-[14px] text-center block text-white hover:opacity-90 transition-all"
+                    className="w-full py-3 rounded-xl font-semibold text-[14px] text-center block text-white hover:opacity-90 transition-all"
                     style={{ background: plan.accent ? T.accent : T.dark }}>
                     {plan.cta}
                   </Link>
@@ -644,7 +644,7 @@ export default function Index() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link to="/auth"
-                className="inline-flex items-center gap-2 font-bold text-white px-9 py-4 rounded-xl hover:opacity-90 transition-all text-base shadow-xl"
+                className="inline-flex items-center gap-2 font-semibold text-white px-9 py-4 rounded-xl hover:opacity-90 transition-all text-base shadow-xl"
                 style={{ background: T.accent }}>
                 Start for free today <ArrowRight className="w-4 h-4" />
               </Link>
@@ -663,7 +663,7 @@ export default function Index() {
             <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: T.accent }}>
               <Heart className="w-3.5 h-3.5 text-white fill-white" />
             </div>
-            <span className="font-extrabold text-base text-white" style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>OurVault</span>
+            <span className="font-semibold text-base text-white" style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>OurVault</span>
           </div>
           <p className="text-xs text-center" style={{ color: "#6b7280" }}>Made with 💚 for couples everywhere · Always private · Always secure</p>
           <div className="flex items-center gap-6 text-xs font-medium" style={{ color: "#6b7280" }}>
