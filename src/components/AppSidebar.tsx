@@ -104,7 +104,6 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
   const navItems = [
     { id: "all" as const, label: "All Files", icon: Home, count: allMedia.length },
     { id: "starred" as const, label: "Starred", icon: Star, count: allMedia.filter(m => m.is_starred).length },
-    { id: "recently-deleted" as const, label: "Recently Deleted", icon: Trash2, count: null },
   ];
 
   const specialItems = [
@@ -112,6 +111,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
     { id: "timeline" as const, label: "Memories Timeline", icon: CalendarHeart },
     { id: "anniversaries" as const, label: "Anniversaries", icon: Trophy },
     { id: "activity" as const, label: "Activity Feed", icon: Activity },
+    { id: "recently-deleted" as const, label: "Recently Deleted", icon: Trash2, badge: 0 },
   ];
 
   const plan = usePlan();
