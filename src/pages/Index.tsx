@@ -351,7 +351,7 @@ export default function Index() {
                   <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: T.accent }}>
                     <Heart className="w-3 h-3 text-white fill-white" />
                   </div>
-                  <span className="text-xs font-bold" style={{ color: T.dark }}>OurVault</span>
+                  <span className="text-xs font-semibold" style={{ color: T.dark }}>OurVault</span>
                 </div>
                 {["Memories","Chat","Milestones","Notes","Settings"].map((item, i) => (
                   <div key={i}
