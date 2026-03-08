@@ -2,9 +2,11 @@ import { useState } from "react";
 import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart, CalendarHeart, Play, Trophy, Link2 } from "lucide-react";
 import { useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, Folder } from "@/hooks/useFolders";
 import { useMedia } from "@/hooks/useMedia";
-import { useStorageUsage, useAllProfiles } from "@/hooks/useProfile";
+import { useStorageUsage, useAllProfiles, useProfile } from "@/hooks/useProfile";
 import { useOnThisDay } from "@/hooks/useMemories";
 import { useMyCouple } from "@/hooks/useCouple";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
