@@ -120,6 +120,7 @@ export type Database = {
       media: {
         Row: {
           created_at: string
+          deleted_at: string | null
           description: string | null
           file_name: string
           file_path: string
@@ -136,6 +137,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           file_name: string
           file_path: string
@@ -152,6 +154,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           file_name?: string
           file_path?: string
