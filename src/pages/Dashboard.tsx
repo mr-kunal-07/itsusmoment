@@ -20,6 +20,7 @@ import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { Slideshow } from "@/components/Slideshow";
 import { PartnerBanner } from "@/components/PartnerBanner";
 import { ChatView } from "@/components/ChatView";
+import { ActivityFeed } from "@/components/ActivityFeed";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { Button } from "@/components/ui/button";
