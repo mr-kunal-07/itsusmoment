@@ -374,12 +374,21 @@ export default function Admin() {
                             );
                           })}
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="gap-2 text-xs"
-                            onClick={() => handleToggleAdmin(u, true)}
-                          >
-                            <ShieldCheck className="h-3.5 w-3.5" /> Make admin
-                          </DropdownMenuItem>
+                          {u.is_admin ? (
+                            <DropdownMenuItem
+                              className="gap-2 text-xs text-amber-600 focus:text-amber-600"
+                              onClick={() => handleToggleAdmin(u, false)}
+                            >
+                              <ShieldOff className="h-3.5 w-3.5" /> Remove admin
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              className="gap-2 text-xs"
+                              onClick={() => handleToggleAdmin(u, true)}
+                            >
+                              <ShieldCheck className="h-3.5 w-3.5" /> Make admin
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="gap-2 text-xs text-destructive focus:text-destructive"
