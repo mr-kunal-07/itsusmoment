@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useIsAdmin, useAdminUsers, useAdminManageUser, AdminUser } from "@/hooks/useAdmin";
+import { useIsAdmin, useAdminUsers, useAdminManageUser, useAdminAuditLog, AdminUser, PlanAuditEntry } from "@/hooks/useAdmin";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +16,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, Search, Users, TrendingUp, HardDrive, Crown,
+  ArrowLeft, Search, Users, TrendingUp, HardDrive,
   MoreHorizontal, RefreshCw, ShieldCheck, ShieldOff, Trash2,
   Sprout, HeartHandshake, Gem, UserCircle2, Heart, Upload,
+  History, ArrowRight, ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
