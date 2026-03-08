@@ -566,8 +566,8 @@ export default function Index() {
       </section>
 
       {/* ══ FINAL CTA ══ */}
-      <section className="relative py-36 overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 60% at 50% 50%, hsl(42 20% 88% / 0.06) 0%, transparent 65%)" }} />
+      <section className="relative py-36 overflow-hidden bg-gradient-to-b from-background to-secondary/20">
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 60% at 50% 50%, hsl(338 80% 56% / 0.06) 0%, hsl(152 55% 45% / 0.04) 50%, transparent 75%)" }} />
         <div className="relative z-10 max-w-3xl mx-auto px-5 md:px-8 text-center">
           <FadeIn>
             <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-8">
