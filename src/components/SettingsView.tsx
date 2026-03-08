@@ -18,6 +18,7 @@ import {
 import { PartnerConnect } from "@/components/PartnerConnect";
 import { usePlan } from "@/hooks/useSubscription";
 import { getIsLockEnabled, setLockPin, disableLock } from "@/components/AppLock";
+import { LOCK_KEYS } from "@/lib/appLockKeys";
 import { cn } from "@/lib/utils";
 
 interface BeforeInstallPromptEvent extends Event {
