@@ -17,9 +17,12 @@ export default function ResetPassword() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Supabase sets the session automatically when the recovery link is opened
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") setReady(true);
+    // Check if already in a recovery session (page loaded after clicking email link)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setReady(true);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) setReady(true);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -74,7 +77,6 @@ export default function ResetPassword() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  disabled={!ready}
                 />
               </div>
               <div className="space-y-2">
@@ -86,12 +88,11 @@ export default function ResetPassword() {
                   onChange={(e) => setConfirm(e.target.value)}
                   required
                   placeholder="••••••••"
-                  disabled={!ready}
                 />
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full" disabled={submitting || !ready}>
+              <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting ? "Updating…" : "Update password"}
               </Button>
             </CardFooter>
