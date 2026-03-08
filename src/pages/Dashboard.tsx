@@ -27,6 +27,7 @@ import { BillingView } from "@/components/BillingView";
 import { SettingsView } from "@/components/SettingsView";
 import { RecentlyDeletedView } from "@/components/RecentlyDeletedView";
 import { LoveStoryView } from "@/components/LoveStoryView";
+import { TravelMapView } from "@/components/travel-map/TravelMapView";
 
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
@@ -54,7 +55,7 @@ function loadPref<T>(key: string, fallback: T): T {
 const SPECIAL_VIEWS = [
   "all", "starred", "recently-deleted",
   "timeline", "on-this-day", "anniversaries",
-  "chat", "activity", "billing", "settings", "love-story",
+  "chat", "activity", "billing", "settings", "love-story", "travel-map",
 ];
 
 function tabToView(tab?: string): ViewType {
@@ -168,6 +169,7 @@ export default function Dashboard() {
     : selectedView === "billing" ? "Billing & Plan"
     : selectedView === "settings" ? "Settings"
     : selectedView === "love-story" ? "Love Story"
+    : selectedView === "travel-map" ? "Travel Map"
     : currentFolder?.name || "Folder";
 
   const avatarUrl = profile?.avatar_url ?? null;
@@ -198,7 +200,7 @@ export default function Dashboard() {
 
   const sortLabel = { created_at: "Date", title: "Name", file_size: "Size" }[sortKey] + (sortDir === "asc" ? " ↑" : " ↓");
 
-  const NON_GRID_VIEWS = ["timeline", "anniversaries", "chat", "activity", "billing", "settings", "recently-deleted", "love-story"];
+  const NON_GRID_VIEWS = ["timeline", "anniversaries", "chat", "activity", "billing", "settings", "recently-deleted", "love-story", "travel-map"];
   const isGridView = !NON_GRID_VIEWS.includes(selectedView);
   const isChat = selectedView === "chat";
 
@@ -325,7 +327,7 @@ export default function Dashboard() {
             <main
               className={cn(
                 "flex-1 overflow-auto pb-20 sm:pb-6",
-                selectedView !== "settings" && "p-3 sm:p-4 md:p-6",
+                selectedView !== "settings" && selectedView !== "travel-map" && "p-3 sm:p-4 md:p-6",
                 dragOverMain && "ring-2 ring-primary ring-inset"
               )}
               onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setDragOverMain(true); }}
@@ -333,7 +335,7 @@ export default function Dashboard() {
               onDrop={handleMainDrop}
             >
               {/* Page header */}
-              {selectedView !== "settings" && (
+              {selectedView !== "settings" && selectedView !== "travel-map" && (
                 <div className={cn(selectedView === "billing" ? "mb-0" : "mb-4 sm:mb-6", "p-3 sm:p-4 md:p-6 pt-0 pl-0 pr-0")}>
                   {!isSpecialView && (
                     <FolderBreadcrumb folderId={selectedView} folders={folders} onNavigate={setSelectedView} />
@@ -365,6 +367,8 @@ export default function Dashboard() {
                 <AnniversariesView />
               ) : selectedView === "love-story" ? (
                 <LoveStoryView />
+              ) : selectedView === "travel-map" ? (
+                <TravelMapView />
               ) : selectedView === "activity" ? (
                 <ActivityFeed />
               ) : selectedView === "billing" ? (

@@ -623,6 +623,65 @@ export type Database = {
         }
         Relationships: []
       }
+      travel_locations: {
+        Row: {
+          city: string | null
+          country: string | null
+          couple_id: string
+          created_at: string
+          created_by: string
+          date_visited: string | null
+          description: string | null
+          id: string
+          latitude: number
+          location_name: string
+          longitude: number
+          photo_urls: string[] | null
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          couple_id: string
+          created_at?: string
+          created_by: string
+          date_visited?: string | null
+          description?: string | null
+          id?: string
+          latitude: number
+          location_name: string
+          longitude: number
+          photo_urls?: string[] | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          couple_id?: string
+          created_at?: string
+          created_by?: string
+          date_visited?: string | null
+          description?: string | null
+          id?: string
+          latitude?: number
+          location_name?: string
+          longitude?: number
+          photo_urls?: string[] | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "travel_locations_couple_id_fkey"
+            columns: ["couple_id"]
+            isOneToOne: false
+            referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
