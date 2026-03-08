@@ -321,14 +321,14 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
           onClick={() => onSelectView("billing")}
           className={cn(
             "w-full justify-start gap-2 text-xs",
-            plan === "pro"
+            plan === "soulmate"
               ? "text-primary hover:text-primary"
               : "text-muted-foreground hover:text-foreground",
             selectedView === "billing" && "bg-accent text-accent-foreground"
           )}
         >
           <Crown className="h-3.5 w-3.5 shrink-0" />
-          {plan === "pro" ? "Pro plan active" : "Upgrade to Pro"}
+          {plan === "soulmate" ? "Soulmate plan active" : plan === "dating" ? "Dating plan active" : "Upgrade plan"}
         </SidebarMenuButton>
 
         <DaysTogether />
