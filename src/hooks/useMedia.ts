@@ -5,7 +5,7 @@ import { Tables } from "@/integrations/supabase/types";
 
 export type Media = Tables<"media"> & { uploader_name?: string | null; taken_at?: string | null };
 
-const PAGE_SIZE = 30;
+
 
 export function useMedia(folderId?: string | null, search?: string) {
   const { user } = useAuth();
