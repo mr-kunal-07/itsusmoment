@@ -5,13 +5,7 @@ import { getPublicUrl, useBackfillExifDates } from "@/hooks/useMedia";
 import { format, formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, Image as ImageIcon, Video, Star, HardDrive, CalendarHeart, Clock, Camera, ScanLine } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-function formatSize(bytes: number) {
-  if (bytes < 1048576) return (bytes / 1024).toFixed(0) + " KB";
-  if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + " MB";
-  return (bytes / 1073741824).toFixed(1) + " GB";
-}
+import { cn, formatSize } from "@/lib/utils";
 
 interface TimelineProps {
   onPreview: (mediaId: string) => void;

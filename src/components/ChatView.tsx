@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Trash2, Lock, Reply, X, Check, CheckCheck, Phone, Video, MoreVertical, Smile, Paperclip, Mic, Play, Pause, ArrowLeft } from "lucide-react";
+import { Send, Trash2, Lock, Reply, X, Check, CheckCheck, MoreVertical, Smile, Paperclip, Mic, Play, Pause, ArrowLeft, Image as ImageIcon } from "lucide-react";
 import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMessages, Message } from "@/hooks/useMessages";
@@ -210,8 +210,10 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [emojiPickerId, setEmojiPickerId] = useState<string | null>(null);
   const [voiceMode, setVoiceMode] = useState(false);
+  const [kbOffset, setKbOffset] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const filePickerRef = useRef<HTMLInputElement>(null);
 
   const coupleId = couple?.status === "active" ? couple.id : null;
   const partnerId = couple?.status === "active"
@@ -220,6 +222,22 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   const partnerProfile = partnerId ? profiles.find(p => p.user_id === partnerId) : null;
   const { partnerTyping, sendTyping } = useTyping(coupleId, user?.id);
   const { partnerOnline, partnerLastSeen } = usePresence(coupleId, user?.id, partnerId);
+
+  // ── VisualViewport keyboard offset (mobile keyboard push) ──────────────────
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKbOffset(offset);
+    };
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -230,11 +248,6 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
     if (emojiPickerId) document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
   }, [emojiPickerId]);
-
-  // Scroll to bottom on new messages
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
 
   const handleSend = async () => {
     const trimmed = text.trim();
@@ -297,6 +310,8 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
       className="flex flex-col h-full"
       style={{
         background: "hsl(var(--wa-bg))",
+        paddingBottom: kbOffset > 0 ? `${kbOffset}px` : undefined,
+        transition: "padding-bottom 0.15s ease",
       }}
     >
       {/* ── WhatsApp-style Header ── */}
@@ -350,15 +365,13 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
         </div>
 
         <div className="flex items-center gap-1">
-          {[Video, Phone, MoreVertical].map((Icon, i) => (
-            <button
-              key={i}
-              className="p-2 rounded-full transition-colors"
-              style={{ color: "hsl(var(--wa-text) / 0.6)" }}
-            >
-              <Icon className="h-5 w-5" />
-            </button>
-          ))}
+          <button
+            className="p-2 rounded-full transition-colors"
+            style={{ color: "hsl(var(--wa-text) / 0.6)" }}
+            title="More options"
+          >
+            <MoreVertical className="h-5 w-5" />
+          </button>
         </div>
       </div>
 
@@ -689,11 +702,19 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                 autoComplete="off"
               />
               <button
+                onClick={() => filePickerRef.current?.click()}
                 className="shrink-0 mb-0.5 transition-opacity"
                 style={{ color: "hsl(var(--wa-text) / 0.45)" }}
+                title="Share photo from vault"
               >
-                <Paperclip className="h-5 w-5" />
+                <ImageIcon className="h-5 w-5" />
               </button>
+              <input ref={filePickerRef} type="file" accept="image/*,video/*" className="hidden" onChange={e => {
+                // File selected — for now show a hint; full vault share can be wired later
+                const file = e.target.files?.[0];
+                if (file) setText(prev => prev + (prev ? " " : "") + `[${file.name}]`);
+                e.target.value = "";
+              }} />
             </div>
 
             {/* Send / Mic button */}

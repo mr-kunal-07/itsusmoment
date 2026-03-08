@@ -13,11 +13,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import {
   Camera, Loader2, Save, Heart, Moon, Sun, Link2, ShieldCheck,
-  Trash2, Crown, LogOut, Lock, LockOpen, Fingerprint, Smartphone, Download, X,
+  Trash2, Crown, LogOut, Lock, LockOpen, Fingerprint, Smartphone, Download, X, KeyRound,
 } from "lucide-react";
 import { PartnerConnect } from "@/components/PartnerConnect";
 import { usePlan } from "@/hooks/useSubscription";
-import { getIsLockEnabled, enableLock, setLockPin, disableLock } from "@/components/AppLock";
+import { getIsLockEnabled, getSavedPin, enableLock, setLockPin, disableLock } from "@/components/AppLock";
 import { cn } from "@/lib/utils";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -47,8 +47,9 @@ export function SettingsView({ onNavigateBilling }: Props) {
   // ── App Lock state ──────────────────────────────────────────────────────────
   const [lockEnabled, setLockEnabled] = useState(getIsLockEnabled);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
-  // PIN setup (shown when biometric unavailable)
+  // PIN setup/change modes
   const [showPinSetup, setShowPinSetup] = useState(false);
+  const [showPinChange, setShowPinChange] = useState(false);
   const [pinStep, setPinStep] = useState<"enter" | "confirm">("enter");
   const [pinDraft, setPinDraft] = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
@@ -112,6 +113,7 @@ export function SettingsView({ onNavigateBilling }: Props) {
       toast({ title: "Fingerprint lock enabled 🔒" });
     } else {
       setShowPinSetup(true);
+      setShowPinChange(false);
       setPinStep("enter");
       setPinDraft("");
       setPinConfirm("");
@@ -123,10 +125,20 @@ export function SettingsView({ onNavigateBilling }: Props) {
     disableLock();
     setLockEnabled(false);
     setShowPinSetup(false);
+    setShowPinChange(false);
     toast({ title: "App lock disabled" });
   };
 
-  // ── PIN setup flow (only used when biometric unavailable) ───────────────────
+  const handleChangePinOpen = () => {
+    setShowPinChange(true);
+    setShowPinSetup(false);
+    setPinStep("enter");
+    setPinDraft("");
+    setPinConfirm("");
+    setPinError("");
+  };
+
+  // ── PIN setup/change flow ───────────────────────────────────────────────────
   const handlePinDigit = (d: string) => {
     if (pinStep === "enter") {
       if (pinDraft.length >= 4) return;
@@ -142,8 +154,9 @@ export function SettingsView({ onNavigateBilling }: Props) {
           setLockPin(next);
           setLockEnabled(true);
           setShowPinSetup(false);
+          setShowPinChange(false);
           setPinDraft(""); setPinConfirm(""); setPinStep("enter");
-          toast({ title: "PIN lock enabled 🔒" });
+          toast({ title: showPinChange ? "PIN updated 🔒" : "PIN lock enabled 🔒" });
         } else {
           setPinError("PINs don't match. Try again.");
           setPinDraft(""); setPinConfirm(""); setPinStep("enter");
@@ -151,6 +164,8 @@ export function SettingsView({ onNavigateBilling }: Props) {
       }
     }
   };
+
+  const hasSavedPin = !!getSavedPin();
 
   const handlePinDelete = () => {
     if (pinStep === "enter") setPinDraft(p => p.slice(0, -1));
@@ -306,14 +321,27 @@ export function SettingsView({ onNavigateBilling }: Props) {
             />
           </div>
 
-          {/* PIN setup (only shown when biometric unavailable and user toggles on) */}
-          {showPinSetup && !biometricAvailable && (
+          {/* Change PIN button (shown when lock is on and PIN exists) */}
+          {lockEnabled && !biometricAvailable && hasSavedPin && !showPinChange && !showPinSetup && (
+            <button
+              onClick={handleChangePinOpen}
+              className="flex items-center gap-2 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+            >
+              <KeyRound className="h-3.5 w-3.5" />
+              Change PIN
+            </button>
+          )}
+
+          {/* PIN setup or change panel */}
+          {(showPinSetup || showPinChange) && !biometricAvailable && (
             <div className="border border-border rounded-xl p-4 bg-muted/30 space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-foreground">
-                  {pinStep === "enter" ? "Set a 4-digit PIN" : "Confirm your PIN"}
+                  {showPinChange
+                    ? (pinStep === "enter" ? "Enter new PIN" : "Confirm new PIN")
+                    : (pinStep === "enter" ? "Set a 4-digit PIN" : "Confirm your PIN")}
                 </p>
-                <button onClick={() => { setShowPinSetup(false); setPinDraft(""); setPinConfirm(""); setPinError(""); }}
+                <button onClick={() => { setShowPinSetup(false); setShowPinChange(false); setPinDraft(""); setPinConfirm(""); setPinError(""); }}
                   className="text-muted-foreground hover:text-foreground">
                   <X className="h-4 w-4" />
                 </button>
