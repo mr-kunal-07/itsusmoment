@@ -401,7 +401,7 @@ export default function Index() {
           <div className="grid md:grid-cols-3 gap-8 relative">
             <div className="hidden md:block absolute top-8 left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-px bg-border" />
             {STEPS.map((s, i) => (
-              <StepCard key={i} step={s.step} icon={s.icon} title={s.title} desc={s.desc} delay={i * 150} />
+              <StepCard key={i} step={s.step} icon={s.icon} title={s.title} desc={s.desc} color={s.color} delay={i * 150} />
             ))}
           </div>
         </div>
