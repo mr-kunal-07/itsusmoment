@@ -237,15 +237,16 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
           {media.map(item => {
             const isSelected = selected.has(item.id);
             return (
-              <Card
-                key={item.id}
-                className={cn(
-                  "overflow-hidden group cursor-pointer hover:shadow-md transition-shadow break-inside-avoid",
-                  isSelected && "ring-2 ring-primary"
-                )}
-                draggable={!isSelecting}
-                onDragStart={e => handleDragStart(e, item)}
-              >
+              <ContextMenu key={item.id}>
+                <ContextMenuTrigger asChild>
+                <Card
+                  className={cn(
+                    "overflow-hidden group cursor-pointer hover:shadow-md transition-shadow break-inside-avoid",
+                    isSelected && "ring-2 ring-primary"
+                  )}
+                  draggable={!isSelecting}
+                  onDragStart={e => handleDragStart(e, item)}
+                >
                 <div
                   className="relative bg-muted"
                   onClick={() => isSelecting ? toggleSelect(item.id) : onPreview(item)}
