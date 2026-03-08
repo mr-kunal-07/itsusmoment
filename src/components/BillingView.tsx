@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Check, X, HardDrive, Mic, Upload, Crown, Sparkles, Zap, Heart,
+  Sprout, HeartHandshake, Gem,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,32 +19,75 @@ interface FeatureRow {
 }
 
 const FEATURES: FeatureRow[] = [
-  { icon: HardDrive, text: "Storage",         single: "1 GB",        dating: "5 GB",        soulmate: "50 GB"      },
-  { icon: Upload,    text: "Monthly uploads", single: "10",          dating: "50",          soulmate: "Unlimited"  },
-  { icon: Heart,     text: "Partner access",  single: true,          dating: true,          soulmate: true         },
-  { icon: Mic,       text: "Voice messages",  single: false,         dating: false,         soulmate: true         },
-  { icon: Zap,       text: "Reactions",       single: false,         dating: false,         soulmate: true         },
-  { icon: Sparkles,  text: "All new features",single: false,         dating: false,         soulmate: true         },
-  { icon: Crown,     text: "Priority support",single: false,         dating: false,         soulmate: true         },
+  { icon: HardDrive, text: "Storage",          single: "1 GB",       dating: "5 GB",        soulmate: "50 GB"      },
+  { icon: Upload,    text: "Monthly uploads",  single: "10",         dating: "50",          soulmate: "Unlimited"  },
+  { icon: Heart,     text: "Partner access",   single: true,         dating: true,          soulmate: true         },
+  { icon: Mic,       text: "Voice messages",   single: false,        dating: false,         soulmate: true         },
+  { icon: Zap,       text: "Reactions",        single: false,        dating: false,         soulmate: true         },
+  { icon: Sparkles,  text: "All new features", single: false,        dating: false,         soulmate: true         },
+  { icon: Crown,     text: "Priority support", single: false,        dating: false,         soulmate: true         },
 ];
 
 const PLAN_ORDER: Plan[] = ["single", "dating", "soulmate"];
 
+// Premium icon component for each plan tier
+function PlanIcon({ planId, active }: { planId: Plan; active: boolean }) {
+  const configs: Record<Plan, {
+    Icon: React.ElementType;
+    bg: string;
+    ring: string;
+    iconColor: string;
+    glow?: string;
+  }> = {
+    single: {
+      Icon: Sprout,
+      bg: "bg-muted/60",
+      ring: "ring-1 ring-border",
+      iconColor: "text-muted-foreground",
+    },
+    dating: {
+      Icon: HeartHandshake,
+      bg: "bg-primary/8",
+      ring: "ring-1 ring-primary/20",
+      iconColor: "text-primary",
+    },
+    soulmate: {
+      Icon: Gem,
+      bg: "bg-primary/15",
+      ring: "ring-1 ring-primary/40",
+      iconColor: "text-primary",
+      glow: "shadow-[0_0_18px_hsl(var(--primary)/0.35)]",
+    },
+  };
+
+  const { Icon, bg, ring, iconColor, glow } = configs[planId];
+
+  return (
+    <div className={cn(
+      "h-11 w-11 rounded-xl flex items-center justify-center shrink-0 transition-all",
+      bg, ring, glow,
+      active && "scale-105"
+    )}>
+      <Icon className={cn("h-5 w-5", iconColor)} strokeWidth={1.75} />
+    </div>
+  );
+}
+
 const PLAN_META: Record<Plan, {
-  emoji: string; label: string; tagline: string;
+  label: string; tagline: string;
   price: string | null; period: string; badge: string | null;
 }> = {
   single: {
-    emoji: "🌱", label: "Single", tagline: "Explore the platform.",
-    price: null,  period: "forever free",   badge: null,
+    label: "Single", tagline: "Explore the platform.",
+    price: null,  period: "forever free", badge: null,
   },
   dating: {
-    emoji: "💌", label: "Dating", tagline: "Unlock more experiences together.",
-    price: "₹9",  period: "per month",       badge: null,
+    label: "Dating", tagline: "Unlock more experiences together.",
+    price: "₹9",  period: "per month",    badge: null,
   },
   soulmate: {
-    emoji: "💍", label: "Soulmate", tagline: "Everything for the perfect connection.",
-    price: "₹99", period: "per month",       badge: "Most popular",
+    label: "Soulmate", tagline: "Everything for the perfect connection.",
+    price: "₹99", period: "per month",    badge: "Most popular",
   },
 };
 
