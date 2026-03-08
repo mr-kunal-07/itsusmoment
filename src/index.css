@@ -114,9 +114,8 @@
     --shadow-popover: 0 8px 32px hsl(0 0% 0% / 0.6), 0 2px 8px hsl(0 0% 0% / 0.4);
 
     /* ── WhatsApp-style Chat tokens (dark mode) ── */
-    --wa-bg:            40 3% 9%;         /* #171716 plain dark bg */
-    --wa-wallpaper:     40 3% 9%;         /* same plain bg */
-    --wa-header:        0 0% 6%;          /* #0f0f0f slightly darker header */
+    --wa-bg:            40 3% 9%;         /* #171716 plain dark bg — NO pattern */
+    --wa-header:        0 0% 7%;          /* #121212 darker header */
     --wa-bubble-out:    166 52% 18%;      /* #0d5045 sent bubble deep WA green */
     --wa-bubble-in:     200 13% 16%;      /* #202c33 received bubble */
     --wa-input-bg:      200 13% 14%;      /* input pill bg */
@@ -284,6 +283,8 @@
   .bg-dots {
     background-image: radial-gradient(hsl(var(--foreground) / 0.04) 1px, transparent 1px);
     background-size: 24px 24px;
+  }
+
   /* Safe area utilities for notched phones */
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -292,7 +293,6 @@
   .pb-safe {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   }
-}
 }
 
 @keyframes waveBar {
