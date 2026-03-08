@@ -59,8 +59,7 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
   const polylineRef = useRef<L.Polyline | null>(null);
   const geojsonLayerRef = useRef<L.GeoJSON | null>(null);
   const geojsonDataRef = useRef<GeoJSON.FeatureCollection | null>(null);
-  const geofenceCircleRef = useRef<L.Circle | null>(null);
-  const geofencePulseRef = useRef<L.Circle | null>(null);
+  const geofenceLayerRef = useRef<L.GeoJSON | null>(null);
 
   // Init map once — show full world
   useEffect(() => {
