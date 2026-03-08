@@ -4,7 +4,7 @@ import { useRelationshipStats } from "@/hooks/useMemories";
 import { getPublicUrl } from "@/hooks/useMedia";
 import { format, formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, Image as ImageIcon, Video, Star, HardDrive, CalendarHeart, Clock } from "lucide-react";
+import { Heart, Image as ImageIcon, Video, Star, HardDrive, CalendarHeart, Clock, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function formatSize(bytes: number) {
@@ -69,37 +69,52 @@ export function MemoriesTimeline({ onPreview }: TimelineProps) {
 
             {/* Photo grid */}
             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-              {media.map((item, idx) => (
-                <div
-                  key={item.id}
-                  className={cn(
-                    "relative aspect-square rounded-xl overflow-hidden cursor-pointer group",
-                    "hover:ring-2 hover:ring-primary/60 transition-all duration-200",
-                    // First item bigger
-                    idx === 0 && media.length > 2 ? "col-span-2 row-span-2" : ""
-                  )}
-                  onClick={() => onPreview(item.id)}
-                >
-                  {item.file_type === "video" ? (
-                    <>
-                      <video src={getPublicUrl(item.file_path)} className="w-full h-full object-cover" preload="metadata" />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                        <Video className="h-6 w-6 text-white drop-shadow" />
+              {media.map((item, idx) => {
+                const photoDate = new Date((item as any).taken_at ?? item.created_at);
+                const hasTakenAt = !!(item as any).taken_at;
+                return (
+                  <div
+                    key={item.id}
+                    className={cn(
+                      "relative aspect-square rounded-xl overflow-hidden cursor-pointer group",
+                      "hover:ring-2 hover:ring-primary/60 transition-all duration-200",
+                      idx === 0 && media.length > 2 ? "col-span-2 row-span-2" : ""
+                    )}
+                    onClick={() => onPreview(item.id)}
+                  >
+                    {item.file_type === "video" ? (
+                      <>
+                        <video src={getPublicUrl(item.file_path)} className="w-full h-full object-cover" preload="metadata" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <Video className="h-6 w-6 text-white drop-shadow" />
+                        </div>
+                      </>
+                    ) : (
+                      <img src={getPublicUrl(item.file_path)} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <p className="text-white text-xs font-medium truncate drop-shadow">{item.title}</p>
+                      <p className="text-white/80 text-[10px] flex items-center gap-1 mt-0.5">
+                        {hasTakenAt
+                          ? <><Camera className="h-2.5 w-2.5" />{format(photoDate, "MMM d, yyyy · h:mm a")}</>
+                          : <><Clock className="h-2.5 w-2.5" />{format(photoDate, "MMM d, yyyy")}</>
+                        }
+                      </p>
+                    </div>
+                    {item.is_starred && (
+                      <Star className="absolute top-1.5 right-1.5 h-3.5 w-3.5 fill-yellow-400 text-yellow-400 drop-shadow" />
+                    )}
+                    {hasTakenAt && (
+                      <div className="absolute top-1.5 left-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="bg-black/50 rounded px-1 py-0.5 text-[9px] text-white/90 flex items-center gap-0.5">
+                          <Camera className="h-2 w-2" /> EXIF
+                        </span>
                       </div>
-                    </>
-                  ) : (
-                    <img src={getPublicUrl(item.file_path)} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="text-white text-xs font-medium truncate drop-shadow">{item.title}</p>
-                    <p className="text-white/70 text-[10px]">{format(new Date(item.created_at), "MMM d")}</p>
+                    )}
                   </div>
-                  {item.is_starred && (
-                    <Star className="absolute top-1.5 right-1.5 h-3.5 w-3.5 fill-yellow-400 text-yellow-400 drop-shadow" />
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         );
