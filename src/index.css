@@ -114,16 +114,16 @@
     --shadow-popover: 0 8px 32px hsl(0 0% 0% / 0.6), 0 2px 8px hsl(0 0% 0% / 0.4);
 
     /* ── WhatsApp-style Chat tokens (dark mode) ── */
-    --wa-bg:            200 14% 8%;       /* #0b1014 outer shell */
-    --wa-wallpaper:     204 14% 10%;      /* #111b21 message area */
-    --wa-header:        200 15% 12%;      /* #1f2c33 header / input bar */
-    --wa-bubble-out:    166 52% 18%;      /* #0d5045 sent bubble (deep WA green) */
+    --wa-bg:            40 4% 9%;         /* #171716 plain dark bg */
+    --wa-wallpaper:     40 4% 9%;         /* same plain bg - no pattern */
+    --wa-header:        40 4% 7%;         /* slightly darker header */
+    --wa-bubble-out:    166 52% 18%;      /* #0d5045 sent bubble deep WA green */
     --wa-bubble-in:     200 13% 16%;      /* #202c33 received bubble */
-    --wa-input-bg:      200 13% 16%;      /* input pill bg */
+    --wa-input-bg:      200 13% 14%;      /* input pill bg */
     --wa-online:        142 69% 43%;      /* #25d366 WA green accent */
     --wa-tick-blue:     207 90% 65%;      /* double-tick blue */
     --wa-meta:          0 0% 52%;         /* #858585 timestamps */
-    --wa-system-bubble: 200 13% 14%;      /* date divider */
+    --wa-system-bubble: 40 4% 12%;        /* date divider */
     --wa-avatar:        166 52% 22%;      /* default avatar bg */
     --wa-voice-thumb:   199 98% 60%;      /* #53d8fb voice playhead */
   }

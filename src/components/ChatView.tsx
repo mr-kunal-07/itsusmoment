@@ -246,10 +246,9 @@ export function ChatView() {
 
   return (
     <div
-      className="flex flex-col rounded-xl overflow-hidden border border-border/40 shadow-2xl"
+      className="flex flex-col overflow-hidden"
       style={{
-        height: "calc(100dvh - 7.5rem)",
-        maxHeight: 900,
+        height: "calc(100dvh - 4rem)",
         background: "hsl(var(--wa-bg))",
       }}
     >
@@ -400,13 +399,14 @@ export function ChatView() {
                           <div
                             className={cn(
                               "relative text-sm leading-relaxed break-words text-white shadow-sm",
-                              isVoice ? "px-2 py-2" : "px-3 py-2"
+                              isVoice ? "px-2 py-2" : "px-3 py-2 pb-1"
                             )}
                             style={{
                               background: isMe ? "hsl(var(--wa-bubble-out))" : "hsl(var(--wa-bubble-in))",
                               borderRadius: isMe
-                                ? `18px ${!prevSame ? "4px" : "18px"} 18px 18px`
-                                : `${!prevSame ? "4px" : "18px"} 18px 18px 18px`,
+                                ? `12px 4px 12px 12px`
+                                : `4px 12px 12px 12px`,
+                              ...(prevSame && { borderRadius: "12px" }),
                             }}
                           >
                             {isVoice && audioUrl ? (
@@ -421,9 +421,15 @@ export function ChatView() {
                               />
                             ) : (
                               <>
-                                <span>{msg.content}</span>
-                                {/* Time + ticks inline at bottom-right */}
-                                <span className="float-right ml-2 mt-1 mb-[-2px] flex items-center gap-0.5 text-[10px] opacity-60 select-none leading-none">
+                                {/* Text + inline time spacer */}
+                                <span className="break-words">{msg.content}</span>
+                                {/* Invisible spacer so time doesn't overlap text */}
+                                <span className="inline-block w-16 h-3 ml-1" aria-hidden />
+                                {/* Time + ticks pinned bottom-right */}
+                                <span
+                                  className="absolute bottom-1.5 right-2.5 flex items-center gap-0.5 text-[10px] select-none leading-none whitespace-nowrap"
+                                  style={{ color: "hsl(var(--wa-meta))" }}
+                                >
                                   {format(new Date(msg.created_at), "h:mm a")}
                                   <ReadReceipt msg={msg} isMe={isMe} />
                                 </span>
