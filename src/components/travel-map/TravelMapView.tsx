@@ -55,7 +55,7 @@ function HeatmapLegend({ locations }: { locations: TravelLocation[] }) {
       className="absolute top-3 right-3 z-10 bg-black/60 border border-purple-500/20 rounded-xl p-3 backdrop-blur-md max-w-[180px]"
     >
       <div className="text-[10px] font-bold text-pink-300 mb-2 flex items-center gap-1">
-        <Globe className="h-3 w-3" /> Countries Visited
+        <Globe2 className="h-3 w-3" /> Countries Visited
       </div>
       <div className="space-y-1 max-h-36 overflow-y-auto">
         {countries.map(([country, count]) => (
