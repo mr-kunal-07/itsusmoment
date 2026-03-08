@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Trash2, Lock, Reply, X, Check, CheckCheck, Phone, Video, MoreVertical, Smile, Paperclip, Mic, Play, Pause } from "lucide-react";
+import { Send, Trash2, Lock, Reply, X, Check, CheckCheck, Phone, Video, MoreVertical, Smile, Paperclip, Mic, Play, Pause, ArrowLeft } from "lucide-react";
 import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMessages, Message } from "@/hooks/useMessages";
@@ -12,9 +12,6 @@ import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { cn } from "@/lib/utils";
 
 const EMOJI_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
-
-// WhatsApp dark doodle wallpaper pattern (encoded SVG)
-const WA_WALLPAPER_SVG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%230d1418'/%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.04' stroke-width='1.2'%3E%3C!-- chat bubble --%3E%3Crect x='20' y='30' width='40' height='28' rx='8'/%3E%3Cline x1='24' y1='58' x2='18' y2='66'/%3E%3C!-- phone --%3E%3Crect x='100' y='20' width='22' height='36' rx='4'/%3E%3Crect x='104' y='50' width='14' height='2' rx='1'/%3E%3C!-- heart --%3E%3Cpath d='M200 35 C200 30 193 25 188 30 C183 25 176 30 176 35 C176 40 188 52 188 52 C188 52 200 40 200 35Z'/%3E%3C!-- smiley --%3E%3Ccircle cx='280' cy='38' r='16'/%3E%3Ccircle cx='275' cy='34' r='2' fill='%23ffffff' fill-opacity='0.04'/%3E%3Ccircle cx='285' cy='34' r='2' fill='%23ffffff' fill-opacity='0.04'/%3E%3Cpath d='M274 42 Q280 48 286 42'/%3E%3C!-- camera --%3E%3Crect x='340' y='22' width='40' height='30' rx='5'/%3E%3Ccircle cx='360' cy='37' r='8'/%3E%3Crect x='350' y='19' width='12' height='5' rx='2'/%3E%3C!-- music note --%3E%3Cpath d='M60 110 L60 90 L80 85 L80 105'/%3E%3Ccircle cx='57' cy='113' r='5'/%3E%3Ccircle cx='77' cy='108' r='5'/%3E%3C!-- star --%3E%3Cpolygon points='160,85 163,95 173,95 165,101 168,111 160,105 152,111 155,101 147,95 157,95'/%3E%3C!-- mic --%3E%3Crect x='255' y='85' width='16' height='26' rx='8'/%3E%3Cpath d='M248 104 Q248 118 263 118 Q278 118 278 104'/%3E%3Cline x1='263' y1='118' x2='263' y2='126'/%3E%3C!-- video camera --%3E%3Crect x='320' y='88' width='32' height='22' rx='4'/%3E%3Cpath d='M352 94 L368 88 L368 110 L352 104Z'/%3E%3C!-- flower --%3E%3Ccircle cx='60' cy='190' r='8'/%3E%3Ccircle cx='60' cy='175' r='6'/%3E%3Ccircle cx='60' cy='205' r='6'/%3E%3Ccircle cx='48' cy='190' r='6'/%3E%3Ccircle cx='72' cy='190' r='6'/%3E%3C!-- envelope --%3E%3Crect x='130' y='178' width='44' height='32' rx='4'/%3E%3Cpath d='M130 182 L152 198 L174 182'/%3E%3C!-- clock --%3E%3Ccircle cx='260' cy='190' r='18'/%3E%3Cline x1='260' y1='178' x2='260' y2='190'/%3E%3Cline x1='260' y1='190' x2='270' y2='196'/%3E%3C!-- gift --%3E%3Crect x='320' y='180' width='36' height='28' rx='3'/%3E%3Crect x='318' y='174' width='40' height='8' rx='2'/%3E%3Cline x1='338' y1='174' x2='338' y2='208'/%3E%3Cpath d='M338 174 C334 168 326 168 326 174'/%3E%3Cpath d='M338 174 C342 168 350 168 350 174'/%3E%3C!-- thumbs up --%3E%3Cpath d='M40 290 L40 270 Q40 264 46 264 L60 264 Q62 264 64 266 L74 280 L72 290Z'/%3E%3Crect x='30' y='270' width='12' height='22' rx='3'/%3E%3C!-- lightning --%3E%3Cpath d='M155 265 L145 285 L155 285 L145 305 L165 280 L155 280Z'/%3E%3C!-- balloon --%3E%3Ccircle cx='260' cy='280' r='18'/%3E%3Cpath d='M255 298 Q258 306 260 310'/%3E%3C!-- sparkles --%3E%3Cpath d='M340 265 L343 275 L353 278 L343 281 L340 291 L337 281 L327 278 L337 275Z'/%3E%3C!-- wave/signal --%3E%3Cpath d='M20 360 Q35 350 50 360 Q65 370 80 360'/%3E%3Cpath d='M20 370 Q35 360 50 370 Q65 380 80 370'/%3E%3C!-- trophy --%3E%3Crect x='125' y='358' width='30' height='26' rx='3'/%3E%3Cpath d='M118 360 Q118 374 125 374'/%3E%3Cpath d='M162 360 Q162 374 155 374'/%3E%3Crect x='130' y='382' width='20' height='6' rx='2'/%3E%3C!-- diamond --%3E%3Cpath d='M250 352 L266 360 L260 376 L240 376 L234 360Z'/%3E%3C!-- phone ringing --%3E%3Cpath d='M340 355 Q355 340 360 355'/%3E%3Cpath d='M335 350 Q355 330 365 350'/%3E%3Cpath d='M344 368 C344 368 348 372 352 368 C356 364 352 356 348 352 L342 358 C342 358 340 360 344 364Z'/%3E%3C/g%3E%3C/svg%3E")`;
 
 function formatDay(dateStr: string) {
   const d = new Date(dateStr);
@@ -155,7 +152,54 @@ function AudioBubble({
   );
 }
 
-export function ChatView() {
+/** Swipeable wrapper: swipe right → trigger reply (mobile only) */
+function SwipeableMessage({
+  children, onSwipeReply, isMe,
+}: {
+  children: React.ReactNode;
+  onSwipeReply: () => void;
+  isMe: boolean;
+}) {
+  const startXRef = useRef<number | null>(null);
+  const [offset, setOffset] = useState(0);
+  const triggered = useRef(false);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    startXRef.current = e.touches[0].clientX;
+    triggered.current = false;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (startXRef.current === null) return;
+    const dx = e.touches[0].clientX - startXRef.current;
+    // Only allow rightward swipe, cap at 60px
+    if (dx > 0) {
+      setOffset(Math.min(dx, 60));
+      if (dx > 50 && !triggered.current) {
+        triggered.current = true;
+        onSwipeReply();
+      }
+    }
+  };
+
+  const onTouchEnd = () => {
+    startXRef.current = null;
+    setOffset(0);
+  };
+
+  return (
+    <div
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      style={{ transform: `translateX(${offset}px)`, transition: offset === 0 ? "transform 0.2s ease" : "none" }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function ChatView({ onBack }: { onBack?: () => void }) {
   const { user } = useAuth();
   const { data: couple } = useMyCouple();
   const { data: profiles = [] } = useAllProfiles();
@@ -249,14 +293,23 @@ export function ChatView() {
       className="flex flex-col overflow-hidden"
       style={{
         height: "calc(100dvh - 4rem)",
-        background: "hsl(var(--wa-bg))",
+        background: "#171716",
       }}
     >
       {/* ── WhatsApp-style Header ── */}
       <div
-        className="flex items-center gap-3 px-4 py-3 shrink-0 z-10"
+        className="flex items-center gap-2 px-3 py-3 shrink-0 z-10"
         style={{ background: "hsl(var(--wa-header))" }}
       >
+        {/* Back button — mobile only */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="sm:hidden p-1.5 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors mr-1 shrink-0"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+        )}
         <div className="relative">
           <Avatar className="h-10 w-10 ring-2 ring-white/10">
             <AvatarImage src={partnerProfile?.avatar_url ?? undefined} />
@@ -302,11 +355,7 @@ export function ChatView() {
       {/* ── Chat Wallpaper + Messages ── */}
       <div
         className="flex-1 overflow-y-auto px-3 py-2 scroll-smooth"
-        style={{
-          backgroundImage: WA_WALLPAPER_SVG,
-          backgroundRepeat: "repeat",
-          backgroundSize: "400px 400px",
-        }}
+        style={{ background: "#171716" }}
       >
         {isLoading ? (
           <div className="flex items-center justify-center h-32">
@@ -351,8 +400,12 @@ export function ChatView() {
                     const audioUrl = (msg as any).audio_url;
 
                     return (
-                      <div
+                      <SwipeableMessage
                         key={msg.id}
+                        onSwipeReply={() => { setReplyTo(msg); inputRef.current?.focus(); }}
+                        isMe={isMe}
+                      >
+                      <div
                         className={cn(
                           "flex items-end gap-1.5 group relative",
                           isMe ? "justify-end pl-12 sm:pl-20" : "justify-start pr-12 sm:pr-20"
@@ -516,6 +569,7 @@ export function ChatView() {
                           </div>
                         )}
                       </div>
+                      </SwipeableMessage>
                     );
                   })}
                 </div>

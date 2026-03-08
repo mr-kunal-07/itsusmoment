@@ -353,7 +353,7 @@ export default function Dashboard() {
             ) : selectedView === "anniversaries" ? (
               <AnniversariesView />
             ) : selectedView === "chat" ? (
-              <ChatView />
+              <ChatView onBack={() => setSelectedView("all")} />
             ) : selectedView === "activity" ? (
               <ActivityFeed />
             ) : selectedView === "billing" ? (
