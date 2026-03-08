@@ -290,13 +290,15 @@ export function BillingView() {
                 plan === planId && "bg-primary/5"
               )}
             >
-              <span className="text-sm">{PLAN_META[planId].emoji}</span>
-              <p className={cn(
-                "text-xs font-semibold mt-0.5",
-                plan === planId ? "text-primary" : "text-muted-foreground"
-              )}>
-                {PLAN_META[planId].label}
-              </p>
+              <div className="flex flex-col items-center gap-1.5">
+                <PlanIcon planId={planId} active={plan === planId} />
+                <p className={cn(
+                  "text-xs font-semibold",
+                  plan === planId ? "text-primary" : "text-muted-foreground"
+                )}>
+                  {PLAN_META[planId].label}
+                </p>
+              </div>
             </div>
           ))}
         </div>
