@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Trash2, Lock, Reply, X, Check, CheckCheck, MoreVertical, Smile, Mic, Play, Pause, ArrowLeft, Image as ImageIcon, CheckSquare } from "lucide-react";
+import { Send, Trash2, Lock, Reply, X, Check, CheckCheck, Smile, Mic, Play, Pause, ArrowLeft, Image as ImageIcon, CheckSquare } from "lucide-react";
 import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMessages, Message } from "@/hooks/useMessages";
