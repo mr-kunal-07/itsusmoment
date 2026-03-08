@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Search, Upload, LogOut, Moon, Sun, LayoutGrid, List } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Media, useMedia, useStarredMedia, useRecentMedia, useMoveMedia } from "@/hooks/useMedia";
+import { useMedia, useStarredMedia, useRecentMedia, useMoveMedia } from "@/hooks/useMedia";
 import { useFolders } from "@/hooks/useFolders";
 import { useTheme } from "@/hooks/useTheme";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -16,6 +16,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+
+type FileTypeFilter = "all" | "image" | "video";
 
 export default function Dashboard() {
   const { user, signOut } = useAuth();
@@ -25,6 +28,7 @@ export default function Dashboard() {
   const [previewIndex, setPreviewIndex] = useState<number>(-1);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [dragOverMain, setDragOverMain] = useState(false);
+  const [fileTypeFilter, setFileTypeFilter] = useState<FileTypeFilter>("all");
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const moveMedia = useMoveMedia();
@@ -46,10 +50,13 @@ export default function Dashboard() {
   const { data: recentMedia = [] } = useRecentMedia();
   const { data: folders = [] } = useFolders();
 
-  // Pick media based on view
-  const media = selectedView === "starred" ? starredMedia
+  // Pick media based on view, then apply file type filter
+  const rawMedia = selectedView === "starred" ? starredMedia
     : selectedView === "recent" ? recentMedia
     : regularMedia;
+
+  const media = fileTypeFilter === "all" ? rawMedia
+    : rawMedia.filter(m => m.file_type === fileTypeFilter);
 
   const currentFolder = !isSpecialView ? folders.find(f => f.id === selectedView) : null;
   const pageTitle = selectedView === "all" ? "All Files"
@@ -101,6 +108,24 @@ export default function Dashboard() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
+            </div>
+
+            {/* File type filter */}
+            <div className="hidden sm:flex items-center gap-0.5 p-0.5 rounded-lg bg-muted">
+              {(["all", "image", "video"] as FileTypeFilter[]).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFileTypeFilter(f)}
+                  className={cn(
+                    "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                    fileTypeFilter === f
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {f === "all" ? "All" : f === "image" ? "Images" : "Videos"}
+                </button>
+              ))}
             </div>
 
             <div className="flex items-center gap-1 ml-auto">
