@@ -158,19 +158,19 @@ const MEMORY_CARDS = [
   { emoji: "🎂", label: "1 Year!", sub: "Dec 2, 2025" },
 ];
 
-const FEATURES: { icon: React.ElementType; title: string; desc: string; tag: string }[] = [
-  { icon: GalleryVerticalEnd, title: "Shared Memory Vault", desc: "Upload photos & videos together — private, beautiful, forever yours. No algorithm, no ads, no noise.", tag: "Core" },
-  { icon: MessagesSquare, title: "Private Chat", desc: "A dedicated space just for the two of you. React with emojis, reply to messages, feel every word.", tag: "Connect" },
-  { icon: AudioWaveform, title: "Voice Messages", desc: "Send your voice, your laugh, your 'I miss you' — audio messages that feel like a warm hug.", tag: "Soulmate" },
-  { icon: CalendarHeart, title: "Milestones & Anniversaries", desc: "Never forget a special date. Your timeline of firsts — first kiss, first trip, first everything.", tag: "Core" },
-  { icon: HeartHandshake, title: "Love Notes", desc: "Attach a handwritten note to any photo. Words that stay forever, tied to your best memories.", tag: "Connect" },
-  { icon: Clapperboard, title: "Slideshow & Highlights", desc: "Relive your journey with a cinematic slideshow of your starred memories. Pure magic.", tag: "Core" },
+const FEATURES: { icon: React.ElementType; title: string; desc: string; tag: string; color: string }[] = [
+  { icon: GalleryVerticalEnd, title: "Shared Memory Vault",       desc: "Upload photos & videos together — private, beautiful, forever yours. No algorithm, no ads, no noise.",  tag: "Core",     color: "linear-gradient(135deg,#a855f7,#7c3aed)" },
+  { icon: MessagesSquare,     title: "Private Chat",              desc: "A dedicated space just for the two of you. React with emojis, reply to messages, feel every word.",       tag: "Connect",  color: "linear-gradient(135deg,#ec4899,#be185d)" },
+  { icon: AudioWaveform,      title: "Voice Messages",            desc: "Send your voice, your laugh, your 'I miss you' — audio messages that feel like a warm hug.",              tag: "Soulmate", color: "linear-gradient(135deg,#f97316,#c2410c)" },
+  { icon: CalendarHeart,      title: "Milestones & Anniversaries",desc: "Never forget a special date. Your timeline of firsts — first kiss, first trip, first everything.",      tag: "Core",     color: "linear-gradient(135deg,#14b8a6,#0f766e)" },
+  { icon: BookHeart,          title: "Love Notes",                desc: "Attach a handwritten note to any photo. Words that stay forever, tied to your best memories.",           tag: "Connect",  color: "linear-gradient(135deg,#f43f5e,#9f1239)" },
+  { icon: Clapperboard,       title: "Slideshow & Highlights",    desc: "Relive your journey with a cinematic slideshow of your starred memories. Pure magic.",                   tag: "Core",     color: "linear-gradient(135deg,#3b82f6,#1d4ed8)" },
 ];
 
-const STEPS: { step: string; icon: React.ElementType; title: string; desc: string }[] = [
-  { step: "01", icon: UserPlus, title: "Create your account", desc: "Sign up free — no credit card required. Takes under a minute." },
-  { step: "02", icon: HeartHandshake, title: "Invite your partner", desc: "Share a unique link. They join, you're linked — your private world is live." },
-  { step: "03", icon: ImagePlay, title: "Start building memories", desc: "Upload photos, chat, add milestones. Your story, finally in one place." },
+const STEPS: { step: string; icon: React.ElementType; title: string; desc: string; color: string }[] = [
+  { step: "01", icon: UserRoundCheck, title: "Create your account",       desc: "Sign up free — no credit card required. Takes under a minute.",                        color: "linear-gradient(135deg,#8b5cf6,#6d28d9)" },
+  { step: "02", icon: HeartHandshake, title: "Invite your partner",       desc: "Share a unique link. They join, you're linked — your private world is live.",          color: "linear-gradient(135deg,#ec4899,#9d174d)" },
+  { step: "03", icon: ImagePlay,      title: "Start building memories",   desc: "Upload photos, chat, add milestones. Your story, finally in one place.",               color: "linear-gradient(135deg,#14b8a6,#0e7490)" },
 ];
 
 const TESTIMONIALS = [
