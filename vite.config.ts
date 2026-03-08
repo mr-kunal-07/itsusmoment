@@ -51,9 +51,9 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       manifest: {
-        name: "kunal & kalyani",
-        short_name: "Our Vault",
-        description: "Our shared photo vault",
+        name: "OurVault",
+        short_name: "OurVault",
+        description: "A private shared space for couples — memories, love notes & more.",
         theme_color: "#171717",
         background_color: "#171717",
         display: "standalone",
