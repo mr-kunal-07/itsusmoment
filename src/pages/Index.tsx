@@ -420,7 +420,7 @@ export default function Index() {
               { val: "100%",    label: "Private, always" },
             ].map((s, i) => (
               <div key={i} className="text-center px-4 md:px-8 py-2">
-                <div className="text-2xl md:text-3xl font-extrabold mb-0.5" style={{ ...displayFont, color: T.dark }}>{s.val}</div>
+                <div className="text-2xl md:text-3xl font-semibold mb-0.5" style={{ ...displayFont, color: T.dark }}>{s.val}</div>
                 <div className="text-xs font-medium" style={{ color: T.muted }}>{s.label}</div>
               </div>
             ))}
