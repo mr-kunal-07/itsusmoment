@@ -242,7 +242,7 @@ export default function Admin() {
                         <p className="text-xs font-medium text-foreground truncate">{u.display_name ?? u.email}</p>
                         <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(u.created_at), { addSuffix: true })}</p>
                       </div>
-                      <PlanBadge plan={u.plan} />
+                      <PlanBadge plan={u.plan} isShared={u.is_shared_plan} />
                     </div>
                   ))}
               </div>
