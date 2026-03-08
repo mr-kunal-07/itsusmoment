@@ -212,7 +212,6 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   const [voiceMode, setVoiceMode] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const chatWrapRef = useRef<HTMLDivElement>(null);
 
   const coupleId = couple?.status === "active" ? couple.id : null;
   const partnerId = couple?.status === "active"
@@ -232,35 +231,10 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
     return () => document.removeEventListener("click", handler);
   }, [emojiPickerId]);
 
-  // Fix mobile keyboard: track visualViewport and shift the wrapper up
-  // so the input bar stays just above the software keyboard.
+  // Scroll to bottom on new messages
   useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const onViewportChange = () => {
-      if (!chatWrapRef.current) return;
-      // Offset from the bottom of the layout viewport to the top of the keyboard
-      const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
-      chatWrapRef.current.style.transform = `translateY(${-Math.max(keyboardHeight, 0)}px)`;
-      chatWrapRef.current.style.height = `${vv.height + vv.offsetTop}px`;
-      // Keep newest message visible
-      bottomRef.current?.scrollIntoView({ behavior: "instant" });
-    };
-
-    vv.addEventListener("resize", onViewportChange);
-    vv.addEventListener("scroll", onViewportChange);
-
-    return () => {
-      vv.removeEventListener("resize", onViewportChange);
-      vv.removeEventListener("scroll", onViewportChange);
-      // Reset on unmount
-      if (chatWrapRef.current) {
-        chatWrapRef.current.style.transform = "";
-        chatWrapRef.current.style.height = "";
-      }
-    };
-  }, []);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length]);
 
   const handleSend = async () => {
     const trimmed = text.trim();
@@ -268,10 +242,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
     setText("");
     const replyId = replyTo?.id ?? null;
     setReplyTo(null);
-    // Reset textarea height
-    if (inputRef.current) {
-      inputRef.current.style.height = "auto";
-    }
+    if (inputRef.current) inputRef.current.style.height = "auto";
     await sendMessage.mutateAsync({ content: trimmed, replyToId: replyId, messageType: "text" });
   };
 
@@ -290,7 +261,6 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
     if (e.target.value) sendTyping();
-    // auto-resize
     e.target.style.height = "auto";
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
   };
@@ -324,13 +294,9 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
 
   return (
     <div
-      ref={chatWrapRef}
-      className="flex flex-col overflow-hidden"
+      className="flex flex-col h-full"
       style={{
-        height: "100%",
         background: "hsl(var(--wa-bg))",
-        transformOrigin: "top left",
-        willChange: "transform, height",
       }}
     >
       {/* ── WhatsApp-style Header ── */}
@@ -398,7 +364,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
 
       {/* ── Messages area ── */}
       <div
-        className="flex-1 overflow-y-auto px-3 py-2 scroll-smooth"
+        className="flex-1 overflow-y-auto overscroll-contain px-3 py-2"
         style={{ background: "hsl(var(--wa-bg))" }}
       >
         {isLoading ? (
@@ -681,8 +647,11 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
 
       {/* ── Input Bar ── */}
       <div
-        className="px-3 py-2.5 flex items-end gap-2 shrink-0 border-t border-border"
-        style={{ background: "hsl(var(--wa-bg))" }}
+        className="px-3 pt-2 pb-3 flex items-end gap-2 shrink-0 border-t border-border"
+        style={{
+          background: "hsl(var(--wa-bg))",
+          paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
+        }}
       >
         {voiceMode ? (
           <div className="flex-1">
