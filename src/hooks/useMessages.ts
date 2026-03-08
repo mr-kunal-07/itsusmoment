@@ -91,11 +91,27 @@ export function useMessages() {
   }, [coupleId, user, queryClient]);
 
   const sendMessage = useMutation({
-    mutationFn: async ({ content, replyToId }: { content: string; replyToId?: string | null }) => {
+    mutationFn: async ({
+      content,
+      replyToId,
+      messageType = "text",
+      audioUrl,
+    }: {
+      content: string;
+      replyToId?: string | null;
+      messageType?: string;
+      audioUrl?: string | null;
+    }) => {
       if (!coupleId || !user) throw new Error("Not connected");
-      const { error } = await supabase
-        .from("messages" as never)
-        .insert({ sender_id: user.id, couple_id: coupleId, content, reply_to_id: replyToId ?? null } as never);
+      const payload: Record<string, unknown> = {
+        sender_id: user.id,
+        couple_id: coupleId,
+        content,
+        reply_to_id: replyToId ?? null,
+        message_type: messageType,
+      };
+      if (audioUrl) payload.audio_url = audioUrl;
+      const { error } = await supabase.from("messages" as never).insert(payload as never);
       if (error) throw error;
     },
   });
