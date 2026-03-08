@@ -63,8 +63,8 @@ export function BucketList() {
   const pending = items.filter(i => !i.done);
   const progress = items.length > 0 ? Math.round((done.length / items.length) * 100) : 0;
 
-  const filteredPending = category === "all" ? pending : pending.filter(i => (i as any).category === category);
-  const filteredDone    = category === "all" ? done    : done.filter(i => (i as any).category === category);
+          const filteredPending = category === "all" ? pending : pending.filter(i => (i as any).category === category);
+          const filteredDone    = category === "all" ? done    : done.filter(i => (i as any).category === category);
 
   const handleAdd = async () => {
     const trimmed = text.trim();
