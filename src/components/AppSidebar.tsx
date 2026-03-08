@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart, CalendarHeart, Play, Trophy, Link2 } from "lucide-react";
+import { DaysTogether } from "@/components/DaysTogether";
 import { useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, Folder } from "@/hooks/useFolders";
 import { useMedia } from "@/hooks/useMedia";
 import { useStorageUsage, useAllProfiles, useProfile } from "@/hooks/useProfile";
@@ -304,6 +305,7 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
           </div>
           <p className="text-xs text-muted-foreground/60">of 500 MB</p>
         </div>
+        <DaysTogether />
       </SidebarFooter>
 
       <AlertDialog open={!!deletingFolder} onOpenChange={open => !open && setDeletingFolder(null)}>
