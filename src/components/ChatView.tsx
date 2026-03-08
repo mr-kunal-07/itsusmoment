@@ -390,7 +390,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
               🔒 Messages are private between you two
             </div>
             <div className="mt-6 text-4xl">💌</div>
-            <p className="text-sm font-medium text-white/80">Send your first message</p>
+            <p className="text-sm font-medium" style={{ color: "hsl(var(--wa-text) / 0.8)" }}>Send your first message</p>
           </div>
         ) : (
           <div className="space-y-1 pb-2">
