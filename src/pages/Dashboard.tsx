@@ -190,32 +190,33 @@ export default function Dashboard() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full overflow-hidden">
         <AppSidebar
           selectedView={selectedView}
           onSelectView={setSelectedView}
           onStartSlideshow={() => setSlideshowOpen(true)}
         />
 
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
-          <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b px-4 h-14 flex items-center gap-3 shadow-sm">
+          <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b px-3 sm:px-4 h-14 flex items-center gap-2 shadow-sm">
             <SidebarTrigger className="shrink-0" />
 
             {isGridView && (
-              <div className="relative flex-1 max-w-md">
+              <div className="relative flex-1 min-w-0 max-w-xs sm:max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search files..."
-                  className="pl-9 h-9"
+                  placeholder="Search…"
+                  className="pl-9 h-9 text-sm"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
               </div>
             )}
 
+            {/* File type filter — hidden on mobile */}
             {isGridView && (
-              <div className="hidden sm:flex items-center gap-0.5 p-0.5 rounded-lg bg-muted">
+              <div className="hidden md:flex items-center gap-0.5 p-0.5 rounded-lg bg-muted shrink-0">
                 {(["all", "image", "video"] as FileTypeFilter[]).map(f => (
                   <button
                     key={f}
@@ -231,14 +232,14 @@ export default function Dashboard() {
               </div>
             )}
 
-            <div className="flex items-center gap-1 ml-auto">
+            <div className="flex items-center gap-0.5 sm:gap-1 ml-auto shrink-0">
               {isGridView && (
                 <>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" className="h-9 text-xs gap-1.5 hidden sm:flex">
                         <ArrowUpDown className="h-3.5 w-3.5" />
-                        {sortLabel}
+                        <span className="hidden lg:inline">{sortLabel}</span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-40">
@@ -254,7 +255,7 @@ export default function Dashboard() {
                     </DropdownMenuContent>
                   </DropdownMenu>
 
-                  <Button variant="ghost" size="icon" className="h-9 w-9"
+                  <Button variant="ghost" size="icon" className="h-9 w-9 hidden sm:flex"
                     onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}
                     title={viewMode === "grid" ? "Switch to list" : "Switch to grid"}
                   >
@@ -269,14 +270,16 @@ export default function Dashboard() {
 
               <NotificationsPanel />
 
-              <Button onClick={() => setUploadOpen(true)} size="sm" className="gap-1.5">
-                <Upload className="h-4 w-4" /> Upload
+              {/* Upload: icon-only on mobile, text on sm+ */}
+              <Button onClick={() => setUploadOpen(true)} size="sm" className="gap-1.5 h-9 px-2 sm:px-3">
+                <Upload className="h-4 w-4" />
+                <span className="hidden sm:inline">Upload</span>
               </Button>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
+                    <Avatar className="h-7 w-7">
                       {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
                       <AvatarFallback className="text-xs">{initials}</AvatarFallback>
                     </Avatar>
@@ -301,18 +304,20 @@ export default function Dashboard() {
 
           {/* Content */}
           <main
-            className={cn("flex-1 p-6", dragOverMain && "ring-2 ring-primary ring-inset bg-primary/5")}
+            className={cn(
+              "flex-1 p-3 sm:p-4 md:p-6 overflow-auto",
+              dragOverMain && "ring-2 ring-primary ring-inset bg-primary/5"
+            )}
             onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setDragOverMain(true); }}
             onDragLeave={() => setDragOverMain(false)}
             onDrop={handleMainDrop}
           >
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6">
               {!isSpecialView && (
                 <FolderBreadcrumb folderId={selectedView} folders={folders} onNavigate={setSelectedView} />
               )}
-              <h1 className="text-2xl font-bold font-heading tracking-tight">{pageTitle}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold font-heading tracking-tight">{pageTitle}</h1>
 
-              {/* On This Day sub-header */}
               {selectedView === "on-this-day" && onThisDayMedia.length > 0 && (
                 <p className="text-sm text-muted-foreground mt-1">
                   🗓️ {onThisDayMedia.length} {onThisDayMedia.length === 1 ? "memory" : "memories"} from previous years on this date
