@@ -234,7 +234,7 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
               (e.target as L.Path).setStyle({ fillOpacity: 0.55, weight: 2 });
             });
             layer.on("mouseout", function (e: L.LeafletMouseEvent) {
-              layer.setStyle({ fillOpacity: 0.35, weight: 1.5 });
+              (e.target as L.Path).setStyle({ fillOpacity: 0.35, weight: 1.5 });
             });
           }
         },

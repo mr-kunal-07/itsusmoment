@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Map, List, Share2, Download, Loader2, Heart, Globe } from "lucide-react";
+import { Plus, Map, List, Share2, Download, Loader2, Heart, Globe2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTravelLocations, TravelLocation } from "@/hooks/useTravelLocations";
 import { useMedia } from "@/hooks/useMedia";
