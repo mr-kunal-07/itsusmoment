@@ -92,6 +92,21 @@ export function useRecentMedia() {
   });
 }
 
+async function extractTakenAt(file: File): Promise<string | null> {
+  try {
+    if (!file.type.startsWith("image/")) return null;
+    const exifr = (await import("exifr")).default;
+    const result = await exifr.parse(file, { tags: ["DateTimeOriginal", "CreateDate", "DateTime"] });
+    const raw = result?.DateTimeOriginal ?? result?.CreateDate ?? result?.DateTime;
+    if (!raw) return null;
+    // exifr returns a Date object for these tags
+    if (raw instanceof Date && !isNaN(raw.getTime())) return raw.toISOString();
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function useUploadMedia() {
   const qc = useQueryClient();
   const { user } = useAuth();
@@ -101,12 +116,15 @@ export function useUploadMedia() {
       const ext = file.name.split(".").pop();
       const filePath = `${user!.id}/${crypto.randomUUID()}.${ext}`;
 
+      // Extract EXIF date before uploading
+      const takenAt = await extractTakenAt(file);
+
       const { error: uploadError } = await supabase.storage.from("media").upload(filePath, file);
       if (uploadError) throw uploadError;
 
       const fileType = file.type.startsWith("video/") ? "video" : "image";
 
-      const { error: dbError } = await supabase.from("media").insert({
+      const { data, error: dbError } = await supabase.from("media").insert({
         title,
         description: description || null,
         file_name: file.name,
@@ -116,8 +134,10 @@ export function useUploadMedia() {
         mime_type: file.type,
         folder_id: folderId ?? null,
         uploaded_by: user!.id,
-      });
+        ...(takenAt ? { taken_at: takenAt } : {}),
+      } as never).select().single();
       if (dbError) throw dbError;
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["media"] });
