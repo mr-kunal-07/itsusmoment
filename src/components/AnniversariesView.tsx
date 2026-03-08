@@ -298,7 +298,7 @@ function MilestoneCard({ milestone, mediaMap, onDelete, canDelete }: {
   const dateObj = new Date(milestone.date);
 
   return (
-    <div className="glass-card rounded-xl p-4 flex gap-4 group">
+    <div className="glass-card rounded-xl p-3 sm:p-4 flex gap-3 sm:gap-4 group">
       {photo ? (
         <img src={getPublicUrl(photo.file_path)} alt={photo.title} className="w-16 h-16 rounded-lg object-cover shrink-0" />
       ) : (
