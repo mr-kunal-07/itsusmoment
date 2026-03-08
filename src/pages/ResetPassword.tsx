@@ -92,7 +92,7 @@ export default function ResetPassword() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full" disabled={submitting || !ready}>
+              <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting ? "Updating…" : "Update password"}
               </Button>
             </CardFooter>
