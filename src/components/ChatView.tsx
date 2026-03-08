@@ -669,8 +669,47 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                           )}
                         </div>
 
-                        {/* Hover actions */}
-                        {hoveredId === msg.id && (
+                        {/* Long-press floating emoji bar (mobile) */}
+                        {longPressId === msg.id && (
+                          <div
+                            className={cn(
+                              "absolute -top-12 flex gap-1 rounded-2xl px-2.5 py-2 shadow-2xl z-50 border border-border",
+                              isMe ? "right-0" : "left-0"
+                            )}
+                            style={{ background: "hsl(var(--wa-header))" }}
+                            onTouchStart={e => e.stopPropagation()}
+                          >
+                            {EMOJI_REACTIONS.map(emoji => (
+                              <button
+                                key={emoji}
+                                onTouchEnd={e => { e.preventDefault(); e.stopPropagation(); handleReact(msg, emoji); setLongPressId(null); }}
+                                className="text-xl active:scale-125 transition-transform px-0.5"
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                            {/* Select option */}
+                            <button
+                              onTouchEnd={e => { e.preventDefault(); e.stopPropagation(); setLongPressId(null); toggleSelect(msg.id); }}
+                              className="flex items-center justify-center w-8 h-8 rounded-full transition-colors"
+                              style={{ color: "hsl(var(--wa-text) / 0.7)" }}
+                            >
+                              <CheckSquare className="h-5 w-5" />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Selected checkmark */}
+                        {selectedIds.has(msg.id) && (
+                          <div className={cn("shrink-0 self-center", isMe ? "order-first mr-1" : "order-last ml-1")}>
+                            <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                              <Check className="h-3 w-3 text-primary-foreground" />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Hover actions (desktop) */}
+                        {hoveredId === msg.id && !selectMode && (
                           <div
                             className={cn(
                               "flex items-center gap-0.5 shrink-0 self-center",
