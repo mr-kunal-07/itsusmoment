@@ -592,7 +592,7 @@ export default function Index() {
                     ? { border: `2px solid ${T.accent}`, transform: "scale(1.03)", boxShadow: `0 12px 48px ${T.accent}1a` }
                     : { border: `1px solid ${T.border}` }}>
                   {plan.accent && (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-white text-[11px] font-extrabold px-4 py-1 rounded-full whitespace-nowrap" style={{ background: T.accent }}>
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-white text-[11px] font-semibold px-4 py-1 rounded-full whitespace-nowrap" style={{ background: T.accent }}>
                       Most popular
                     </div>
                   )}
