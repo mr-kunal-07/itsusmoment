@@ -443,9 +443,7 @@ export default function Index() {
             {FEATURE_CARDS.map((f, i) => {
               const Icon = f.icon;
               return (
-                <Reveal key={i} delay={i * 50}
-                  className="p-8 flex flex-col gap-4"
-                  style={{ background: T.bg }}>
+                <Reveal key={i} delay={i * 50} className="p-8 flex flex-col gap-4 bg-white">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: T.accentL }}>
                     <Icon className="w-5 h-5" style={{ color: T.accent }} strokeWidth={1.75} />
                   </div>
