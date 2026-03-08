@@ -297,8 +297,8 @@ export default function Index() {
 
           {/* H1 */}
           <Reveal delay={60}>
-            <h1 style={{ ...display, fontSize: "clamp(38px, 5vw, 62px)", lineHeight: 1.06, marginBottom: 24, maxWidth: 860, marginLeft: "auto", marginRight: "auto", whiteSpace: "pre-line" }}>
-              {"The private space your love story\n"}
+            <h1 style={{ ...display, fontSize: "clamp(38px, 5vw, 62px)", lineHeight: 1.1, marginBottom: 24, maxWidth: 860, marginLeft: "auto", marginRight: "auto" }}>
+              The private space your love story<br />
               <span style={{ background: "linear-gradient(135deg, #0a0a0a 30%, #52525b)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                 deserves.
               </span>
