@@ -131,7 +131,7 @@ export function BillingView() {
       {plan !== "single" && subscription?.current_period_end && (
         <div className="flex items-center justify-center gap-2.5">
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm">
-            <span>{PLAN_META[plan].emoji}</span>
+            <PlanIcon planId={plan} active />
             <span className="font-medium text-foreground">{PLAN_META[plan].label} plan active</span>
             <span className="text-muted-foreground">·</span>
             <span className="text-xs text-muted-foreground">
