@@ -30,34 +30,6 @@ export function useMedia(folderId?: string | null, search?: string) {
   });
 }
 
-export function useInfiniteMedia(folderId?: string | null, search?: string) {
-  const { user } = useAuth();
-  return useInfiniteQuery({
-    queryKey: ["media-infinite", folderId, search],
-    queryFn: async ({ pageParam = 0 }) => {
-      let query = supabase.from("media").select("*");
-      if (folderId) {
-        query = query.eq("folder_id", folderId);
-      } else if (folderId === null) {
-        query = query.is("folder_id", null);
-      }
-      if (search) {
-        query = query.ilike("title", `%${search}%`);
-      }
-      const { data, error } = await query
-        .order("created_at", { ascending: false })
-        .range(pageParam, pageParam + PAGE_SIZE - 1);
-      if (error) throw error;
-      return data as Media[];
-    },
-    getNextPageParam: (lastPage, allPages) => {
-      if (lastPage.length < PAGE_SIZE) return undefined;
-      return allPages.flat().length;
-    },
-    initialPageParam: 0,
-    enabled: !!user,
-  });
-}
 
 export function useStarredMedia() {
   const { user } = useAuth();
