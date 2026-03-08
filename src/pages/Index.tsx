@@ -61,6 +61,7 @@ function Reveal({ children, delay = 0, className = "", up = true, style }: {
         transition: `opacity 0.65s ease ${delay}ms, transform 0.65s ease ${delay}ms`,
         opacity: vis ? 1 : 0,
         transform: vis ? "none" : up ? "translateY(22px)" : "none",
+        ...style,
       }}>
       {children}
     </div>
