@@ -323,7 +323,7 @@ export default function Admin() {
                       </div>
 
                       {/* Plan */}
-                      <div><PlanBadge plan={u.plan} /></div>
+                      <div><PlanBadge plan={u.plan} isShared={u.is_shared_plan} /></div>
 
                       {/* Storage */}
                       <p className="text-xs text-muted-foreground">{formatBytes(u.storage_used)}</p>
