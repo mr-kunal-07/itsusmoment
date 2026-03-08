@@ -101,7 +101,6 @@ export default function Dashboard() {
     : selectedView === "starred" ? "Starred"
     : selectedView === "recent" ? "Recent"
     : selectedView === "timeline" ? "Memories Timeline"
-    : selectedView === "stats" ? "Our Story"
     : selectedView === "on-this-day" ? `On This Day · ${format(new Date(), "MMMM d")}`
     : selectedView === "anniversaries" ? "Anniversaries & Milestones"
     : currentFolder?.name || "Folder";
