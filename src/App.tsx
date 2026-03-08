@@ -10,6 +10,7 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 import Join from "./pages/Join";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
