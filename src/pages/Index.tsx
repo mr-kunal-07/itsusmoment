@@ -65,7 +65,7 @@ function FeatureCard({ icon: Icon, title, desc, tag, color, delay }: { icon: Rea
 }
 
 /* ─── Step card ─── */
-function StepCard({ step, icon: Icon, title, desc, delay }: { step: string; icon: React.ElementType; title: string; desc: string; delay: number }) {
+function StepCard({ step, icon: Icon, title, desc, color, delay }: { step: string; icon: React.ElementType; title: string; desc: string; color: string; delay: number }) {
   const { ref, visible } = useInView(0.1);
   return (
     <div
@@ -74,12 +74,15 @@ function StepCard({ step, icon: Icon, title, desc, delay }: { step: string; icon
       style={{ transitionDelay: `${delay}ms` }}
     >
       <div className="relative inline-flex mb-6">
-        <div className="w-16 h-16 rounded-2xl bg-card border border-border flex items-center justify-center">
-          <Icon className="w-7 h-7 text-primary" />
+        <div
+          className="w-18 h-18 w-[72px] h-[72px] rounded-3xl flex items-center justify-center shadow-xl"
+          style={{ background: color }}
+        >
+          <Icon className="w-8 h-8 text-white" strokeWidth={1.5} />
         </div>
-        <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center font-heading">{step}</span>
+        <span className="absolute -top-2.5 -right-2.5 w-7 h-7 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center font-heading shadow-glow">{step}</span>
       </div>
-      <h3 className="font-heading font-semibold text-base mb-2">{title}</h3>
+      <h3 className="font-heading font-bold text-base mb-2">{title}</h3>
       <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
     </div>
   );
