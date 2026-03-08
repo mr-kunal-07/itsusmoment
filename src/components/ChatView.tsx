@@ -701,17 +701,18 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                         {hoveredId === msg.id && !selectMode && (
                           <div
                             className={cn(
-                              "flex items-center gap-0.5 shrink-0 self-center",
+                              "hidden sm:flex items-center gap-0.5 shrink-0 self-center",
                               isMe ? "order-first mr-1" : "order-last ml-1"
                             )}
                           >
                             <div className="relative">
                               <button
                                 onClick={e => { e.stopPropagation(); setEmojiPickerId(id => id === msg.id ? null : msg.id); }}
-                                className="p-1.5 rounded-full transition-colors text-sm"
+                                className="p-1.5 rounded-full transition-colors text-sm hover:bg-accent/30"
                                 style={{ color: "hsl(var(--wa-text) / 0.6)" }}
+                                title="React"
                               >
-                                <Smile className="h-4 w-4" />
+                                <Smile className="h-3.5 w-3.5" />
                               </button>
                               {emojiPickerId === msg.id && (
                                 <div
@@ -736,20 +737,28 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                             </div>
                             <button
                               onClick={() => { setReplyTo(msg); inputRef.current?.focus(); }}
-                              className="p-1.5 rounded-full transition-colors"
+                              className="p-1.5 rounded-full transition-colors hover:bg-accent/30"
                               style={{ color: "hsl(var(--wa-text) / 0.6)" }}
+                              title="Reply"
                             >
-                              <Reply className="h-4 w-4" />
+                              <Reply className="h-3.5 w-3.5" />
                             </button>
-                            {isMe && (
-                              <button
-                                onClick={() => deleteMessage.mutateAsync(msg.id)}
-                                className="p-1.5 rounded-full transition-colors"
-                                style={{ color: "hsl(var(--wa-text) / 0.5)" }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            )}
+                            <button
+                              onClick={() => toggleSelect(msg.id)}
+                              className="p-1.5 rounded-full transition-colors hover:bg-accent/30"
+                              style={{ color: "hsl(var(--wa-text) / 0.6)" }}
+                              title="Select"
+                            >
+                              <CheckSquare className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => deleteMessage.mutateAsync(msg.id)}
+                              className="p-1.5 rounded-full transition-colors hover:bg-destructive/10"
+                              style={{ color: "hsl(var(--wa-text) / 0.5)" }}
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         )}
                       </div>
