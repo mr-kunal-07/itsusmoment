@@ -218,7 +218,7 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
     return (
       <div className={cn(
         viewMode === "grid"
-          ? "columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4"
+          ? "columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-3 sm:gap-4 space-y-3 sm:space-y-4"
           : "space-y-2"
       )}>
         {Array.from({ length: 8 }).map((_, i) => (
@@ -228,7 +228,7 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
               <div className="p-3 space-y-2"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-3 w-1/2" /></div>
             </Card>
           ) : (
-            <Skeleton key={i} className="h-16 w-full rounded-lg" />
+            <Skeleton key={i} className="h-14 sm:h-16 w-full rounded-lg" />
           )
         ))}
       </div>
@@ -306,46 +306,41 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
     <>
       {/* ── Selection toolbar ─────────────────────────────────────── */}
       {isSelecting && (
-        <div className="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-xl bg-primary/8 border border-primary/20 backdrop-blur-sm shadow-sm animate-in slide-in-from-top-1 duration-150">
+        <div className="flex flex-wrap items-center gap-2 mb-4 px-3 sm:px-4 py-2.5 rounded-xl bg-primary/8 border border-primary/20 backdrop-blur-sm shadow-sm animate-in slide-in-from-top-1 duration-150">
           <CheckSquare className="h-4 w-4 text-primary shrink-0" />
           <span className="text-sm font-semibold text-primary">{selected.size} selected</span>
           <Button variant="ghost" size="sm" className="text-xs h-7 px-2 text-muted-foreground hover:text-foreground" onClick={selectAll}>
-            Select all {media.length}
+            All {media.length}
           </Button>
           <div className="flex items-center gap-1.5 ml-auto">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5"
+                <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
                   onClick={() => { setMoveFolderId("__none__"); setBulkMoveOpen(true); }}>
-                  <FolderInput className="h-3.5 w-3.5" /> Move
+                  <FolderInput className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Move</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Move selected files</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" variant="destructive" className="h-7 text-xs gap-1.5"
+                <Button size="sm" variant="destructive" className="h-7 text-xs gap-1"
                   onClick={() => setBulkDeleteOpen(true)}>
-                  <Trash2 className="h-3.5 w-3.5" /> Delete
+                  <Trash2 className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Delete</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Delete · <kbd className="font-mono">Del</kbd></TooltipContent>
+              <TooltipContent>Delete</TooltipContent>
             </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearSelection}>
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Clear · <kbd className="font-mono">Esc</kbd></TooltipContent>
-            </Tooltip>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearSelection}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
           </div>
         </div>
       )}
 
-      {/* ── Keyboard hint ──────────────────────────────────────────── */}
+      {/* ── Keyboard hint — desktop only ───────────────────────────── */}
       {!isSelecting && media.length > 0 && (
-        <div className="flex items-center gap-1.5 mb-4 text-xs text-muted-foreground/60 select-none">
+        <div className="hidden sm:flex items-center gap-1.5 mb-4 text-xs text-muted-foreground/60 select-none">
           <Keyboard className="h-3 w-3" />
           <span><kbd className="font-mono">Ctrl+A</kbd> select all · <kbd className="font-mono">Del</kbd> delete · <kbd className="font-mono">Esc</kbd> clear</span>
         </div>
@@ -353,7 +348,7 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
 
       {/* ── Grid view ─────────────────────────────────────────────── */}
       {viewMode === "grid" ? (
-        <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4">
+        <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-2 sm:gap-4 space-y-2 sm:space-y-4">
           {media.map(item => {
             const isSelected = selected.has(item.id);
             const uploaderName = uploaderMap[item.uploaded_by];

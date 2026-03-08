@@ -81,14 +81,14 @@ export function AnniversariesView() {
   const mediaImages = allMedia.filter(m => m.file_type === "image");
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold font-heading gradient-text">Our Milestones</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Anniversaries, special moments & countdowns</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="text-lg sm:text-xl font-bold font-heading gradient-text truncate">Our Milestones</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Anniversaries, special moments & countdowns</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* View toggle */}
           <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
             <button
@@ -112,8 +112,9 @@ export function AnniversariesView() {
               <CalendarIcon className="h-3.5 w-3.5" />
             </button>
           </div>
-          <Button onClick={() => setShowAdd(true)} size="sm" className="gap-1.5">
-            <Plus className="h-4 w-4" /> Add milestone
+          <Button onClick={() => setShowAdd(true)} size="sm" className="gap-1 h-8 px-2 sm:px-3">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Add milestone</span>
           </Button>
         </div>
       </div>
@@ -297,11 +298,11 @@ function MilestoneCard({ milestone, mediaMap, onDelete, canDelete }: {
   const dateObj = new Date(milestone.date);
 
   return (
-    <div className="glass-card rounded-xl p-4 flex gap-4 group">
+    <div className="glass-card rounded-xl p-3 sm:p-4 flex gap-3 sm:gap-4 group">
       {photo ? (
-        <img src={getPublicUrl(photo.file_path)} alt={photo.title} className="w-16 h-16 rounded-lg object-cover shrink-0" />
+        <img src={getPublicUrl(photo.file_path)} alt={photo.title} className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover shrink-0" />
       ) : (
-        <div className={cn("w-16 h-16 rounded-lg flex items-center justify-center shrink-0 text-2xl", isAnniversary ? "bg-primary/10" : "bg-amber-500/10")}>
+        <div className={cn("w-12 h-12 sm:w-16 sm:h-16 rounded-lg flex items-center justify-center shrink-0 text-xl sm:text-2xl", isAnniversary ? "bg-primary/10" : "bg-amber-500/10")}>
           {isAnniversary ? "💑" : "⭐"}
         </div>
       )}

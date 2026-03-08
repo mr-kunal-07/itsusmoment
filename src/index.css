@@ -118,6 +118,8 @@
 @layer base {
   * {
     @apply border-border;
+    /* Ensure tap targets on mobile are large enough */
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
@@ -125,6 +127,10 @@
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Prevent horizontal overflow on mobile */
+    overflow-x: hidden;
+    /* Use dynamic viewport on iOS Safari */
+    min-height: 100dvh;
   }
 
   h1, h2, h3, h4, h5, h6 {

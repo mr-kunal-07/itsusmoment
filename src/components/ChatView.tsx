@@ -122,7 +122,7 @@ export function ChatView() {
   const partnerInitials = (partnerProfile?.display_name ?? "?").slice(0, 2).toUpperCase();
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] max-h-[800px]">
+    <div className="flex flex-col h-[calc(100dvh-7rem)] sm:h-[calc(100vh-8rem)] max-h-[900px]">
       {/* Chat header */}
       <div className="flex items-center gap-3 pb-4 border-b mb-2">
         <div className="flex items-center -space-x-2">

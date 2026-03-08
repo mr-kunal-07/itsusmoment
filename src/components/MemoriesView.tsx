@@ -112,7 +112,7 @@ export function MemoriesTimeline({ onPreview }: TimelineProps) {
             </div>
 
             {/* Photo grid */}
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-1.5">
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1 sm:gap-1.5">
               {media.map((item, itemIdx) => {
                 const photoDate = new Date((item as any).taken_at ?? item.created_at);
                 const hasTakenAt = !!(item as any).taken_at;
