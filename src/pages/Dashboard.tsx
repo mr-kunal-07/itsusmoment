@@ -20,6 +20,8 @@ import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { Slideshow } from "@/components/Slideshow";
 import { PartnerBanner } from "@/components/PartnerBanner";
 import { ChatView } from "@/components/ChatView";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -305,7 +307,7 @@ export default function Dashboard() {
           {/* Content */}
           <main
             className={cn(
-              "flex-1 p-3 sm:p-4 md:p-6 overflow-auto",
+              "flex-1 p-3 sm:p-4 md:p-6 overflow-auto pb-20 sm:pb-6",
               dragOverMain && "ring-2 ring-primary ring-inset bg-primary/5"
             )}
             onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setDragOverMain(true); }}
@@ -353,6 +355,13 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Mobile bottom navigation — hidden on sm+ */}
+      <MobileBottomNav
+        selectedView={selectedView}
+        onSelectView={setSelectedView}
+        onUpload={() => setUploadOpen(true)}
+      />
+
       <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} folderId={!isSpecialView ? selectedView : undefined} />
       <MediaPreview
         media={media}
@@ -366,6 +375,7 @@ export default function Dashboard() {
         open={slideshowOpen}
         onClose={() => setSlideshowOpen(false)}
       />
+      <PWAInstallPrompt />
     </SidebarProvider>
   );
 }
