@@ -56,8 +56,8 @@ export const PLAN_STORAGE: Record<Plan, number> = {
 };
 
 export const PLAN_UPLOAD_LIMIT: Record<Plan, number | null> = {
-  single:   10,   // 10 uploads / month
-  dating:   50,   // 50 uploads / month
+  single:   50,   // 50 uploads / month
+  dating:   200,  // 200 uploads / month
   soulmate: null, // unlimited
 };
 
