@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash } from "lucide-react";
+import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart } from "lucide-react";
 import { useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, Folder } from "@/hooks/useFolders";
 import { useMedia } from "@/hooks/useMedia";
 import { useStorageUsage } from "@/hooks/useProfile";
@@ -85,8 +85,16 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
 
   return (
     <Sidebar className="border-r">
-      <SidebarHeader className="p-4">
-        <h2 className="text-lg font-semibold tracking-tight">Media Hub</h2>
+      <SidebarHeader className="p-4 border-b border-sidebar-border">
+        <div className="flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
+            <Heart className="h-4 w-4 text-primary-foreground fill-primary-foreground" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold font-heading tracking-tight gradient-text">Kunal & Kalyani</h2>
+            <p className="text-[10px] text-muted-foreground">Media Vault</p>
+          </div>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
