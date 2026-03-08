@@ -1,4 +1,4 @@
-import { Home, CalendarHeart, Trophy, MessageCircleHeart, Upload, Activity } from "lucide-react";
+import { Home, CalendarHeart, Activity, MessageCircleHeart, Upload, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ViewType } from "@/components/AppSidebar";
 
@@ -9,10 +9,11 @@ interface Props {
 }
 
 const navItems = [
-  { id: "all" as ViewType, label: "Files", icon: Home },
-  { id: "timeline" as ViewType, label: "Memories", icon: CalendarHeart },
-  { id: "activity" as ViewType, label: "Activity", icon: Activity },
-  { id: "chat" as ViewType, label: "Chat", icon: MessageCircleHeart },
+  { id: "all" as ViewType,        label: "Files",    icon: Home },
+  { id: "timeline" as ViewType,   label: "Memories", icon: CalendarHeart },
+  { id: "activity" as ViewType,   label: "Activity", icon: Activity },
+  { id: "chat" as ViewType,       label: "Chat",     icon: MessageCircleHeart },
+  { id: "billing" as ViewType,    label: "Plans",    icon: CreditCard },
 ];
 
 export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props) {
@@ -21,14 +22,14 @@ export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props)
       <div className="flex items-center justify-around px-1 h-16">
         {navItems.map((item, index) => {
           const isActive = selectedView === item.id;
-          // Insert Upload button in the center (after index 1)
-          const showUploadBefore = index === 2;
+          const showUploadBefore = index === 2; // Center upload FAB
 
           return (
             <div key={item.id} className="contents">
               {showUploadBefore && (
                 <button
                   onClick={onUpload}
+                  aria-label="Upload"
                   className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2"
                 >
                   <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center shadow-lg -mt-5 border-2 border-background">
@@ -38,6 +39,7 @@ export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props)
               )}
               <button
                 onClick={() => onSelectView(item.id)}
+                aria-label={item.label}
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors",
                   isActive ? "text-primary" : "text-muted-foreground"
