@@ -353,8 +353,12 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                     const audioUrl = (msg as any).audio_url;
 
                     return (
-                      <div
+                      <SwipeableMessage
                         key={msg.id}
+                        onSwipeReply={() => { setReplyTo(msg); inputRef.current?.focus(); }}
+                        isMe={isMe}
+                      >
+                      <div
                         className={cn(
                           "flex items-end gap-1.5 group relative",
                           isMe ? "justify-end pl-12 sm:pl-20" : "justify-start pr-12 sm:pr-20"
