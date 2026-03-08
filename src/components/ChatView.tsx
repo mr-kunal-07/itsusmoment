@@ -294,10 +294,8 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
 
   return (
     <div
-      className="flex flex-col"
+      className="flex flex-col h-full"
       style={{
-        height: "100dvh",
-        maxHeight: "100dvh",
         background: "hsl(var(--wa-bg))",
       }}
     >
