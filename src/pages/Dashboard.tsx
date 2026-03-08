@@ -14,7 +14,7 @@ import { MediaGrid, ViewMode } from "@/components/MediaGrid";
 import { UploadDialog } from "@/components/UploadDialog";
 import { MediaPreview } from "@/components/MediaPreview";
 import { FolderBreadcrumb } from "@/components/FolderBreadcrumb";
-import { MemoriesTimeline } from "@/components/MemoriesView";
+import { MemoriesTimeline, RelationshipStats } from "@/components/MemoriesView";
 import { AnniversariesView } from "@/components/AnniversariesView";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { Slideshow } from "@/components/Slideshow";
@@ -25,6 +25,7 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { BillingView } from "@/components/BillingView";
 import { SettingsView } from "@/components/SettingsView";
 import { RecentlyDeletedView } from "@/components/RecentlyDeletedView";
+import { BucketList } from "@/components/BucketList";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,7 @@ function loadPref<T>(key: string, fallback: T): T {
 const SPECIAL_VIEWS = [
   "all", "starred", "recently-deleted",
   "timeline", "on-this-day", "anniversaries",
-  "chat", "activity", "billing", "settings",
+  "chat", "activity", "billing", "settings", "stats", "bucket-list",
 ];
 
 function tabToView(tab?: string): ViewType {
