@@ -47,15 +47,7 @@ export function SettingsView({ onNavigateBilling }: Props) {
 
   // ── App Lock state ──────────────────────────────────────────────────────────
   const [lockEnabled, setLockEnabled] = useState(getIsLockEnabled);
-  const [showPinSetup, setShowPinSetup] = useState(false);
-  const [pinStep, setPinStep] = useState<"enter" | "confirm">("enter");
-  const [pinDraft, setPinDraft] = useState("");
-  const [pinConfirm, setPinConfirm] = useState("");
-  const [pinError, setPinError] = useState("");
   const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricEnabled, setBiometricEnabled] = useState(
-    () => localStorage.getItem(LOCK_KEYS.biometric) === "1"
-  );
 
   // ── PWA install state ───────────────────────────────────────────────────────
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -111,61 +103,16 @@ export function SettingsView({ onNavigateBilling }: Props) {
     }
   };
 
-  // ── PIN setup flow ──────────────────────────────────────────────────────────
-  const handlePinDigit = (d: string) => {
-    if (pinStep === "enter") {
-      if (pinDraft.length >= 4) return;
-      const next = pinDraft + d;
-      setPinDraft(next);
-      if (next.length === 4) {
-        setPinStep("confirm");
-        setPinConfirm("");
-        setPinError("");
-      }
-    } else {
-      if (pinConfirm.length >= 4) return;
-      const next = pinConfirm + d;
-      setPinConfirm(next);
-      if (next.length === 4) {
-        if (next === pinDraft) {
-          setLockPin(next);
-          setLockEnabled(true);
-          setShowPinSetup(false);
-          setPinDraft("");
-          setPinConfirm("");
-          setPinStep("enter");
-          toast({ title: "App lock enabled 🔒" });
-        } else {
-          setPinError("PINs don't match. Try again.");
-          setPinDraft("");
-          setPinConfirm("");
-          setPinStep("enter");
-        }
-      }
-    }
-  };
-
-  const handlePinDelete = () => {
-    if (pinStep === "enter") setPinDraft(p => p.slice(0, -1));
-    else setPinConfirm(p => p.slice(0, -1));
+  const handleEnableLock = () => {
+    enableLock();
+    setLockEnabled(true);
+    toast({ title: "Fingerprint lock enabled 🔒" });
   };
 
   const handleDisableLock = () => {
     disableLock();
     setLockEnabled(false);
-    setBiometricEnabled(false);
-    localStorage.removeItem(LOCK_KEYS.biometric);
     toast({ title: "App lock disabled" });
-  };
-
-  const handleBiometricToggle = (enabled: boolean) => {
-    setBiometricEnabled(enabled);
-    if (enabled) {
-      localStorage.setItem(LOCK_KEYS.biometric, "1");
-      toast({ title: "Biometric unlock enabled 👆" });
-    } else {
-      localStorage.removeItem(LOCK_KEYS.biometric);
-    }
   };
 
   const handleInstall = async () => {
@@ -174,10 +121,6 @@ export function SettingsView({ onNavigateBilling }: Props) {
     const { outcome } = await installPrompt.userChoice;
     if (outcome === "accepted") setInstallPrompt(null);
   };
-
-  const pinDisplay = pinStep === "enter" ? pinDraft : pinConfirm;
-  const pinDots = Array.from({ length: 4 }, (_, i) => i < pinDisplay.length);
-  const pinRows = [["1","2","3"],["4","5","6"],["7","8","9"]];
 
   return (
     <div className="max-w-lg mx-auto p-4 sm:p-6 space-y-5 pb-24 sm:pb-8">
