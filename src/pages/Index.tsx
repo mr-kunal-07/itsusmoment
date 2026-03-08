@@ -248,7 +248,7 @@ export default function Index() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden font-sans">
+    <div className="landing min-h-screen bg-background text-foreground overflow-x-hidden font-sans">
 
       {/* ══ NAV ══ */}
       <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrollY > 40 ? "bg-background/95 backdrop-blur-xl border-b border-border shadow-card" : "bg-transparent"}`}>
