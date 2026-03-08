@@ -591,7 +591,7 @@ export default function Index() {
         <div className="max-w-7xl mx-auto px-5 md:px-8 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-xl bg-primary flex items-center justify-center shadow-glow">
-              <Vault className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={2} />
+              <LockKeyhole className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={2} />
             </div>
             <span className="font-heading font-semibold text-foreground">OurVault</span>
           </div>
