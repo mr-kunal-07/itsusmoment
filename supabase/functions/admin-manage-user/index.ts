@@ -38,16 +38,38 @@ serve(async (req) => {
       const periodEnd = new Date(now);
       periodEnd.setMonth(periodEnd.getMonth() + 1);
 
-      const { error: upsertErr } = await adminClient
+      // Check if subscription exists
+      const { data: existing } = await adminClient
         .from("subscriptions")
-        .upsert({
-          user_id: target_user_id,
-          plan,
-          status: "active",
-          current_period_start: now.toISOString(),
-          current_period_end: plan === "single" ? null : periodEnd.toISOString(),
-          updated_at: now.toISOString(),
-        }, { onConflict: "user_id" });
+        .select("id")
+        .eq("user_id", target_user_id)
+        .maybeSingle();
+
+      let upsertErr;
+      if (existing) {
+        const { error } = await adminClient
+          .from("subscriptions")
+          .update({
+            plan,
+            status: "active",
+            current_period_start: now.toISOString(),
+            current_period_end: plan === "single" ? null : periodEnd.toISOString(),
+            updated_at: now.toISOString(),
+          })
+          .eq("user_id", target_user_id);
+        upsertErr = error;
+      } else {
+        const { error } = await adminClient
+          .from("subscriptions")
+          .insert({
+            user_id: target_user_id,
+            plan,
+            status: "active",
+            current_period_start: now.toISOString(),
+            current_period_end: plan === "single" ? null : periodEnd.toISOString(),
+          });
+        upsertErr = error;
+      }
 
       if (upsertErr) throw new Error(upsertErr.message);
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -62,7 +84,16 @@ serve(async (req) => {
     if (action === "toggle_admin") {
       const { add } = body;
       if (add) {
-        await adminClient.from("user_roles").upsert({ user_id: target_user_id, role: "admin" }, { onConflict: "user_id,role" });
+        // Check if role already exists before inserting
+        const { data: existingRole } = await adminClient
+          .from("user_roles")
+          .select("id")
+          .eq("user_id", target_user_id)
+          .eq("role", "admin")
+          .maybeSingle();
+        if (!existingRole) {
+          await adminClient.from("user_roles").insert({ user_id: target_user_id, role: "admin" });
+        }
       } else {
         await adminClient.from("user_roles").delete().eq("user_id", target_user_id).eq("role", "admin");
       }
