@@ -344,7 +344,7 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
 
         {isAdmin && (
           <SidebarMenuButton
-            onClick={() => navigate("/admin")}
+            onClick={() => { setOpenMobile(false); navigate("/admin"); }}
             className="w-full justify-start gap-2 text-xs text-muted-foreground hover:text-foreground"
           >
             <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
