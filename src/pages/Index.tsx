@@ -5,6 +5,7 @@ import {
   Menu, X as XIcon, Camera, MessageCircle, Calendar,
   Sparkles, Image, Mic, Bell, Users, ChevronRight } from "lucide-react";
 import dashboardImg from "@/assets/dashboard-preview.png";
+import memoriesTimelineImg from "@/assets/memories-timeline.png";
 
 /* ── Design Tokens ─────────────────────────────────────── */
 const T = {
@@ -144,30 +145,13 @@ function MemoriesCard() {
         <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>4 memories</span>
       </div>
 
-      {/* Photo grid — 1 large + 3 small (matches screenshot layout) */}
-      <div style={{ padding: "0 12px 12px", display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "auto auto", gap: 5 }}>
-        {/* Large hero photo */}
-        <div style={{
-          gridRow: "span 2",
-          borderRadius: 12,
-          overflow: "hidden",
-          aspectRatio: "3/4",
-          background: PHOTO_GRADIENTS[0],
-          position: "relative"
-        }}>
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 36 }}>💑</span>
-          </div>
-          <div style={{ position: "absolute", top: 8, right: 8 }}>
-            <Star style={{ width: 13, height: 13, fill: "#facc15", color: "#facc15", filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.5))" }} />
-          </div>
-        </div>
-        {/* 3 smaller photos */}
-        {[PHOTO_GRADIENTS[1], PHOTO_GRADIENTS[2], PHOTO_GRADIENTS[3]].map((g, i) => (
-          <div key={i} style={{ borderRadius: 10, overflow: "hidden", aspectRatio: "4/3", background: g, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 22 }}>{["🌅", "🌿", "✈️"][i]}</span>
-          </div>
-        ))}
+      {/* Real memories timeline screenshot */}
+      <div style={{ padding: "0 12px 12px" }}>
+        <img
+          src={memoriesTimelineImg}
+          alt="Memories timeline"
+          style={{ width: "100%", borderRadius: 12, display: "block", objectFit: "cover" }}
+        />
       </div>
 
       {/* Love note input */}
