@@ -86,6 +86,14 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    if (action === "update_password") {
+      const { password } = body;
+      if (!password) return new Response(JSON.stringify({ error: "Missing password" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { error: pwErr } = await adminClient.auth.admin.updateUserById(target_user_id, { password });
+      if (pwErr) throw new Error(pwErr.message);
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (action === "delete_user") {
       const { error: delErr } = await adminClient.auth.admin.deleteUser(target_user_id);
       if (delErr) throw new Error(delErr.message);
