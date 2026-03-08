@@ -188,6 +188,15 @@ export default function Admin() {
           <TabsList className="mb-2">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">Users ({totalUsers})</TabsTrigger>
+            <TabsTrigger value="audit" className="gap-1.5">
+              <History className="h-3.5 w-3.5" />
+              Plan History
+              {auditLogs.length > 0 && (
+                <span className="ml-0.5 rounded-full bg-primary/15 text-primary text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                  {auditLogs.length}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* ── Overview ── */}
