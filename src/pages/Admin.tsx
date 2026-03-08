@@ -511,6 +511,7 @@ export default function Admin() {
             </div>
           </TabsContent>
         </Tabs>
+      </div>
 
       {/* Delete confirm dialog */}
       <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
