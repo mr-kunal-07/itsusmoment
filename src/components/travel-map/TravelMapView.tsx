@@ -1,13 +1,13 @@
 import { useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Map, List, Share2, Download, Loader2, Heart } from "lucide-react";
+import { Plus, Map, List, Share2, Download, Loader2, Heart, PenLine, Trash2, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTravelLocations, TravelLocation } from "@/hooks/useTravelLocations";
 import { useMedia } from "@/hooks/useMedia";
 import { useMyCouple } from "@/hooks/useCouple";
 import { useAllProfiles, useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
-import { TravelMapCanvas } from "./TravelMapCanvas";
+import { TravelMapCanvas, DrawnPoint } from "./TravelMapCanvas";
 import { AddLocationModal } from "./AddLocationModal";
 import { LocationPopup } from "./LocationPopup";
 import { TravelStats } from "./TravelStats";
@@ -60,6 +60,10 @@ export function TravelMapView() {
   const [clickedCoords, setClickedCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [exporting, setExporting] = useState(false);
 
+  // Draw geofence state
+  const [drawMode, setDrawMode] = useState(false);
+  const [drawnGeofence, setDrawnGeofence] = useState<DrawnPoint[] | null>(null);
+
   const partnerId = couple?.status === "active"
     ? (couple.user1_id === user?.id ? couple.user2_id : couple.user1_id)
     : null;
@@ -78,6 +82,22 @@ export function TravelMapView() {
     setFocusLocation(loc);
     setSelectedLocation(loc);
     setMode("map");
+  };
+
+  const handleDrawComplete = useCallback((points: DrawnPoint[]) => {
+    setDrawnGeofence(points);
+    setDrawMode(false);
+    toast({ title: "✏️ Area drawn!", description: "Your custom geofence is now shown on the map." });
+  }, [toast]);
+
+  const handleCancelDraw = () => {
+    setDrawMode(false);
+  };
+
+  const handleClearGeofence = () => {
+    setDrawnGeofence(null);
+    setFocusLocation(null);
+    toast({ title: "Geofence cleared" });
   };
 
   const handleExport = async () => {
@@ -187,7 +207,7 @@ export function TravelMapView() {
         </div>
       </motion.div>
 
-      {/* ── Stats — always one row ── */}
+      {/* ── Stats ── */}
       <TravelStats locations={locations} mediaCount={allMedia.length} />
 
       {/* ── Main content ── */}
@@ -201,6 +221,33 @@ export function TravelMapView() {
               exit={{ opacity: 0 }}
               className="relative"
             >
+              {/* Draw mode instruction banner */}
+              <AnimatePresence>
+                {drawMode && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    className="mb-2 px-3 py-2 rounded-xl bg-card border border-pink-500/30 flex items-center justify-between gap-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <PenLine className="h-3.5 w-3.5 text-pink-500 shrink-0" />
+                      <p className="text-[11px] text-foreground font-medium">
+                        <span className="font-bold text-pink-500">Click</span> to add points ·{" "}
+                        <span className="font-bold text-pink-500">Double-click</span> to finish
+                        {" "}<span className="text-muted-foreground">(min. 3 points)</span>
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleCancelDraw}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Map */}
               <div
                 className="relative rounded-2xl overflow-hidden border border-border shadow-card"
@@ -215,11 +262,16 @@ export function TravelMapView() {
                     locations={locations}
                     onMapClick={handleMapClick}
                     onPinClick={loc => {
-                      setSelectedLocation(loc);
-                      setFocusLocation(loc);
+                      if (!drawMode) {
+                        setSelectedLocation(loc);
+                        setFocusLocation(loc);
+                      }
                     }}
                     focusLocation={focusLocation}
                     showHeatmap={false}
+                    drawMode={drawMode}
+                    onDrawComplete={handleDrawComplete}
+                    manualGeofence={drawnGeofence}
                   />
                 )}
 
@@ -246,16 +298,65 @@ export function TravelMapView() {
                 )}
               </div>
 
-              {/* FAB — Add Memory */}
-              <motion.button
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => { setClickedCoords(null); setAddOpen(true); }}
-                className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-20 flex items-center gap-2 pl-4 pr-5 py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-semibold text-sm shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-shadow"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Add Memory</span>
-              </motion.button>
+              {/* Bottom action row */}
+              <div className="flex items-center justify-between mt-2 gap-2">
+                {/* Draw geofence button */}
+                <div className="flex items-center gap-1.5">
+                  {!drawMode ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => { setDrawnGeofence(null); setFocusLocation(null); setDrawMode(true); }}
+                      className="h-8 gap-1.5 text-xs border-pink-500/30 text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-950/20"
+                    >
+                      <PenLine className="h-3 w-3" />
+                      Draw Area
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleCancelDraw}
+                      className="h-8 gap-1.5 text-xs"
+                    >
+                      <X className="h-3 w-3" />
+                      Cancel
+                    </Button>
+                  )}
+
+                  {drawnGeofence && !drawMode && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleClearGeofence}
+                      className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Clear Area
+                    </Button>
+                  )}
+                </div>
+
+                {/* Confirm drawn area button */}
+                {drawMode && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Double-click to finish drawing
+                  </p>
+                )}
+              </div>
+
+              {/* FAB — Add Memory (hidden in draw mode) */}
+              {!drawMode && (
+                <motion.button
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={() => { setClickedCoords(null); setAddOpen(true); }}
+                  className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-20 flex items-center gap-2 pl-4 pr-5 py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-semibold text-sm shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-shadow"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Memory</span>
+                </motion.button>
+              )}
             </motion.div>
           ) : (
             <motion.div
