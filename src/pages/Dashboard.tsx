@@ -49,10 +49,13 @@ export default function Dashboard() {
   const { data: recentMedia = [] } = useRecentMedia();
   const { data: folders = [] } = useFolders();
 
-  // Pick media based on view
-  const media = selectedView === "starred" ? starredMedia
+  // Pick media based on view, then apply file type filter
+  const rawMedia = selectedView === "starred" ? starredMedia
     : selectedView === "recent" ? recentMedia
     : regularMedia;
+
+  const media = fileTypeFilter === "all" ? rawMedia
+    : rawMedia.filter(m => m.file_type === fileTypeFilter);
 
   const currentFolder = !isSpecialView ? folders.find(f => f.id === selectedView) : null;
   const pageTitle = selectedView === "all" ? "All Files"
