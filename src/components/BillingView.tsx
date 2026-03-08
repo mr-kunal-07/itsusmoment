@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   Check, X, HardDrive, Mic, Upload, Crown, Sparkles, Zap, Heart,
-  Sprout, HeartHandshake, Gem,
+  Sprout, HeartHandshake, Gem, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,6 @@ const FEATURES: FeatureRow[] = [
 
 const PLAN_ORDER: Plan[] = ["single", "dating", "soulmate"];
 
-// Premium icon component for each plan tier
 function PlanIcon({ planId, active }: { planId: Plan; active: boolean }) {
   const configs: Record<Plan, {
     Icon: React.ElementType;
@@ -47,7 +46,7 @@ function PlanIcon({ planId, active }: { planId: Plan; active: boolean }) {
     },
     dating: {
       Icon: HeartHandshake,
-      bg: "bg-primary/8",
+      bg: "bg-primary/10",
       ring: "ring-1 ring-primary/20",
       iconColor: "text-primary",
     },
@@ -79,22 +78,22 @@ const PLAN_META: Record<Plan, {
 }> = {
   single: {
     label: "Single", tagline: "Explore the platform.",
-    price: null,   period: "forever free", badge: null,
+    price: null, period: "forever free", badge: null,
   },
   dating: {
     label: "Dating", tagline: "Unlock more experiences together.",
-    price: "₹29", period: "per month",    badge: "Best value",
+    price: "₹29", period: "/ month", badge: "Best value",
   },
   soulmate: {
     label: "Soulmate", tagline: "Everything for the perfect connection.",
-    price: "₹99", period: "per month",    badge: "Most popular",
+    price: "₹99", period: "/ month", badge: "Most popular",
   },
 };
 
 function FeatureValue({ val }: { val: boolean | string }) {
   if (val === false) return <X className="h-4 w-4 text-muted-foreground/30 mx-auto" />;
   if (val === true)  return <Check className="h-4 w-4 text-primary mx-auto" />;
-  return <span className="text-xs font-medium text-foreground">{val}</span>;
+  return <span className="text-xs font-semibold text-foreground">{val}</span>;
 }
 
 export function BillingView() {
@@ -112,25 +111,25 @@ export function BillingView() {
   const currentPlanIndex = PLAN_ORDER.indexOf(plan);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-12">
+    <div className="max-w-5xl mx-auto space-y-10 pb-8">
 
-      {/* ── Hero ── */}
-      <div className="text-center space-y-3 pt-2">
-        <p className="text-xs font-semibold tracking-[0.2em] uppercase text-primary">
+      {/* Hero */}
+      <div className="text-center space-y-2 pt-4 sm:pt-6">
+        <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary">
           Plans & Pricing
         </p>
-        <h2 className="text-3xl sm:text-4xl font-bold font-heading tracking-tight text-foreground">
+        <h2 className="text-2xl sm:text-3xl font-bold font-heading tracking-tight text-foreground">
           Choose your story
         </h2>
-        <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+        <p className="text-sm text-muted-foreground max-w-xs mx-auto">
           Start free and upgrade as your relationship grows.
         </p>
       </div>
 
-      {/* ── Active plan notice ── */}
+      {/* Active plan notice */}
       {plan !== "single" && subscription?.current_period_end && (
-        <div className="flex items-center justify-center gap-2.5">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm">
+        <div className="flex items-center justify-center">
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary/10 border border-primary/20 text-sm">
             <PlanIcon planId={plan} active />
             <span className="font-medium text-foreground">{PLAN_META[plan].label} plan active</span>
             <span className="text-muted-foreground">·</span>
@@ -141,11 +140,11 @@ export function BillingView() {
         </div>
       )}
 
-      {/* ── Pricing cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      {/* Pricing cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
         {PLAN_ORDER.map((planId) => {
-          const meta    = PLAN_META[planId];
-          const isCurrent  = plan === planId;
+          const meta = PLAN_META[planId];
+          const isCurrent   = plan === planId;
           const isDowngrade = PLAN_ORDER.indexOf(planId) < currentPlanIndex;
           const isBilling   = planId === "dating" || planId === "soulmate";
           const isHighlight = planId === "soulmate";
@@ -154,14 +153,15 @@ export function BillingView() {
             <div
               key={planId}
               className={cn(
-                "relative flex flex-col rounded-2xl p-6 transition-all duration-200",
+                "relative flex flex-col rounded-2xl p-5 sm:p-6 transition-all duration-200 bg-card border",
                 isHighlight
-                  ? "bg-card border border-primary/40 shadow-[0_0_40px_hsl(var(--primary)/0.08)]"
-                  : "bg-card border border-border",
-                isCurrent && !isHighlight && "border-primary/30"
+                  ? "border-primary/40 shadow-[0_0_40px_hsl(var(--primary)/0.08)]"
+                  : isCurrent
+                    ? "border-primary/30"
+                    : "border-border"
               )}
             >
-              {/* Popular badge */}
+              {/* Badge */}
               {meta.badge && (
                 <div className="absolute -top-3.5 inset-x-0 flex justify-center">
                   <Badge className="bg-primary text-primary-foreground text-[11px] font-semibold px-3 py-1 rounded-full shadow-md">
@@ -171,11 +171,11 @@ export function BillingView() {
               )}
 
               {/* Plan header */}
-              <div className="mb-6">
+              <div className="mb-5">
                 <div className="flex items-center gap-3 mb-3">
                   <PlanIcon planId={planId} active={isCurrent} />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold font-heading text-base text-foreground">{meta.label}</span>
                       {isCurrent && (
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Active</Badge>
@@ -185,9 +185,9 @@ export function BillingView() {
                   </div>
                 </div>
 
-                <div className="mt-5 flex items-baseline gap-1">
+                <div className="mt-4 flex items-baseline gap-1">
                   <span className={cn(
-                    "font-bold font-heading tracking-tight",
+                    "font-bold font-heading tracking-tight text-foreground",
                     meta.price ? "text-4xl" : "text-3xl"
                   )}>
                     {meta.price ?? "Free"}
@@ -201,8 +201,8 @@ export function BillingView() {
                 )}
               </div>
 
-              {/* Features for this plan */}
-              <ul className="space-y-3 flex-1 mb-7">
+              {/* Feature list */}
+              <ul className="space-y-2.5 flex-1 mb-6">
                 {FEATURES.map(({ icon: Icon, text, ...vals }) => {
                   const val = vals[planId as keyof typeof vals] as boolean | string;
                   const active = val !== false;
@@ -243,38 +243,39 @@ export function BillingView() {
                   Downgrade
                 </Button>
               ) : isBilling ? (
-                <Button
-                  className={cn("w-full rounded-xl gap-2 font-semibold", !isHighlight && "variant-outline")}
-                  variant={isHighlight ? "default" : "outline"}
-                  onClick={() => handleCheckout(planId as BillingPlan)}
-                  disabled={loading}
-                >
-                  {checkingOut === planId ? (
-                    <span className="flex items-center gap-2">
-                      <span className="h-3.5 w-3.5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
-                      Processing…
-                    </span>
-                  ) : (
-                    <>
-                      {isHighlight ? <Crown className="h-3.5 w-3.5" /> : <Heart className="h-3.5 w-3.5" />}
-                      {meta.label === "Soulmate" ? "Become Soulmates" : "Get Dating"}
-                    </>
-                  )}
-                </Button>
+                <>
+                  <Button
+                    className="w-full rounded-xl gap-2 font-semibold"
+                    variant={isHighlight ? "default" : "outline"}
+                    onClick={() => handleCheckout(planId as BillingPlan)}
+                    disabled={loading}
+                    size="lg"
+                  >
+                    {checkingOut === planId ? (
+                      <span className="flex items-center gap-2">
+                        <span className="h-3.5 w-3.5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                        Processing…
+                      </span>
+                    ) : (
+                      <>
+                        {isHighlight ? <Crown className="h-4 w-4" /> : <Heart className="h-4 w-4" />}
+                        {planId === "soulmate" ? "Become Soulmates" : `Get Dating · ${meta.price}`}
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-[10px] text-center text-muted-foreground mt-2 leading-relaxed flex items-center justify-center gap-1">
+                    <ShieldCheck className="h-3 w-3" />
+                    Secure payment · Cancel anytime
+                  </p>
+                </>
               ) : null}
-
-              {isBilling && !isCurrent && !isDowngrade && (
-                <p className="text-[10px] text-center text-muted-foreground mt-2.5 leading-relaxed">
-                  Secure payment via Razorpay · Cancel anytime
-                </p>
-              )}
             </div>
           );
         })}
       </div>
 
-      {/* ── Feature comparison table ── */}
-      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      {/* Feature comparison table — hidden on mobile, shown on sm+ */}
+      <div className="hidden sm:block rounded-2xl border border-border bg-card overflow-hidden">
         <div className="px-6 py-4 border-b border-border">
           <h3 className="text-sm font-semibold font-heading text-foreground">Full feature comparison</h3>
         </div>
@@ -303,7 +304,7 @@ export function BillingView() {
           ))}
         </div>
 
-        {/* Feature rows */}
+        {/* Rows */}
         {FEATURES.map(({ icon: Icon, text, single, dating, soulmate }, i) => (
           <div
             key={text}
@@ -331,9 +332,10 @@ export function BillingView() {
         ))}
       </div>
 
-      {/* ── Footer note ── */}
-      <p className="text-center text-xs text-muted-foreground pb-4">
-        All plans include end-to-end encrypted storage. Payments processed securely by Razorpay.
+      {/* Footer */}
+      <p className="text-center text-xs text-muted-foreground pb-2 flex items-center justify-center gap-1.5">
+        <ShieldCheck className="h-3.5 w-3.5" />
+        End-to-end encrypted storage. Payments processed securely by Razorpay.
       </p>
     </div>
   );
