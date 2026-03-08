@@ -310,7 +310,7 @@ export default function Dashboard() {
           <PartnerBanner />
 
           {/* Upgrade nudge for free users */}
-          <UpgradeBanner onUpgrade={() => setSelectedView("billing")} />
+          <UpgradeBanner onUpgrade={() => setSelectedView("billing")} selectedView={selectedView} />
 
           {/* Content */}
           <main
