@@ -486,7 +486,7 @@ export default function Index() {
               {/* Text */}
               <div className="order-1 lg:order-2">
                 <div className="inline-flex items-center gap-2 bg-card border border-border px-3 py-1.5 rounded-full text-xs text-muted-foreground mb-6">
-                  <Image className="w-3 h-3 text-primary" /> Memory Vault
+                  <GalleryVerticalEnd className="w-3 h-3 text-primary" /> Memory Vault
                 </div>
                 <h2 className="font-heading text-4xl md:text-5xl font-bold mb-6 leading-tight">
                   Every photo tells<br /><span className="gradient-text">your story.</span>
