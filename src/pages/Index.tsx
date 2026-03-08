@@ -470,7 +470,7 @@ export default function Index() {
       </section>
 
       {/* ══ SPOTLIGHT: Memory Vault ══ */}
-      <section className="bg-card/20 border-y border-border py-28">
+      <section className="bg-accent/30 border-y border-border py-28">
         <div className="max-w-7xl mx-auto px-5 md:px-8">
           <FadeIn>
             <div className="grid lg:grid-cols-2 gap-16 items-center">
