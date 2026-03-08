@@ -23,23 +23,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-
-export type ViewType = "all" | "starred" | "recently-deleted" | "timeline" | "stats" | "anniversaries" | "chat" | "activity" | "billing" | "settings" | string;
-
-interface Props {
-  selectedView: ViewType;
-  onSelectView: (view: ViewType) => void;
-  onStartSlideshow?: () => void;
-}
-
-function formatSize(bytes: number) {
-  if (bytes < 1024) return bytes + " B";
-  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
-  if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + " MB";
-  return (bytes / 1073741824).toFixed(1) + " GB";
-}
+import { cn, formatSize } from "@/lib/utils";
 
 export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Props) {
   const navigate = useNavigate();

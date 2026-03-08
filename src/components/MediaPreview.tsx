@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight, Download, Link, User, MessageCircleHeart, Ta
 import { useToast } from "@/hooks/use-toast";
 import { LoveNotesPanel } from "@/components/LoveNotesPanel";
 import { TagsPanel } from "@/components/TagsPanel";
-import { cn } from "@/lib/utils";
+import { cn, formatSize } from "@/lib/utils";
 
 interface Props {
   media: Media[];
