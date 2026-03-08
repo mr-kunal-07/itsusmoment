@@ -152,7 +152,7 @@ function AudioBubble({
   );
 }
 
-export function ChatView() {
+export function ChatView({ onBack }: { onBack?: () => void }) {
   const { user } = useAuth();
   const { data: couple } = useMyCouple();
   const { data: profiles = [] } = useAllProfiles();
