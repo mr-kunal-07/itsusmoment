@@ -1,0 +1,168 @@
+import { useMemo } from "react";
+import { useMemoriesTimeline } from "@/hooks/useMemories";
+import { useRelationshipStats } from "@/hooks/useMemories";
+import { getPublicUrl } from "@/hooks/useMedia";
+import { format, formatDistanceToNow } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Heart, Image as ImageIcon, Video, Star, HardDrive, CalendarHeart, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+function formatSize(bytes: number) {
+  if (bytes < 1048576) return (bytes / 1024).toFixed(0) + " KB";
+  if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + " MB";
+  return (bytes / 1073741824).toFixed(1) + " GB";
+}
+
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+interface TimelineProps {
+  onPreview: (mediaId: string) => void;
+}
+
+export function MemoriesTimeline({ onPreview }: TimelineProps) {
+  const { data: groups, isLoading } = useMemoriesTimeline();
+
+  const sortedKeys = useMemo(() => {
+    if (!groups) return [];
+    return Object.keys(groups).sort((a, b) => b.localeCompare(a));
+  }, [groups]);
+
+  if (isLoading) return (
+    <div className="space-y-8">
+      {[1,2,3].map(i => (
+        <div key={i} className="space-y-3">
+          <Skeleton className="h-6 w-32" />
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            {Array.from({length: 6}).map((_,j) => <Skeleton key={j} className="aspect-square rounded-xl" />)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  if (!groups || sortedKeys.length === 0) return (
+    <div className="flex flex-col items-center py-20 text-muted-foreground">
+      <CalendarHeart className="h-12 w-12 mb-4 opacity-30" />
+      <p className="font-medium text-foreground">No memories yet</p>
+      <p className="text-sm mt-1">Upload your first photo to start the timeline ❤️</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-10">
+      {sortedKeys.map(key => {
+        const [year, monthStr] = key.split("-");
+        const monthName = MONTH_NAMES[parseInt(monthStr) - 1];
+        const media = groups[key];
+        return (
+          <section key={key}>
+            {/* Month header */}
+            <div className="flex items-center gap-3 mb-4 sticky top-0 bg-background/90 backdrop-blur-sm py-2 z-10">
+              <div className="h-px flex-1 bg-border/50" />
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-border/60 bg-card">
+                <Heart className="h-3 w-3 text-primary fill-primary" />
+                <span className="text-sm font-semibold font-heading">{monthName} {year}</span>
+                <span className="text-xs text-muted-foreground">{media.length} {media.length === 1 ? "memory" : "memories"}</span>
+              </div>
+              <div className="h-px flex-1 bg-border/50" />
+            </div>
+
+            {/* Photo grid */}
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
+              {media.map((item, idx) => (
+                <div
+                  key={item.id}
+                  className={cn(
+                    "relative aspect-square rounded-xl overflow-hidden cursor-pointer group",
+                    "hover:ring-2 hover:ring-primary/60 transition-all duration-200",
+                    // First item bigger
+                    idx === 0 && media.length > 2 ? "col-span-2 row-span-2" : ""
+                  )}
+                  onClick={() => onPreview(item.id)}
+                >
+                  {item.file_type === "video" ? (
+                    <>
+                      <video src={getPublicUrl(item.file_path)} className="w-full h-full object-cover" preload="metadata" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                        <Video className="h-6 w-6 text-white drop-shadow" />
+                      </div>
+                    </>
+                  ) : (
+                    <img src={getPublicUrl(item.file_path)} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-white text-xs font-medium truncate drop-shadow">{item.title}</p>
+                    <p className="text-white/70 text-[10px]">{format(new Date(item.created_at), "MMM d")}</p>
+                  </div>
+                  {item.is_starred && (
+                    <Star className="absolute top-1.5 right-1.5 h-3.5 w-3.5 fill-yellow-400 text-yellow-400 drop-shadow" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+export function RelationshipStats() {
+  const { data: stats, isLoading } = useRelationshipStats();
+
+  if (isLoading) return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {Array.from({length:4}).map((_,i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}
+    </div>
+  );
+
+  if (!stats) return null;
+
+  const items = [
+    { icon: <ImageIcon className="h-5 w-5" />, label: "Photos", value: stats.images, color: "text-sky-400" },
+    { icon: <Video className="h-5 w-5" />, label: "Videos", value: stats.videos, color: "text-violet-400" },
+    { icon: <Star className="h-5 w-5" />, label: "Starred", value: stats.starred, color: "text-yellow-400" },
+    { icon: <HardDrive className="h-5 w-5" />, label: "Used", value: formatSize(stats.totalSize), color: "text-emerald-400" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      {/* Days together banner */}
+      {stats.firstDate && (
+        <div className="glass-card p-5 flex items-center gap-4">
+          <div className="h-12 w-12 rounded-2xl bg-primary/15 flex items-center justify-center shrink-0">
+            <CalendarHeart className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold font-heading gradient-text">{stats.daysTogether.toLocaleString()} days</p>
+            <p className="text-sm text-muted-foreground">
+              Since your first memory · {format(stats.firstDate, "MMMM d, yyyy")}
+              <span className="ml-1 text-muted-foreground/60">({formatDistanceToNow(stats.firstDate, { addSuffix: true })})</span>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Stat grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {items.map(item => (
+          <div key={item.label} className="glass-card p-4 flex flex-col gap-2">
+            <span className={cn("", item.color)}>{item.icon}</span>
+            <p className="text-2xl font-bold font-heading">{item.value}</p>
+            <p className="text-xs text-muted-foreground">{item.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Total memories */}
+      <div className="glass-card p-4 flex items-center gap-3">
+        <Heart className="h-5 w-5 text-primary fill-primary shrink-0" />
+        <p className="text-sm text-muted-foreground">
+          <span className="font-bold text-foreground text-base">{stats.total}</span> total memories captured together
+        </p>
+        <Clock className="h-4 w-4 text-muted-foreground/50 ml-auto shrink-0" />
+      </div>
+    </div>
+  );
+}
