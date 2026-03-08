@@ -523,10 +523,10 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                                     className={cn(
                                       "flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs border transition-colors backdrop-blur-sm",
                                     )}
-                                    style={{
+                                  style={{
                                       background: iMine ? "hsl(var(--wa-bubble-out) / 0.3)" : "hsl(var(--wa-system-bubble))",
                                       borderColor: iMine ? "hsl(var(--wa-online) / 0.5)" : "transparent",
-                                      color: "white",
+                                      color: "hsl(var(--wa-text))",
                                     }}
                                   >
                                     {emoji} {count > 1 && <span>{count}</span>}
