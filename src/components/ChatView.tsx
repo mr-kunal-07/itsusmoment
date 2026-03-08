@@ -232,6 +232,25 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
     return () => document.removeEventListener("click", handler);
   }, [emojiPickerId]);
 
+  // Fix mobile keyboard pushing content off-screen using visualViewport
+  const chatRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      if (chatRef.current) {
+        const offsetFromBottom = window.innerHeight - vv.height - vv.offsetTop;
+        chatRef.current.style.paddingBottom = offsetFromBottom > 0 ? `${offsetFromBottom}px` : "0px";
+      }
+    };
+    vv.addEventListener("resize", onResize);
+    vv.addEventListener("scroll", onResize);
+    return () => {
+      vv.removeEventListener("resize", onResize);
+      vv.removeEventListener("scroll", onResize);
+    };
+  }, []);
+
   const handleSend = async () => {
     const trimmed = text.trim();
     if (!trimmed || sendMessage.isPending) return;
