@@ -215,9 +215,9 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
             <SidebarMenu>
               {specialItems.map(item => (
                 <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    onClick={() => onSelectView(item.id)}
-                    className={cn("justify-between", selectedView === item.id && "bg-accent text-accent-foreground")}
+                   <SidebarMenuButton
+                     onClick={() => selectView(item.id)}
+                     className={cn("justify-between", selectedView === item.id && "bg-accent text-accent-foreground")}
                   >
                     <span className="flex items-center">
                       <item.icon className="h-4 w-4 mr-2" />
