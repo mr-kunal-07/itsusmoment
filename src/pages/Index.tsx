@@ -578,7 +578,7 @@ export default function Index() {
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <p className="text-sm text-muted-foreground flex items-center gap-2">
-                <Shield className="w-4 h-4" />
+                <ShieldCheck className="w-4 h-4" />
                 No credit card · 100% private · Always free tier
               </p>
             </div>
