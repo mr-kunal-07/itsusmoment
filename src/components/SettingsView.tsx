@@ -13,13 +13,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import {
   Camera, Loader2, Save, Heart, Moon, Sun, Link2, ShieldCheck,
-  Trash2, Crown, LogOut, Lock, LockOpen, Fingerprint, Smartphone, Download, X,
+  Trash2, Crown, LogOut, Lock, LockOpen, Fingerprint, Smartphone, Download,
 } from "lucide-react";
 import { PartnerConnect } from "@/components/PartnerConnect";
 import { usePlan } from "@/hooks/useSubscription";
 import { getIsLockEnabled, enableLock, disableLock } from "@/components/AppLock";
-import { LOCK_KEYS } from "@/lib/appLockKeys";
-import { cn } from "@/lib/utils";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
