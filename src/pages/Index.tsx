@@ -292,14 +292,6 @@ export default function Index() {
       <section style={{ background: T.white, paddingTop: 64 }}>
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "80px 32px 64px", textAlign: "center" }}>
 
-          {/* Eyebrow */}
-          <Reveal>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: T.surface, border: `1px solid ${T.border}`, padding: "6px 14px", borderRadius: 99, fontSize: 12, fontWeight: 500, color: T.muted, marginBottom: 32 }}>
-              <Sparkles style={{ width: 13, height: 13, color: T.ink }} />
-              50,000+ couples · 2M+ memories stored
-            </div>
-          </Reveal>
-
           {/* H1 */}
           <Reveal delay={60}>
             <h1 style={{ ...display, fontSize: "clamp(42px, 7vw, 76px)", lineHeight: 1.02, marginBottom: 24, maxWidth: 700, marginLeft: "auto", marginRight: "auto" }}>
