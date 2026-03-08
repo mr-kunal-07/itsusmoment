@@ -122,7 +122,7 @@ function AudioBubble({
                     height: heights[i % heights.length] + "px",
                     background: filled
                       ? "hsl(var(--wa-voice-thumb))"
-                      : "hsl(0 0% 100% / 0.25)",
+                      : "hsl(var(--wa-text) / 0.2)",
                   }}
                 />
               );
