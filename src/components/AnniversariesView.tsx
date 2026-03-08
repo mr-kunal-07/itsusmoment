@@ -6,10 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, differenceInDays, addYears, isAfter, startOfDay } from "date-fns";
-import { Plus, Trash2, Heart, Star, Calendar, Clock, Image } from "lucide-react";
+import { Plus, Trash2, Heart, Star, Calendar as CalendarIcon, Clock, Image, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { MilestoneCalendar } from "@/components/MilestoneCalendar";
 
 function getNextOccurrence(dateStr: string): Date {
   const now = startOfDay(new Date());
@@ -59,9 +62,13 @@ export function AnniversariesView() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<AddForm>(defaultForm);
   const [pickMedia, setPickMedia] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const anniversaries = milestones.filter(m => m.type === "anniversary").sort((a, b) => daysUntil(a.date) - daysUntil(b.date));
   const milestoneList = milestones.filter(m => m.type === "milestone").sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const mediaMap = Object.fromEntries(allMedia.map(x => [x.id, x]));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,58 +81,93 @@ export function AnniversariesView() {
   const mediaImages = allMedia.filter(m => m.file_type === "image");
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold font-heading gradient-text">Our Milestones</h2>
           <p className="text-sm text-muted-foreground mt-0.5">Anniversaries, special moments & countdowns</p>
         </div>
-        <Button onClick={() => setShowAdd(true)} size="sm" className="gap-1.5">
-          <Plus className="h-4 w-4" /> Add milestone
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+            <button
+              onClick={() => setViewMode("list")}
+              className={cn(
+                "h-7 w-7 rounded-md flex items-center justify-center transition-colors",
+                viewMode === "list" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+              title="List view"
+            >
+              <List className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => setViewMode("calendar")}
+              className={cn(
+                "h-7 w-7 rounded-md flex items-center justify-center transition-colors",
+                viewMode === "calendar" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+              title="Calendar view"
+            >
+              <CalendarIcon className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <Button onClick={() => setShowAdd(true)} size="sm" className="gap-1.5">
+            <Plus className="h-4 w-4" /> Add milestone
+          </Button>
+        </div>
       </div>
 
-      {/* Anniversaries */}
-      {anniversaries.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <Heart className="h-4 w-4 text-primary fill-primary" />
-            <h3 className="text-sm font-semibold font-heading uppercase tracking-wide text-muted-foreground">Anniversaries</h3>
-          </div>
-          <div className="grid gap-3">
-            {anniversaries.map(m => (
-              <MilestoneCard key={m.id} milestone={m} mediaMap={Object.fromEntries(allMedia.map(x => [x.id, x]))} onDelete={() => deleteMilestone.mutate(m.id)} canDelete={m.created_by === user?.id} />
-            ))}
-          </div>
-        </section>
+      {/* Calendar view */}
+      {viewMode === "calendar" && (
+        <MilestoneCalendar milestones={milestones} mediaMap={mediaMap} />
       )}
 
-      {/* Milestones */}
-      {milestoneList.length > 0 && (
-        <section>
-          <div className="flex items-center gap-2 mb-3">
-            <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-            <h3 className="text-sm font-semibold font-heading uppercase tracking-wide text-muted-foreground">Special Moments</h3>
-          </div>
-          <div className="grid gap-3">
-            {milestoneList.map(m => (
-              <MilestoneCard key={m.id} milestone={m} mediaMap={Object.fromEntries(allMedia.map(x => [x.id, x]))} onDelete={() => deleteMilestone.mutate(m.id)} canDelete={m.created_by === user?.id} />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* List view */}
+      {viewMode === "list" && (
+        <>
+          {/* Anniversaries */}
+          {anniversaries.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <Heart className="h-4 w-4 text-primary fill-primary" />
+                <h3 className="text-sm font-semibold font-heading uppercase tracking-wide text-muted-foreground">Anniversaries</h3>
+              </div>
+              <div className="grid gap-3">
+                {anniversaries.map(m => (
+                  <MilestoneCard key={m.id} milestone={m} mediaMap={mediaMap} onDelete={() => deleteMilestone.mutate(m.id)} canDelete={m.created_by === user?.id} />
+                ))}
+              </div>
+            </section>
+          )}
 
-      {!isLoading && milestones.length === 0 && (
-        <div className="text-center py-16 text-muted-foreground">
-          <Heart className="h-10 w-10 mx-auto mb-3 opacity-20" />
-          <p className="font-medium">No milestones yet</p>
-          <p className="text-sm mt-1">Add your first date anniversary or special moment!</p>
-        </div>
+          {/* Milestones */}
+          {milestoneList.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                <h3 className="text-sm font-semibold font-heading uppercase tracking-wide text-muted-foreground">Special Moments</h3>
+              </div>
+              <div className="grid gap-3">
+                {milestoneList.map(m => (
+                  <MilestoneCard key={m.id} milestone={m} mediaMap={mediaMap} onDelete={() => deleteMilestone.mutate(m.id)} canDelete={m.created_by === user?.id} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {!isLoading && milestones.length === 0 && (
+            <div className="text-center py-16 text-muted-foreground">
+              <Heart className="h-10 w-10 mx-auto mb-3 opacity-20" />
+              <p className="font-medium">No milestones yet</p>
+              <p className="text-sm mt-1">Add your first date anniversary or special moment!</p>
+            </div>
+          )}
+        </>
       )}
 
       {/* Add dialog */}
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+      <Dialog open={showAdd} onOpenChange={open => { setShowAdd(open); if (!open) setDatePickerOpen(false); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-heading">Add Milestone</DialogTitle>
@@ -154,14 +196,39 @@ export function AnniversariesView() {
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
               required
             />
+            {/* Date picker */}
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1"><Calendar className="h-3 w-3" /> Date</label>
-              <Input
-                type="date"
-                value={form.date}
-                onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-                required
-              />
+              <label className="text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+                <CalendarIcon className="h-3 w-3" /> Date
+              </label>
+              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(
+                      "w-full flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-left transition-colors hover:border-primary/50 focus:outline-none focus:ring-1 focus:ring-ring",
+                      !form.date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="h-4 w-4 shrink-0 opacity-50" />
+                    {form.date ? format(new Date(form.date + "T00:00:00"), "MMMM d, yyyy") : "Pick a date"}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 z-50" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={form.date ? new Date(form.date + "T00:00:00") : undefined}
+                    onSelect={d => {
+                      if (d) {
+                        setForm(f => ({ ...f, date: format(d, "yyyy-MM-dd") }));
+                        setDatePickerOpen(false);
+                      }
+                    }}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <Textarea
               placeholder="Description (optional)"
