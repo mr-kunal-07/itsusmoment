@@ -37,8 +37,8 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            {/* Public landing page */}
-            <Route path="/" element={<Index />} />
+            {/* Public landing page — redirect to dashboard if already logged in */}
+            <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/join" element={<Join />} />
