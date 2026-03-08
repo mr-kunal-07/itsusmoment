@@ -218,7 +218,7 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
     return (
       <div className={cn(
         viewMode === "grid"
-          ? "columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4"
+          ? "columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-3 sm:gap-4 space-y-3 sm:space-y-4"
           : "space-y-2"
       )}>
         {Array.from({ length: 8 }).map((_, i) => (
@@ -228,7 +228,7 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
               <div className="p-3 space-y-2"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-3 w-1/2" /></div>
             </Card>
           ) : (
-            <Skeleton key={i} className="h-16 w-full rounded-lg" />
+            <Skeleton key={i} className="h-14 sm:h-16 w-full rounded-lg" />
           )
         ))}
       </div>
