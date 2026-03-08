@@ -1,202 +1,226 @@
 import { useState } from "react";
-import { Check, Zap, HardDrive, MessageSquare, Upload, Crown, Sparkles } from "lucide-react";
+import { Check, Zap, HardDrive, MessageSquare, Upload, Crown, Heart, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useSubscription, usePlan, FREE_MONTHLY_UPLOAD_LIMIT } from "@/hooks/useSubscription";
+import { useSubscription, usePlan, Plan } from "@/hooks/useSubscription";
 import { useRazorpayCheckout, BillingPlan } from "@/hooks/useRazorpayCheckout";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
-const FREE_FEATURES = [
-  { icon: HardDrive, text: "5 GB storage" },
-  { icon: Upload, text: `${FREE_MONTHLY_UPLOAD_LIMIT} uploads / month` },
-  { icon: MessageSquare, text: "Text messages only" },
-];
+interface PlanConfig {
+  id: Plan;
+  label: string;
+  emoji: string;
+  tagline: string;
+  price: string | null;
+  period: string;
+  badge: string | null;
+  features: { icon: React.ElementType; text: string; included: boolean }[];
+  cta: string;
+  highlight: boolean;
+}
 
-const PRO_FEATURES = [
-  { icon: HardDrive, text: "50 GB storage" },
-  { icon: Upload, text: "Unlimited uploads" },
-  { icon: MessageSquare, text: "Voice messages & reactions" },
-  { icon: Zap, text: "Priority support" },
-  { icon: Sparkles, text: "All future features" },
-];
-
-const PLANS = [
+const PLANS: PlanConfig[] = [
   {
-    id: "pro_monthly" as BillingPlan,
-    label: "Monthly",
-    price: "₹499",
-    period: "/month",
+    id: "single",
+    label: "Single",
+    emoji: "🌱",
+    tagline: "Explore the platform.",
+    price: null,
+    period: "forever free",
     badge: null,
-    saving: null,
+    highlight: false,
+    cta: "Current plan",
+    features: [
+      { icon: HardDrive,     text: "1 GB storage",             included: true  },
+      { icon: Upload,        text: "10 uploads / month",       included: true  },
+      { icon: MessageSquare, text: "Text messages",            included: true  },
+      { icon: Zap,           text: "Voice messages",           included: false },
+      { icon: Sparkles,      text: "Unlimited uploads",        included: false },
+      { icon: Crown,         text: "Priority support",         included: false },
+    ],
   },
   {
-    id: "pro_yearly" as BillingPlan,
-    label: "Yearly",
-    price: "₹3,999",
-    period: "/year",
-    badge: "Best value",
-    saving: "Save ₹1,989",
+    id: "dating",
+    label: "Dating",
+    emoji: "💌",
+    tagline: "Unlock more experiences together.",
+    price: "₹9",
+    period: "/ month",
+    badge: null,
+    highlight: false,
+    cta: "Get Dating",
+    features: [
+      { icon: HardDrive,     text: "5 GB storage",             included: true  },
+      { icon: Upload,        text: "50 uploads / month",       included: true  },
+      { icon: MessageSquare, text: "Text messages",            included: true  },
+      { icon: Zap,           text: "Voice messages",           included: false },
+      { icon: Sparkles,      text: "Unlimited uploads",        included: false },
+      { icon: Crown,         text: "Priority support",         included: false },
+    ],
+  },
+  {
+    id: "soulmate",
+    label: "Soulmate",
+    emoji: "💍",
+    tagline: "Everything for the perfect connection.",
+    price: "₹99",
+    period: "/ month",
+    badge: "Most popular",
+    highlight: true,
+    cta: "Become Soulmates",
+    features: [
+      { icon: HardDrive,     text: "50 GB storage",            included: true  },
+      { icon: Upload,        text: "Unlimited uploads",        included: true  },
+      { icon: MessageSquare, text: "Text messages",            included: true  },
+      { icon: Zap,           text: "Voice messages",           included: true  },
+      { icon: Sparkles,      text: "All future features",      included: true  },
+      { icon: Crown,         text: "Priority support",         included: true  },
+    ],
   },
 ];
+
+const PLAN_ORDER: Plan[] = ["single", "dating", "soulmate"];
 
 export function BillingView() {
   const plan = usePlan();
   const { data: subscription } = useSubscription();
   const { checkout, loading } = useRazorpayCheckout();
-  const [selectedPlan, setSelectedPlan] = useState<BillingPlan>("pro_monthly");
+  const [checkingOut, setCheckingOut] = useState<BillingPlan | null>(null);
 
-  const isPro = plan === "pro";
+  const handleCheckout = async (p: BillingPlan) => {
+    setCheckingOut(p);
+    await checkout(p);
+    setCheckingOut(null);
+  };
+
+  const currentPlanIndex = PLAN_ORDER.indexOf(plan);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      {/* Current plan badge */}
-      <div className="flex items-center gap-3">
-        <div className={cn(
-          "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium",
-          isPro
-            ? "bg-primary/10 text-primary border border-primary/30"
-            : "bg-muted text-muted-foreground border border-border"
-        )}>
-          {isPro ? <Crown className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
-          {isPro ? "Pro plan" : "Free plan"}
-        </div>
-        {isPro && subscription?.current_period_end && (
-          <span className="text-sm text-muted-foreground">
-            Renews {format(new Date(subscription.current_period_end), "MMMM d, yyyy")}
+    <div className="space-y-8 max-w-4xl mx-auto">
+      {/* Active plan pill */}
+      {plan !== "single" && subscription?.current_period_end && (
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-primary/8 border border-primary/20 w-fit text-sm">
+          <span className="text-lg">{PLANS.find(p2 => p2.id === plan)?.emoji}</span>
+          <span className="font-medium text-foreground">
+            {PLANS.find(p2 => p2.id === plan)?.label} plan
           </span>
-        )}
-      </div>
+          <span className="text-muted-foreground">·</span>
+          <span className="text-muted-foreground text-xs">
+            Renews {format(new Date(subscription.current_period_end), "MMM d, yyyy")}
+          </span>
+        </div>
+      )}
 
-      {isPro ? (
-        <ProActiveCard subscription={subscription} />
-      ) : (
-        <>
-          {/* Plan toggle */}
-          <div className="grid grid-cols-2 gap-3">
-            {PLANS.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setSelectedPlan(p.id)}
-                className={cn(
-                  "relative flex flex-col items-start gap-1 p-4 rounded-xl border text-left transition-all",
-                  selectedPlan === p.id
-                    ? "border-primary bg-primary/5 shadow-sm"
-                    : "border-border bg-card hover:border-primary/40"
-                )}
-              >
-                {p.badge && (
-                  <Badge className="absolute top-3 right-3 text-xs bg-primary text-primary-foreground">
+      {/* Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {PLANS.map((p) => {
+          const isCurrentPlan = plan === p.id;
+          const isDowngrade = PLAN_ORDER.indexOf(p.id) < currentPlanIndex;
+          const isBillingPlan = p.id === "dating" || p.id === "soulmate";
+
+          return (
+            <div
+              key={p.id}
+              className={cn(
+                "relative flex flex-col rounded-2xl border p-5 transition-all",
+                p.highlight
+                  ? "border-primary/50 bg-primary/5 shadow-lg shadow-primary/10"
+                  : "border-border bg-card",
+                isCurrentPlan && "ring-2 ring-primary/30"
+              )}
+            >
+              {/* Badge */}
+              {p.badge && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <Badge className="bg-primary text-primary-foreground text-[11px] px-2.5 py-0.5 shadow-sm">
                     {p.badge}
                   </Badge>
-                )}
-                <span className="text-sm font-medium text-muted-foreground">{p.label}</span>
-                <span className="text-2xl font-bold text-foreground font-heading">{p.price}</span>
-                <span className="text-xs text-muted-foreground">{p.period}</span>
-                {p.saving && (
-                  <span className="text-xs text-primary font-medium mt-0.5">{p.saving}</span>
-                )}
-              </button>
-            ))}
-          </div>
+                </div>
+              )}
 
-          {/* Comparison */}
-          <div className="grid sm:grid-cols-2 gap-4">
-            {/* Free */}
-            <div className="rounded-xl border border-border bg-card p-5 space-y-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Free</p>
-                <p className="text-3xl font-bold font-heading text-foreground">₹0</p>
-                <p className="text-xs text-muted-foreground">forever</p>
+              {/* Header */}
+              <div className="mb-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">{p.emoji}</span>
+                  <span className="font-bold text-base font-heading text-foreground">{p.label}</span>
+                  {isCurrentPlan && (
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-auto">Active</Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{p.tagline}</p>
+                <div className="mt-4 flex items-end gap-1">
+                  {p.price ? (
+                    <>
+                      <span className="text-3xl font-bold font-heading text-foreground">{p.price}</span>
+                      <span className="text-sm text-muted-foreground mb-0.5">{p.period}</span>
+                    </>
+                  ) : (
+                    <span className="text-3xl font-bold font-heading text-foreground">Free</span>
+                  )}
+                </div>
+                {p.price === null && (
+                  <p className="text-xs text-muted-foreground mt-0.5">{p.period}</p>
+                )}
               </div>
-              <ul className="space-y-2.5">
-                {FREE_FEATURES.map(({ icon: Icon, text }) => (
-                  <li key={text} className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                    <Icon className="h-4 w-4 shrink-0" />
+
+              {/* Features */}
+              <ul className="space-y-2.5 flex-1 mb-6">
+                {p.features.map(({ icon: Icon, text, included }) => (
+                  <li
+                    key={text}
+                    className={cn(
+                      "flex items-center gap-2.5 text-xs",
+                      included ? "text-foreground" : "text-muted-foreground/50"
+                    )}
+                  >
+                    {included
+                      ? <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                      : <X className="h-3.5 w-3.5 shrink-0" />
+                    }
                     {text}
                   </li>
                 ))}
               </ul>
-              <Button variant="outline" className="w-full" disabled>
-                Current plan
-              </Button>
-            </div>
 
-            {/* Pro */}
-            <div className="relative rounded-xl border border-primary/40 bg-card p-5 space-y-4 shadow-md">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge className="bg-primary text-primary-foreground text-xs px-3 py-0.5 shadow">
-                  ✦ Upgrade
-                </Badge>
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">Pro</p>
-                <p className="text-3xl font-bold font-heading text-foreground">
-                  {PLANS.find((p) => p.id === selectedPlan)?.price}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {PLANS.find((p) => p.id === selectedPlan)?.period}
-                </p>
-              </div>
-              <ul className="space-y-2.5">
-                {PRO_FEATURES.map(({ icon: Icon, text }) => (
-                  <li key={text} className="flex items-center gap-2.5 text-sm text-foreground">
-                    <Check className="h-4 w-4 shrink-0 text-primary" />
-                    {text}
-                  </li>
-                ))}
-              </ul>
-              <Button
-                className="w-full gap-2"
-                onClick={() => checkout(selectedPlan)}
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    Processing…
-                  </span>
-                ) : (
-                  <>
-                    <Crown className="h-4 w-4" />
-                    Upgrade to Pro
-                  </>
-                )}
-              </Button>
-              <p className="text-xs text-center text-muted-foreground">
-                Secure payment via Razorpay · Cancel anytime
-              </p>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
+              {/* CTA */}
+              {isCurrentPlan ? (
+                <Button variant="outline" className="w-full" disabled>
+                  ✓ Current plan
+                </Button>
+              ) : isDowngrade ? (
+                <Button variant="ghost" className="w-full text-muted-foreground" disabled>
+                  Downgrade
+                </Button>
+              ) : isBillingPlan ? (
+                <Button
+                  className={cn("w-full gap-2", p.highlight ? "" : "variant-outline")}
+                  variant={p.highlight ? "default" : "outline"}
+                  onClick={() => handleCheckout(p.id as BillingPlan)}
+                  disabled={loading}
+                >
+                  {checkingOut === p.id ? (
+                    <span className="flex items-center gap-2">
+                      <span className="h-3.5 w-3.5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                      Processing…
+                    </span>
+                  ) : (
+                    <>
+                      <Heart className="h-3.5 w-3.5" />
+                      {p.cta}
+                    </>
+                  )}
+                </Button>
+              ) : null}
 
-function ProActiveCard({ subscription }: { subscription: ReturnType<typeof useSubscription>["data"] }) {
-  return (
-    <div className="rounded-xl border border-primary/30 bg-primary/5 p-6 space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-          <Crown className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <p className="font-semibold text-foreground">Pro plan is active</p>
-          <p className="text-sm text-muted-foreground">
-            {subscription?.current_period_end
-              ? `Valid until ${format(new Date(subscription.current_period_end), "MMMM d, yyyy")}`
-              : "Lifetime access"}
-          </p>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3 pt-1">
-        {PRO_FEATURES.map(({ icon: Icon, text }) => (
-          <div key={text} className="flex items-center gap-2 text-sm text-foreground">
-            <Check className="h-4 w-4 text-primary shrink-0" />
-            {text}
-          </div>
-        ))}
+              {isBillingPlan && !isCurrentPlan && !isDowngrade && (
+                <p className="text-[10px] text-center text-muted-foreground mt-2">
+                  Secure · Razorpay · Cancel anytime
+                </p>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
