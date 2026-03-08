@@ -110,8 +110,8 @@ export function useAddTagToMedia() {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async ({ mediaId, tagId }: { mediaId: string; tagId: string }) => {
-      const { error } = await supabase
-        .from("media_tags" as never)
+      const { error } = await (supabase as any)
+        .from("media_tags")
         .insert({ media_id: mediaId, tag_id: tagId, created_by: user!.id });
       if (error && !error.message.includes("duplicate")) throw error;
     },
