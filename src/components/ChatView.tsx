@@ -397,31 +397,37 @@ export function ChatView() {
 
                           {/* Bubble */}
                           <div
-                            className="relative px-3 py-2 text-sm leading-relaxed break-words text-white shadow-sm"
+                            className={cn(
+                              "relative text-sm leading-relaxed break-words text-white shadow-sm",
+                              isVoice ? "px-2 py-2" : "px-3 py-2"
+                            )}
                             style={{
                               background: isMe ? "hsl(var(--wa-bubble-out))" : "hsl(var(--wa-bubble-in))",
                               borderRadius: isMe
-                                ? `${prevSame ? "18px" : "18px"} ${!prevSame ? "4px" : "18px"} 18px 18px`
-                                : `${!prevSame ? "4px" : "18px"} ${prevSame ? "18px" : "18px"} 18px 18px`,
-                              // Tail
-                              ...((!prevSame && isMe) && {
-                                borderTopRightRadius: 4,
-                              }),
-                              ...((!prevSame && !isMe) && {
-                                borderTopLeftRadius: 4,
-                              }),
+                                ? `18px ${!prevSame ? "4px" : "18px"} 18px 18px`
+                                : `${!prevSame ? "4px" : "18px"} 18px 18px 18px`,
                             }}
                           >
                             {isVoice && audioUrl ? (
-                              <AudioBubble url={audioUrl} duration={msg.content} />
+                              <AudioBubble
+                                url={audioUrl}
+                                duration={msg.content}
+                                avatarUrl={isMe ? (myProfile?.avatar_url ?? undefined) : (partnerProfile?.avatar_url ?? undefined)}
+                                avatarFallback={isMe ? myInitials : partnerInitials}
+                                isMe={isMe}
+                                time={format(new Date(msg.created_at), "h:mm a")}
+                                msg={msg}
+                              />
                             ) : (
-                              <span>{msg.content}</span>
+                              <>
+                                <span>{msg.content}</span>
+                                {/* Time + ticks inline at bottom-right */}
+                                <span className="float-right ml-2 mt-1 mb-[-2px] flex items-center gap-0.5 text-[10px] opacity-60 select-none leading-none">
+                                  {format(new Date(msg.created_at), "h:mm a")}
+                                  <ReadReceipt msg={msg} isMe={isMe} />
+                                </span>
+                              </>
                             )}
-                            {/* Time + ticks inline at bottom-right */}
-                            <span className="float-right ml-2 mt-1 mb-[-2px] flex items-center gap-0.5 text-[10px] opacity-60 select-none leading-none">
-                              {format(new Date(msg.created_at), "h:mm a")}
-                              <ReadReceipt msg={msg} isMe={isMe} />
-                            </span>
                           </div>
 
                           {/* Reactions */}
