@@ -374,7 +374,7 @@ export default function Index() {
               <div className="col-span-3 p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-sm font-bold" style={{ color: T.dark }}>Our Memories</h3>
+                    <h3 className="text-sm font-semibold" style={{ color: T.dark }}>Our Memories</h3>
                     <p className="text-[11px]" style={{ color: T.muted }}>47 photos · last added 2h ago</p>
                   </div>
                   <div className="text-[10px] px-3 py-1 rounded-full font-semibold" style={{ background: T.accentL, color: T.accent }}>+ Add memory</div>
