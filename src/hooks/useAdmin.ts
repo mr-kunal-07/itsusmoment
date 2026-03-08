@@ -2,6 +2,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
+export interface PlanAuditEntry {
+  id: string;
+  target_user_id: string;
+  changed_by_user_id: string;
+  old_plan: string | null;
+  new_plan: string;
+  changed_at: string;
+  note: string | null;
+  target_user: { display_name: string | null; avatar_url: string | null; email: string } | null;
+  changed_by_user: { display_name: string | null; avatar_url: string | null; email: string } | null;
+}
+
 export interface AdminUser {
   id: string;
   email: string;
