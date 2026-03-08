@@ -366,7 +366,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
 
       {/* ── Messages area ── */}
       <div
-        className="flex-1 overflow-y-auto px-3 py-2 scroll-smooth"
+        className="flex-1 overflow-y-auto overscroll-contain px-3 py-2"
         style={{ background: "hsl(var(--wa-bg))" }}
       >
         {isLoading ? (
