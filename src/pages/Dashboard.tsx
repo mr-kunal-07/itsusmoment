@@ -278,8 +278,6 @@ export default function Dashboard() {
                 setSelectedView("all");
                 setTimeout(() => setPreviewIndex(idx >= 0 ? idx : 0), 100);
               }} />
-            ) : selectedView === "stats" ? (
-              <RelationshipStats />
             ) : selectedView === "anniversaries" ? (
               <AnniversariesView />
             ) : (
