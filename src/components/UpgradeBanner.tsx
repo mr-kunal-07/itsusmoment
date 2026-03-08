@@ -39,11 +39,11 @@ export function UpgradeBanner({ onUpgrade }: Props) {
   // Only show for Single (free) users
   if (plan !== "single" || dismissed) return null;
 
-  const limit = PLAN_UPLOAD_LIMIT.single!; // 10
+  const limit = PLAN_UPLOAD_LIMIT.single!; // 50
   const remaining = Math.max(0, limit - usedCount);
   const pct = Math.min(100, (usedCount / limit) * 100);
 
-  const isWarning = remaining <= 3;
+  const isWarning = remaining <= 10;
   const isEmpty = remaining === 0;
 
   return (
