@@ -54,7 +54,7 @@ function loadPref<T>(key: string, fallback: T): T {
 const SPECIAL_VIEWS = [
   "all", "starred", "recently-deleted",
   "timeline", "on-this-day", "anniversaries",
-  "chat", "activity", "billing", "settings", "stats", "bucket-list",
+  "chat", "activity", "billing", "settings",
 ];
 
 function tabToView(tab?: string): ViewType {
