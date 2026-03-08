@@ -87,9 +87,9 @@ function AudioBubble({
       />
 
       {/* Avatar */}
-      <Avatar className="h-10 w-10 shrink-0 ring-2 ring-white/10">
+      <Avatar className="h-10 w-10 shrink-0 ring-2 ring-border">
         <AvatarImage src={avatarUrl} />
-        <AvatarFallback className="text-xs font-semibold" style={{ background: "hsl(var(--wa-avatar))", color: "white" }}>
+        <AvatarFallback className="text-xs font-semibold" style={{ background: "hsl(var(--wa-avatar))", color: "hsl(var(--wa-text))" }}>
           {avatarFallback}
         </AvatarFallback>
       </Avatar>
