@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Trash2, Lock, Reply, X, Check, CheckCheck, Phone, Video, MoreVertical, Smile, Paperclip, Mic } from "lucide-react";
-import { format, isToday, isYesterday } from "date-fns";
+import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMessages, Message } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyCouple } from "@/hooks/useCouple";
 import { useAllProfiles, useProfile } from "@/hooks/useProfile";
 import { useTyping } from "@/hooks/useTyping";
+import { usePresence } from "@/hooks/usePresence";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { cn } from "@/lib/utils";
 
