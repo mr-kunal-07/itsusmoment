@@ -1,4 +1,4 @@
-import { Home, CalendarHeart, MessageCircleHeart, Upload, Settings } from "lucide-react";
+import { Home, CalendarHeart, MessageCircleHeart, Upload, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ViewType } from "@/components/AppSidebar";
 import { useMessages } from "@/hooks/useMessages";
@@ -47,8 +47,8 @@ export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props)
           badge={unreadCount}
         />
 
-        {/* Settings */}
-        <NavBtn id="settings" label="Settings" icon={Settings} selectedView={selectedView} onSelectView={onSelectView} />
+        {/* Plan */}
+        <NavBtn id="billing" label="Plan" icon={Crown} selectedView={selectedView} onSelectView={onSelectView} />
 
       </div>
     </nav>
