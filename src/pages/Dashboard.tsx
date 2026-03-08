@@ -383,11 +383,6 @@ export default function Dashboard() {
             onClose={() => setSlideshowOpen(false)}
           />
         )}
-            media={media}
-            open={slideshowOpen}
-            onClose={() => setSlideshowOpen(false)}
-          />
-        )}
 
         <MobileBottomNav
           selectedView={selectedView}
