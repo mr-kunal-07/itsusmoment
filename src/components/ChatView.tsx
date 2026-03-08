@@ -361,6 +361,10 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
             <Lock className="h-2.5 w-2.5 inline-block" />
             <span>End-to-end encrypted</span>
           </p>
+          <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: "hsl(var(--wa-meta))" }}>
+            <Lock className="h-2.5 w-2.5 inline-block" />
+            <span>End-to-end encrypted</span>
+          </p>
           <p className="text-xs mt-0.5 truncate" style={{ color: "hsl(var(--wa-meta))" }}>
             {partnerTyping ? (
               <span style={{ color: "hsl(var(--wa-online))" }}>typing…</span>
