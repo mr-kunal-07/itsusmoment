@@ -270,54 +270,78 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
       .catch(() => {});
   }, [locations, showHeatmap]);
 
-  // Geofence circle on selected/focused location — baby pink
+  // Proper geofence: fetch real administrative boundary polygon from Nominatim
   useEffect(() => {
     const map = mapInstanceRef.current;
 
-    // Remove old circles
-    if (geofenceCircleRef.current) {
-      geofenceCircleRef.current.remove();
-      geofenceCircleRef.current = null;
-    }
-    if (geofencePulseRef.current) {
-      geofencePulseRef.current.remove();
-      geofencePulseRef.current = null;
+    // Always remove previous geofence layer
+    if (geofenceLayerRef.current) {
+      geofenceLayerRef.current.remove();
+      geofenceLayerRef.current = null;
     }
 
     if (!map || !focusLocation) return;
 
-    // Outer soft pulse ring
-    geofencePulseRef.current = L.circle(
-      [focusLocation.latitude, focusLocation.longitude],
-      {
-        radius: 80000, // ~80km outer glow
-        color: "#f9a8d4",
-        weight: 1.5,
-        opacity: 0.5,
-        fillColor: "#fce7f3",
-        fillOpacity: 0.08,
-        dashArray: "6 8",
-      }
-    ).addTo(map);
-
-    // Inner baby pink geofence fill
-    geofenceCircleRef.current = L.circle(
-      [focusLocation.latitude, focusLocation.longitude],
-      {
-        radius: 45000, // ~45km radius geofence
-        color: "#f472b6",
-        weight: 2,
-        opacity: 0.85,
-        fillColor: "#fce7f3",
-        fillOpacity: 0.28,
-      }
-    ).addTo(map);
-
-    // Fly to the location
-    map.flyTo([focusLocation.latitude, focusLocation.longitude], 8, {
+    // Fly to the location immediately
+    map.flyTo([focusLocation.latitude, focusLocation.longitude], 10, {
       duration: 1.4,
       easeLinearity: 0.25,
     });
+
+    // Fetch the real boundary polygon using Nominatim reverse geocoding
+    // zoom=10 → city level, zoom=8 → county/district, zoom=6 → state, zoom=3 → country
+    const zoom = 10;
+    const url =
+      `https://nominatim.openstreetmap.org/reverse` +
+      `?lat=${focusLocation.latitude}&lon=${focusLocation.longitude}` +
+      `&format=geojson&polygon_geojson=1&zoom=${zoom}` +
+      `&accept-language=en`;
+
+    fetch(url, { headers: { "User-Agent": "OurVault-App/1.0" } })
+      .then(r => r.json())
+      .then((data: GeoJSON.FeatureCollection) => {
+        // Nominatim /reverse returns a FeatureCollection with the boundary
+        if (!mapInstanceRef.current) return;
+
+        // Remove any existing geofence before adding new one
+        if (geofenceLayerRef.current) {
+          geofenceLayerRef.current.remove();
+        }
+
+        const layer = L.geoJSON(data, {
+          style: () => ({
+            // Baby pink fill with vivid pink border
+            color: "#f472b6",
+            weight: 2.5,
+            opacity: 1,
+            dashArray: "8 5",
+            lineCap: "round",
+            lineJoin: "round",
+            fillColor: "#fce7f3",
+            fillOpacity: 0.30,
+          }),
+          onEachFeature: (_feature, featureLayer) => {
+            featureLayer.on("mouseover", function (e: L.LeafletMouseEvent) {
+              (e.target as L.Path).setStyle({ fillOpacity: 0.48, weight: 3, dashArray: "0" });
+            });
+            featureLayer.on("mouseout", function (e: L.LeafletMouseEvent) {
+              (e.target as L.Path).setStyle({ fillOpacity: 0.30, weight: 2.5, dashArray: "8 5" });
+            });
+          },
+        });
+
+        layer.addTo(mapInstanceRef.current);
+        geofenceLayerRef.current = layer;
+
+        // Fit map to the boundary bounds with padding
+        const bounds = layer.getBounds();
+        if (bounds.isValid()) {
+          mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+        }
+      })
+      .catch(() => {
+        // Fallback: no geofence rendered silently
+      });
   }, [focusLocation]);
 
   return (
