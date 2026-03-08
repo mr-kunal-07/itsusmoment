@@ -589,10 +589,10 @@ export default function Index() {
       <footer className="border-t border-border bg-card/30">
         <div className="max-w-7xl mx-auto px-5 md:px-8 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
-              <Heart className="w-3.5 h-3.5 text-primary-foreground fill-primary-foreground" />
+            <div className="w-7 h-7 rounded-xl bg-primary flex items-center justify-center shadow-glow">
+              <Vault className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={2} />
             </div>
-            <span className="font-heading font-semibold text-foreground">KunalKalyani</span>
+            <span className="font-heading font-semibold text-foreground">OurVault</span>
           </div>
           <p className="text-xs text-muted-foreground text-center">
             Made with 💕 for couples everywhere · Your memories are private and secure
