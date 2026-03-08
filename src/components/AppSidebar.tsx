@@ -242,14 +242,6 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
                 </SidebarMenuItem>
               )}
 
-              {onStartSlideshow && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton onClick={() => { setOpenMobile(false); onStartSlideshow?.(); }} className="text-primary hover:text-primary">
-                    <Play className="h-4 w-4 mr-2 fill-primary" />
-                    <span>Slideshow</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

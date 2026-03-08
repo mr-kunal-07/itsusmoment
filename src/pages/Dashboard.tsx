@@ -91,7 +91,7 @@ export default function Dashboard() {
   const [fileTypeFilter, setFileTypeFilter] = useState<FileTypeFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>(() => loadPref<SortKey>(STORAGE_KEY_SORT + "_key", "created_at"));
   const [sortDir, setSortDir] = useState<SortDir>(() => loadPref<SortDir>(STORAGE_KEY_SORT + "_dir", "desc"));
-  const [slideshowOpen, setSlideshowOpen] = useState(false);
+  
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const moveMedia = useMoveMedia();
