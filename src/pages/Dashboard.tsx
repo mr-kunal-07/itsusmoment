@@ -380,6 +380,10 @@ export default function Dashboard() {
           <Slideshow
             media={media}
             open={slideshowOpen}
+            onClose={() => setSlideshowOpen(false)}
+          />
+            media={media}
+            open={slideshowOpen}
             onOpenChange={setSlideshowOpen}
           />
         )}
