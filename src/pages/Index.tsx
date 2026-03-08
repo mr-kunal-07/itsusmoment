@@ -305,7 +305,7 @@ export default function Index() {
           <Reveal delay={180}>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-9">
               <Link to="/auth"
-                className="inline-flex items-center gap-2 font-bold text-white px-8 py-3.5 rounded-xl hover:opacity-90 transition-all hover:scale-[1.02] shadow-lg text-base"
+                className="inline-flex items-center gap-2 font-semibold text-white px-8 py-3.5 rounded-xl hover:opacity-90 transition-all hover:scale-[1.02] shadow-lg text-base"
                 style={{ background: T.accent }}>
                 Start for free
                 <ArrowRight className="w-4 h-4" />
