@@ -4,8 +4,8 @@ import {
   Heart, GalleryVerticalEnd, MessagesSquare, AudioWaveform, CalendarHeart,
   ArrowRight, Check, ChevronDown, Sparkles, ImagePlay, Gift,
   ShieldCheck, UserPlus, Infinity, PlayCircle, Quote, LockKeyhole,
-  HeartHandshake, Clapperboard, Zap, Film, Gem, Stars, Fingerprint,
-  ScanHeart, WandSparkles, BookHeart, PartyPopper, UserRoundCheck
+  HeartHandshake, Clapperboard, Zap, Film, Gem,
+  WandSparkles, BookHeart, PartyPopper, UserRoundCheck
 } from "lucide-react";
 import heroBg from "@/assets/hero-couple.jpg";
 
