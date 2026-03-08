@@ -41,21 +41,24 @@ function FadeIn({ children, delay = 0, className = "" }: { children: React.React
 }
 
 /* ─── Feature card (extracted so hooks run at component level) ─── */
-function FeatureCard({ icon: Icon, title, desc, tag, delay }: { icon: React.ElementType; title: string; desc: string; tag: string; delay: number }) {
+function FeatureCard({ icon: Icon, title, desc, tag, color, delay }: { icon: React.ElementType; title: string; desc: string; tag: string; color: string; delay: number }) {
   const { ref, visible } = useInView(0.1);
   return (
     <div
       ref={ref}
-      className={`premium-card p-6 group hover:border-primary/30 transition-all duration-500 hover:-translate-y-1 hover:shadow-glow ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
+      className={`premium-card p-7 group hover:border-primary/30 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-glow ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
       style={{ transitionDelay: `${delay}ms` }}
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-          <Icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+      <div className="flex items-start justify-between mb-5">
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300"
+          style={{ background: color }}
+        >
+          <Icon className="w-6 h-6 text-white" strokeWidth={1.5} />
         </div>
-        <span className="text-[10px] font-medium text-muted-foreground border border-border px-2 py-0.5 rounded-full">{tag}</span>
+        <span className="text-[10px] font-semibold tracking-wide uppercase text-primary border border-primary/20 bg-primary/8 px-2.5 py-1 rounded-full">{tag}</span>
       </div>
-      <h3 className="font-heading font-semibold text-base mb-2 text-foreground">{title}</h3>
+      <h3 className="font-heading font-bold text-base mb-2.5 text-foreground">{title}</h3>
       <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
     </div>
   );
