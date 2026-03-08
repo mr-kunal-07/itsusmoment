@@ -551,16 +551,23 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                     return (
                       <SwipeableMessage
                         key={msg.id}
-                        onSwipeReply={() => { setReplyTo(msg); inputRef.current?.focus(); }}
+                        onSwipeReply={() => { if (!selectMode) { setReplyTo(msg); inputRef.current?.focus(); } }}
                         isMe={isMe}
                       >
                       <div
                         className={cn(
-                          "flex items-end gap-1.5 group relative",
-                          isMe ? "justify-end pl-12 sm:pl-20" : "justify-start pr-12 sm:pr-20"
+                          "flex items-end gap-1.5 group relative transition-colors",
+                          isMe ? "justify-end pl-12 sm:pl-20" : "justify-start pr-12 sm:pr-20",
+                          selectedIds.has(msg.id) && "bg-primary/10 rounded-lg"
                         )}
                         onMouseEnter={() => setHoveredId(msg.id)}
                         onMouseLeave={() => setHoveredId(null)}
+                        /* Long-press for mobile */
+                        onTouchStart={() => startLongPress(msg.id)}
+                        onTouchEnd={() => { cancelLongPress(); }}
+                        onTouchMove={() => cancelLongPress()}
+                        /* Click in select mode = toggle select */
+                        onClick={() => { if (selectMode) toggleSelect(msg.id); }}
                       >
                         {/* Partner avatar for first in a cluster */}
                         {!isMe && (
