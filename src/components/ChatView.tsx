@@ -634,7 +634,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
       {/* ── Reply Banner ── */}
       {replyTo && (
         <div
-          className="flex items-center gap-3 px-4 py-2.5 shrink-0 border-t border-white/10"
+          className="flex items-center gap-3 px-4 py-2.5 shrink-0 border-t border-border"
           style={{ background: "hsl(var(--wa-header))" }}
         >
           <div
@@ -645,13 +645,14 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
             <p className="text-xs font-semibold" style={{ color: "hsl(var(--wa-online))" }}>
               {replyTo.sender_id === user?.id ? "You" : partnerName}
             </p>
-            <p className="text-xs opacity-60 truncate text-white">
+            <p className="text-xs opacity-60 truncate" style={{ color: "hsl(var(--wa-text))" }}>
               {replyTo.content.slice(0, 80)}{replyTo.content.length > 80 ? "…" : ""}
             </p>
           </div>
           <button
             onClick={() => setReplyTo(null)}
-            className="text-white/50 hover:text-white transition-colors shrink-0"
+            className="hover:opacity-100 opacity-50 transition-opacity shrink-0"
+            style={{ color: "hsl(var(--wa-text))" }}
           >
             <X className="h-4 w-4" />
           </button>
@@ -678,7 +679,10 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
               className="flex items-end flex-1 gap-2 rounded-3xl px-4 py-2"
               style={{ background: "hsl(var(--wa-input-bg))" }}
             >
-              <button className="text-white/40 hover:text-white/70 transition-colors shrink-0 mb-0.5">
+              <button
+                className="shrink-0 mb-0.5 hover:opacity-70 transition-opacity"
+                style={{ color: "hsl(var(--wa-text) / 0.5)" }}
+              >
                 <Smile className="h-5 w-5" />
               </button>
               <textarea
@@ -686,13 +690,19 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                 value={text}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                placeholder={replyTo ? "Write a reply…" : `Message…`}
+                placeholder={replyTo ? "Write a reply…" : "Message…"}
                 rows={1}
-                className="flex-1 bg-transparent border-0 outline-none resize-none text-sm text-white placeholder-white/30 leading-relaxed py-0.5 max-h-28 overflow-y-auto"
+                className="flex-1 bg-transparent border-0 outline-none resize-none text-sm leading-relaxed py-0.5 max-h-28 overflow-y-auto"
+                style={{
+                  color: "hsl(var(--wa-text))",
+                  minHeight: "24px",
+                }}
                 autoComplete="off"
-                style={{ minHeight: "24px" }}
               />
-              <button className="text-white/40 hover:text-white/70 transition-colors shrink-0 mb-0.5">
+              <button
+                className="shrink-0 mb-0.5 hover:opacity-70 transition-opacity"
+                style={{ color: "hsl(var(--wa-text) / 0.5)" }}
+              >
                 <Paperclip className="h-5 w-5" />
               </button>
             </div>
