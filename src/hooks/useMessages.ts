@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyCouple } from "@/hooks/useCouple";
+import { encryptText, decryptMessages } from "@/lib/crypto";
 
 export interface MessageReaction {
   id: string;
@@ -44,7 +45,9 @@ export function useMessages() {
         .order("created_at", { ascending: true })
         .limit(200);
       if (error) throw error;
-      return (data ?? []) as Message[];
+      const raw = (data ?? []) as Message[];
+      // Decrypt content client-side
+      return decryptMessages(raw, coupleId!);
     },
   });
 
@@ -103,10 +106,12 @@ export function useMessages() {
       audioUrl?: string | null;
     }) => {
       if (!coupleId || !user) throw new Error("Not connected");
+      // Encrypt content before storing
+      const encryptedContent = await encryptText(content, coupleId);
       const payload: Record<string, unknown> = {
         sender_id: user.id,
         couple_id: coupleId,
-        content,
+        content: encryptedContent,
         reply_to_id: replyToId ?? null,
         message_type: messageType,
       };
@@ -130,7 +135,7 @@ export function useMessages() {
       const { error } = await supabase
         .from("message_reactions" as never)
         .insert({ message_id: messageId, user_id: user.id, emoji } as never);
-      if (error && error.code !== "23505") throw error; // ignore duplicate
+      if (error && error.code !== "23505") throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["messages", coupleId] }),
   });
