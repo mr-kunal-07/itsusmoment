@@ -96,10 +96,9 @@ async function extractTakenAt(file: File): Promise<string | null> {
   try {
     if (!file.type.startsWith("image/")) return null;
     const exifr = (await import("exifr")).default;
-    const result = await exifr.parse(file, { tags: ["DateTimeOriginal", "CreateDate", "DateTime"] });
+    const result = await exifr.parse(file, ["DateTimeOriginal", "CreateDate", "DateTime"]);
     const raw = result?.DateTimeOriginal ?? result?.CreateDate ?? result?.DateTime;
     if (!raw) return null;
-    // exifr returns a Date object for these tags
     if (raw instanceof Date && !isNaN(raw.getTime())) return raw.toISOString();
     return null;
   } catch {
