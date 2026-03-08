@@ -210,8 +210,10 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [emojiPickerId, setEmojiPickerId] = useState<string | null>(null);
   const [voiceMode, setVoiceMode] = useState(false);
+  const [kbOffset, setKbOffset] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const filePickerRef = useRef<HTMLInputElement>(null);
 
   const coupleId = couple?.status === "active" ? couple.id : null;
   const partnerId = couple?.status === "active"
@@ -220,6 +222,22 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   const partnerProfile = partnerId ? profiles.find(p => p.user_id === partnerId) : null;
   const { partnerTyping, sendTyping } = useTyping(coupleId, user?.id);
   const { partnerOnline, partnerLastSeen } = usePresence(coupleId, user?.id, partnerId);
+
+  // ── VisualViewport keyboard offset (mobile keyboard push) ──────────────────
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKbOffset(offset);
+    };
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -230,11 +248,6 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
     if (emojiPickerId) document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
   }, [emojiPickerId]);
-
-  // Scroll to bottom on new messages
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
 
   const handleSend = async () => {
     const trimmed = text.trim();
