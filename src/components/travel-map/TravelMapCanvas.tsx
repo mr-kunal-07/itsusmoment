@@ -282,66 +282,115 @@ export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocati
 
     if (!map || !focusLocation) return;
 
-    // Fly to the location immediately
-    map.flyTo([focusLocation.latitude, focusLocation.longitude], 10, {
-      duration: 1.4,
-      easeLinearity: 0.25,
-    });
+    const geofenceStyle = {
+      color: "#f472b6",
+      weight: 2.5,
+      opacity: 1,
+      dashArray: "8 5",
+      lineCap: "round" as const,
+      lineJoin: "round" as const,
+      fillColor: "#fce7f3",
+      fillOpacity: 0.32,
+    };
 
-    // Fetch the real boundary polygon using Nominatim reverse geocoding
-    // zoom=10 → city level, zoom=8 → county/district, zoom=6 → state, zoom=3 → country
-    const zoom = 10;
-    const url =
-      `https://nominatim.openstreetmap.org/reverse` +
-      `?lat=${focusLocation.latitude}&lon=${focusLocation.longitude}` +
-      `&format=geojson&polygon_geojson=1&zoom=${zoom}` +
-      `&accept-language=en`;
+    // Render a GeoJSON Feature (what Nominatim /reverse actually returns — a single Feature, NOT a FeatureCollection)
+    const renderBoundary = (feature: GeoJSON.Feature) => {
+      if (!mapInstanceRef.current) return;
+      if (geofenceLayerRef.current) {
+        geofenceLayerRef.current.remove();
+      }
 
-    fetch(url, { headers: { "User-Agent": "OurVault-App/1.0" } })
-      .then(r => r.json())
-      .then((data: GeoJSON.FeatureCollection) => {
-        // Nominatim /reverse returns a FeatureCollection with the boundary
-        if (!mapInstanceRef.current) return;
-
-        // Remove any existing geofence before adding new one
-        if (geofenceLayerRef.current) {
-          geofenceLayerRef.current.remove();
-        }
-
-        const layer = L.geoJSON(data, {
-          style: () => ({
-            // Baby pink fill with vivid pink border
-            color: "#f472b6",
-            weight: 2.5,
-            opacity: 1,
-            dashArray: "8 5",
-            lineCap: "round",
-            lineJoin: "round",
-            fillColor: "#fce7f3",
-            fillOpacity: 0.30,
-          }),
-          onEachFeature: (_feature, featureLayer) => {
-            featureLayer.on("mouseover", function (e: L.LeafletMouseEvent) {
-              (e.target as L.Path).setStyle({ fillOpacity: 0.48, weight: 3, dashArray: "0" });
-            });
-            featureLayer.on("mouseout", function (e: L.LeafletMouseEvent) {
-              (e.target as L.Path).setStyle({ fillOpacity: 0.30, weight: 2.5, dashArray: "8 5" });
-            });
-          },
-        });
-
-        layer.addTo(mapInstanceRef.current);
-        geofenceLayerRef.current = layer;
-
-        // Fit map to the boundary bounds with padding
-        const bounds = layer.getBounds();
-        if (bounds.isValid()) {
-          mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
-        }
-      })
-      .catch(() => {
-        // Fallback: no geofence rendered silently
+      const layer = L.geoJSON(feature, {
+        style: () => geofenceStyle,
+        onEachFeature: (_f, fl) => {
+          fl.on("mouseover", function (e: L.LeafletMouseEvent) {
+            (e.target as L.Path).setStyle({ fillOpacity: 0.52, weight: 3.5, dashArray: "0" });
+          });
+          fl.on("mouseout", function (e: L.LeafletMouseEvent) {
+            (e.target as L.Path).setStyle(geofenceStyle);
+          });
+        },
       });
+
+      layer.addTo(mapInstanceRef.current);
+      geofenceLayerRef.current = layer;
+
+      const bounds = layer.getBounds();
+      if (bounds.isValid()) {
+        mapInstanceRef.current.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 });
+      }
+    };
+
+    // Fallback: draw a circle when no polygon boundary is available
+    const renderFallbackCircle = () => {
+      if (!mapInstanceRef.current) return;
+      if (geofenceLayerRef.current) {
+        geofenceLayerRef.current.remove();
+      }
+      // Use a circle as a rough geofence
+      const circle = L.circle(
+        [focusLocation.latitude, focusLocation.longitude],
+        {
+          radius: 3000,
+          ...geofenceStyle,
+        }
+      );
+      // Wrap in a layer group so the ref type matches
+      const layer = L.geoJSON();
+      circle.addTo(mapInstanceRef.current);
+      // Store the circle removal in the geofence layer ref using a workaround
+      (layer as unknown as { _fallbackCircle: L.Circle })._fallbackCircle = circle;
+      layer.remove = () => {
+        circle.remove();
+        return layer;
+      };
+      geofenceLayerRef.current = layer;
+
+      mapInstanceRef.current.flyTo(
+        [focusLocation.latitude, focusLocation.longitude], 13,
+        { duration: 1.2, easeLinearity: 0.25 }
+      );
+    };
+
+    // Try zoom levels from most specific (suburb) to broader (city → district)
+    // Nominatim /reverse returns a single GeoJSON Feature, not a FeatureCollection
+    const tryZoomLevels = async (zoomLevels: number[]): Promise<void> => {
+      for (const zoom of zoomLevels) {
+        try {
+          const url =
+            `https://nominatim.openstreetmap.org/reverse` +
+            `?lat=${focusLocation.latitude}&lon=${focusLocation.longitude}` +
+            `&format=geojson&polygon_geojson=1&zoom=${zoom}` +
+            `&accept-language=en`;
+
+          const res = await fetch(url, {
+            headers: { "User-Agent": "OurVault-App/1.0", "Accept": "application/json" },
+          });
+
+          if (!res.ok) continue;
+
+          const feature = await res.json() as GeoJSON.Feature;
+
+          // Check if we got a real polygon (not just a Point fallback)
+          const geomType = feature?.geometry?.type;
+          const hasPolygon =
+            geomType === "Polygon" ||
+            geomType === "MultiPolygon";
+
+          if (hasPolygon && mapInstanceRef.current) {
+            renderBoundary(feature);
+            return; // success — stop trying
+          }
+        } catch {
+          // continue to next zoom level
+        }
+      }
+      // All zoom levels returned only Points — draw fallback circle
+      renderFallbackCircle();
+    };
+
+    // zoom 14 = building/suburb, 12 = neighbourhood, 10 = city, 8 = county, 6 = state
+    tryZoomLevels([14, 12, 10, 8]);
   }, [focusLocation]);
 
   return (
