@@ -354,6 +354,13 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Mobile bottom navigation — hidden on sm+ */}
+      <MobileBottomNav
+        selectedView={selectedView}
+        onSelectView={setSelectedView}
+        onUpload={() => setUploadOpen(true)}
+      />
+
       <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} folderId={!isSpecialView ? selectedView : undefined} />
       <MediaPreview
         media={media}
