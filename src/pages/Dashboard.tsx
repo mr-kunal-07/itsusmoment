@@ -382,6 +382,7 @@ export default function Dashboard() {
             open={slideshowOpen}
             onClose={() => setSlideshowOpen(false)}
           />
+        )}
             media={media}
             open={slideshowOpen}
             onOpenChange={setSlideshowOpen}
