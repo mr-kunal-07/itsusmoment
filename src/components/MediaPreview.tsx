@@ -1,9 +1,11 @@
 import { Media, getPublicUrl } from "@/hooks/useMedia";
+import { useAllProfiles } from "@/hooks/useProfile";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Link, User } from "lucide-react";
 import { useCallback, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   media: Media[];
@@ -20,10 +22,25 @@ function formatSize(bytes: number) {
   return (bytes / 1073741824).toFixed(1) + " GB";
 }
 
+function downloadFile(url: string, filename: string) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 export function MediaPreview({ media, currentIndex, open, onOpenChange, onNavigate }: Props) {
   const item = media[currentIndex] ?? null;
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < media.length - 1;
+  const { data: profiles = [] } = useAllProfiles();
+  const { toast } = useToast();
+
+  const uploaderMap = Object.fromEntries(profiles.map(p => [p.user_id, p.display_name ?? null]));
 
   const goPrev = useCallback(() => { if (currentIndex > 0) onNavigate(currentIndex - 1); }, [currentIndex, onNavigate]);
   const goNext = useCallback(() => { if (currentIndex < media.length - 1) onNavigate(currentIndex + 1); }, [currentIndex, media.length, onNavigate]);
@@ -40,6 +57,13 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
 
   if (!item) return null;
   const url = getPublicUrl(item.file_path);
+  const uploaderName = uploaderMap[item.uploaded_by];
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(url).then(() => {
+      toast({ title: "Link copied to clipboard" });
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -47,10 +71,30 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
         <div className="p-6 pb-0">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between pr-6">
-              <span>{item.title}</span>
-              <span className="text-sm font-normal text-muted-foreground">
-                {currentIndex + 1} / {media.length}
-              </span>
+              <span className="truncate">{item.title}</span>
+              <div className="flex items-center gap-2 shrink-0 ml-3">
+                <span className="text-sm font-normal text-muted-foreground">
+                  {currentIndex + 1} / {media.length}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleCopyLink}
+                  title="Copy link"
+                >
+                  <Link className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => downloadFile(url, item.file_name)}
+                  title="Download"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              </div>
             </DialogTitle>
           </DialogHeader>
         </div>
@@ -88,6 +132,12 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
           {item.description && <p className="text-foreground">{item.description}</p>}
           <p>Uploaded {format(new Date(item.created_at), "MMM d, yyyy 'at' h:mm a")}</p>
           <p>{item.file_name} · {formatSize(item.file_size)} · {item.mime_type}</p>
+          {uploaderName && (
+            <p className="flex items-center gap-1">
+              <User className="h-3.5 w-3.5" />
+              Uploaded by {uploaderName}
+            </p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
