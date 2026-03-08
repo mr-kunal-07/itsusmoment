@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Camera, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, Save, Heart } from "lucide-react";
+import { PartnerConnect } from "@/components/PartnerConnect";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -53,7 +54,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b px-4 h-14 flex items-center gap-3 shadow-sm">
+      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b px-4 h-14 flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -61,6 +62,7 @@ export default function Profile() {
       </header>
 
       <div className="max-w-lg mx-auto p-6 space-y-6">
+        {/* Profile card */}
         <Card>
           <CardHeader>
             <CardTitle>Your Profile</CardTitle>
@@ -81,27 +83,15 @@ export default function Profile() {
                   {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
                 </button>
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleAvatarChange}
-              />
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
               <p className="text-xs text-muted-foreground">Click the camera icon to upload a photo</p>
             </div>
 
-            {/* Display name */}
             <div className="space-y-2">
               <Label>Display Name</Label>
-              <Input
-                value={displayName}
-                onChange={e => setDisplayName(e.target.value)}
-                placeholder="Enter your display name"
-              />
+              <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Enter your display name" />
             </div>
 
-            {/* Email (read-only) */}
             <div className="space-y-2">
               <Label>Email</Label>
               <Input value={user?.email ?? ""} disabled className="text-muted-foreground" />
@@ -112,6 +102,22 @@ export default function Profile() {
               {updateProfile.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
               Save Changes
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Partner card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-primary" />
+              Partner Access
+            </CardTitle>
+            <CardDescription>
+              Link your partner's account so you both share full admin access to this vault
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PartnerConnect />
           </CardContent>
         </Card>
       </div>

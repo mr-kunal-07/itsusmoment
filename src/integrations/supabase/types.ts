@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      couples: {
+        Row: {
+          created_at: string
+          id: string
+          invite_code: string
+          status: string
+          updated_at: string
+          user1_id: string
+          user2_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invite_code?: string
+          status?: string
+          updated_at?: string
+          user1_id: string
+          user2_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invite_code?: string
+          status?: string
+          updated_at?: string
+          user1_id?: string
+          user2_id?: string | null
+        }
+        Relationships: []
+      }
       folders: {
         Row: {
           created_at: string
@@ -292,7 +322,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_couple_invite: { Args: { _invite_code: string }; Returns: Json }
+      get_partner_id: { Args: { _user_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
