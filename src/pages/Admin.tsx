@@ -331,6 +331,9 @@ export default function Admin() {
                         {u.has_partner && (
                           <Heart className="h-3 w-3 text-primary fill-primary shrink-0" />
                         )}
+                        {u.is_admin && (
+                          <ShieldCheck className="h-3 w-3 text-primary shrink-0" title="Admin" />
+                        )}
                       </div>
 
                       {/* Plan */}
