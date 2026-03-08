@@ -17,6 +17,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 
+type FileTypeFilter = "all" | "image" | "video";
+
 export default function Dashboard() {
   const { user, signOut } = useAuth();
   const [selectedView, setSelectedView] = useState<ViewType>("all");
