@@ -61,6 +61,9 @@ export default function Dashboard() {
   const moveMedia = useMoveMedia();
   const { data: profile } = useProfile();
   const { data: onThisDayMedia = [] } = useOnThisDay();
+  const { data: couple } = useMyCouple();
+  const { data: profiles = [] } = useAllProfiles();
+  const seenMediaRef = useRef<Set<string>>(new Set());
 
   // Persist prefs
   useEffect(() => { localStorage.setItem(STORAGE_KEY_VIEW, JSON.stringify(viewMode)); }, [viewMode]);
