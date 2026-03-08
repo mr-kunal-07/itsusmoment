@@ -466,7 +466,7 @@ export default function Index() {
               <div className={`grid lg:grid-cols-2 gap-16 items-center ${i % 2 === 1 ? "lg:[&>*:first-child]:order-2" : ""}`}>
                 {/* Text */}
                 <Reveal delay={50}>
-                  <p className="text-[11px] font-extrabold tracking-[0.14em] uppercase mb-5" style={{ color: T.accent }}>{s.tag}</p>
+                  <p className="text-[11px] font-semibold tracking-[0.14em] uppercase mb-5" style={{ color: T.accent }}>{s.tag}</p>
                   <h2 style={{ ...displayFont, fontSize: "clamp(24px, 3vw, 38px)", lineHeight: 1.12, color: T.dark }} className="mb-5">
                     {s.title}
                   </h2>
