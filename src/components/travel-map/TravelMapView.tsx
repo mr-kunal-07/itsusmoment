@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Map, List, Share2, Download, Loader2, Heart } from "lucide-react";
+import { Plus, Map, List, Share2, Download, Loader2, Heart, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTravelLocations, TravelLocation } from "@/hooks/useTravelLocations";
 import { useMedia } from "@/hooks/useMedia";
@@ -16,6 +16,8 @@ import { toPng } from "html-to-image";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
+type ViewMode = "map" | "heatmap" | "timeline";
+
 // Floating heart particles
 function FloatingHearts() {
   const hearts = Array.from({ length: 8 });
@@ -25,21 +27,9 @@ function FloatingHearts() {
         <motion.div
           key={i}
           className="absolute text-pink-400/20 select-none"
-          style={{
-            left: `${10 + i * 11}%`,
-            fontSize: `${12 + (i % 3) * 8}px`,
-          }}
-          animate={{
-            y: ["100%", "-20%"],
-            opacity: [0, 0.6, 0],
-            x: [0, (i % 2 === 0 ? 15 : -15)],
-          }}
-          transition={{
-            duration: 5 + i * 0.7,
-            repeat: Infinity,
-            delay: i * 0.8,
-            ease: "easeOut",
-          }}
+          style={{ left: `${10 + i * 11}%`, fontSize: `${12 + (i % 3) * 8}px` }}
+          animate={{ y: ["100%", "-20%"], opacity: [0, 0.6, 0], x: [0, (i % 2 === 0 ? 15 : -15)] }}
+          transition={{ duration: 5 + i * 0.7, repeat: Infinity, delay: i * 0.8, ease: "easeOut" }}
         >
           ❤️
         </motion.div>
@@ -47,6 +37,54 @@ function FloatingHearts() {
     </div>
   );
 }
+
+// Countries visited legend for heatmap
+function HeatmapLegend({ locations }: { locations: TravelLocation[] }) {
+  const countries = Array.from(
+    new Map(
+      locations
+        .filter(l => l.country)
+        .map(l => [l.country!, locations.filter(x => x.country === l.country).length])
+    ).entries()
+  ).sort((a, b) => b[1] - a[1]);
+
+  if (countries.length === 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      className="absolute top-3 right-3 z-10 bg-black/60 border border-purple-500/20 rounded-xl p-3 backdrop-blur-md max-w-[180px]"
+    >
+      <div className="text-[10px] font-bold text-pink-300 mb-2 flex items-center gap-1">
+        <Globe className="h-3 w-3" /> Countries Visited
+      </div>
+      <div className="space-y-1 max-h-36 overflow-y-auto">
+        {countries.map(([country, count]) => (
+          <div key={country} className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-2 rounded-full bg-pink-500 shrink-0" />
+              <span className="text-[10px] text-white/80 truncate">{country}</span>
+            </div>
+            <span className="text-[10px] text-pink-300 font-medium shrink-0">{count}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 pt-2 border-t border-purple-500/20">
+        <div className="flex items-center gap-1.5">
+          <div className="h-1.5 w-8 rounded-full bg-gradient-to-r from-pink-500/30 to-pink-500" />
+          <span className="text-[9px] text-purple-300">= visited</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+const VIEW_TABS: { id: ViewMode; label: string; icon: typeof Map }[] = [
+  { id: "map", label: "Map", icon: Map },
+  { id: "heatmap", label: "Heatmap", icon: Globe },
+  { id: "timeline", label: "Timeline", icon: List },
+];
 
 export function TravelMapView() {
   const { user } = useAuth();
@@ -58,7 +96,7 @@ export function TravelMapView() {
   const { data: profiles = [] } = useAllProfiles();
   const exportRef = useRef<HTMLDivElement>(null);
 
-  const [mode, setMode] = useState<"map" | "timeline">("map");
+  const [mode, setMode] = useState<ViewMode>("map");
   const [addOpen, setAddOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<TravelLocation | null>(null);
   const [focusLocation, setFocusLocation] = useState<TravelLocation | null>(null);
@@ -75,9 +113,10 @@ export function TravelMapView() {
   ].join(" ❤️ ");
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
+    if (mode === "heatmap") return; // disable click-to-add in heatmap mode
     setClickedCoords({ lat, lng });
     setAddOpen(true);
-  }, []);
+  }, [mode]);
 
   const handleTimelineSelect = (loc: TravelLocation) => {
     setFocusLocation(loc);
@@ -119,7 +158,7 @@ export function TravelMapView() {
         toast({ title: "Image saved — open Instagram and upload from your gallery!" });
       }
     } catch {
-      // user cancelled share
+      // user cancelled
     } finally {
       setExporting(false);
     }
@@ -134,6 +173,8 @@ export function TravelMapView() {
       </div>
     );
   }
+
+  const isMapView = mode === "map" || mode === "heatmap";
 
   return (
     <div className="relative min-h-screen bg-[#06030f] overflow-hidden">
@@ -157,42 +198,32 @@ export function TravelMapView() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Map / Timeline toggle */}
+            {/* View toggle */}
             <div className="flex items-center gap-0.5 p-0.5 rounded-xl bg-white/5 border border-white/10">
-              {(["map", "timeline"] as const).map(m => (
+              {VIEW_TABS.map(tab => (
                 <button
-                  key={m}
-                  onClick={() => setMode(m)}
+                  key={tab.id}
+                  onClick={() => setMode(tab.id)}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
-                    mode === m
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all",
+                    mode === tab.id
                       ? "bg-gradient-to-r from-pink-500/30 to-purple-600/30 text-white border border-pink-400/30"
                       : "text-white/50 hover:text-white/80"
                   )}
                 >
-                  {m === "map" ? <Map className="h-3 w-3" /> : <List className="h-3 w-3" />}
-                  <span className="capitalize">{m}</span>
+                  <tab.icon className="h-3 w-3" />
+                  <span className="hidden sm:inline">{tab.label}</span>
                 </button>
               ))}
             </div>
 
-            {/* Export buttons */}
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleExport}
-              disabled={exporting}
-              className="h-8 px-2 text-purple-300 hover:text-white hover:bg-white/10 border border-white/10"
-            >
+            {/* Export */}
+            <Button size="sm" variant="ghost" onClick={handleExport} disabled={exporting}
+              className="h-8 px-2 text-purple-300 hover:text-white hover:bg-white/10 border border-white/10">
               {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleShare}
-              disabled={exporting}
-              className="h-8 px-2 text-pink-300 hover:text-white hover:bg-white/10 border border-white/10"
-            >
+            <Button size="sm" variant="ghost" onClick={handleShare} disabled={exporting}
+              className="h-8 px-2 text-pink-300 hover:text-white hover:bg-white/10 border border-white/10">
               <Share2 className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -202,17 +233,32 @@ export function TravelMapView() {
       {/* Stats */}
       <TravelStats locations={locations} mediaCount={allMedia.length} />
 
-      {/* Main content area (exportable) */}
+      {/* Main content (exportable) */}
       <div ref={exportRef} className="relative">
         <AnimatePresence mode="wait">
-          {mode === "map" ? (
+          {isMapView ? (
             <motion.div
-              key="map"
+              key="map-container"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="relative"
             >
+              {/* Heatmap banner */}
+              {mode === "heatmap" && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mx-3 mb-2 px-4 py-2 rounded-xl bg-gradient-to-r from-pink-900/30 to-purple-900/30 border border-pink-500/20 flex items-center gap-2"
+                >
+                  <Globe className="h-3.5 w-3.5 text-pink-400 shrink-0" />
+                  <p className="text-[11px] text-pink-200">
+                    Countries you've visited together are highlighted in pink/purple
+                    {locations.filter(l => l.country).length === 0 && " — add locations with a Country to see them highlighted"}
+                  </p>
+                </motion.div>
+              )}
+
               {/* Map container */}
               <div
                 className="relative mx-3 mb-4 rounded-2xl overflow-hidden border border-purple-500/20 shadow-2xl"
@@ -230,13 +276,17 @@ export function TravelMapView() {
                   <TravelMapCanvas
                     locations={locations}
                     onMapClick={handleMapClick}
-                    onPinClick={loc => setSelectedLocation(loc)}
+                    onPinClick={loc => { if (mode !== "heatmap") setSelectedLocation(loc); }}
                     focusLocation={focusLocation}
+                    showHeatmap={mode === "heatmap"}
                   />
                 )}
 
-                {/* Map overlay: couple name watermark */}
-                <div className="absolute bottom-3 left-3 pointer-events-none">
+                {/* Heatmap legend */}
+                {mode === "heatmap" && !isLoading && <HeatmapLegend locations={locations} />}
+
+                {/* Couple name watermark */}
+                <div className="absolute bottom-3 left-3 pointer-events-none z-10">
                   <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 border border-pink-500/20 backdrop-blur-md">
                     <Heart className="h-3 w-3 text-pink-400 fill-pink-400" />
                     <span className="text-[10px] font-semibold text-white/80">{coupleName}</span>
@@ -259,16 +309,18 @@ export function TravelMapView() {
                 )}
               </div>
 
-              {/* Floating Add button */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => { setClickedCoords(null); setAddOpen(true); }}
-                className="fixed bottom-24 sm:bottom-8 right-4 sm:right-6 z-20 flex items-center gap-2 pl-4 pr-5 py-3 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold text-sm shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-shadow"
-              >
-                <Plus className="h-4 w-4" />
-                Add Memory
-              </motion.button>
+              {/* Floating Add button — hidden in heatmap mode */}
+              {mode === "map" && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => { setClickedCoords(null); setAddOpen(true); }}
+                  className="fixed bottom-24 sm:bottom-8 right-4 sm:right-6 z-20 flex items-center gap-2 pl-4 pr-5 py-3 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold text-sm shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-shadow"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Memory
+                </motion.button>
+              )}
             </motion.div>
           ) : (
             <motion.div
@@ -278,12 +330,8 @@ export function TravelMapView() {
               exit={{ opacity: 0, x: -20 }}
               className="min-h-[70vh]"
             >
-              <TimelineView
-                locations={locations}
-                onSelectLocation={handleTimelineSelect}
-              />
+              <TimelineView locations={locations} onSelectLocation={handleTimelineSelect} />
 
-              {/* Floating Add button */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

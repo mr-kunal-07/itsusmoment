@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, X, Calendar, Globe, Tag, Image, Loader2 } from "lucide-react";
+import { MapPin, X, Calendar, Globe, Tag, Image, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,12 +9,27 @@ import { useAddTravelLocation } from "@/hooks/useTravelLocations";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   initialLat?: number;
   initialLng?: number;
+}
+
+interface GeoResult {
+  display_name: string;
+  lat: string;
+  lon: string;
+  address: {
+    city?: string;
+    town?: string;
+    village?: string;
+    county?: string;
+    country?: string;
+    state?: string;
+  };
 }
 
 const TAG_OPTIONS = ["Trip", "Anniversary", "Vacation", "Date Night", "Road Trip", "Adventure", "Honeymoon"];
@@ -37,10 +52,88 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng }: Prop
   const [uploading, setUploading] = useState(false);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
 
+  // Geocoding state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<GeoResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Sync initialLat/Lng when props change (map click)
+  useEffect(() => {
+    if (initialLat !== undefined && initialLng !== undefined) {
+      setForm(f => ({
+        ...f,
+        latitude: initialLat.toFixed(6),
+        longitude: initialLng.toFixed(6),
+      }));
+    }
+  }, [initialLat, initialLng]);
+
+  // Reset on close
+  useEffect(() => {
+    if (!open) {
+      setSearchQuery("");
+      setSearchResults([]);
+      setShowSuggestions(false);
+    }
+  }, [open]);
+
+  // Debounced geocoding search via Nominatim (free, no API key)
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    if (!searchQuery.trim() || searchQuery.length < 2) {
+      setSearchResults([]);
+      setShowSuggestions(false);
+      return;
+    }
+    searchDebounceRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=6&addressdetails=1`;
+        const res = await fetch(url, {
+          headers: { "Accept-Language": "en", "User-Agent": "OurVault-App/1.0" },
+        });
+        const data: GeoResult[] = await res.json();
+        setSearchResults(data);
+        setShowSuggestions(data.length > 0);
+      } catch {
+        // silently fail
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 400);
+
+    return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
+  }, [searchQuery]);
+
+  const handleSelectResult = (result: GeoResult) => {
+    const city = result.address.city || result.address.town || result.address.village || result.address.county || "";
+    const country = result.address.country || "";
+
+    // Build a clean display name (first part of display_name)
+    const shortName = result.display_name.split(",")[0].trim();
+
+    setForm(f => ({
+      ...f,
+      location_name: f.location_name || shortName,
+      city,
+      country,
+      latitude: parseFloat(result.lat).toFixed(6),
+      longitude: parseFloat(result.lon).toFixed(6),
+    }));
+    setSearchQuery(result.display_name.split(",").slice(0, 2).join(", "));
+    setShowSuggestions(false);
+    setSearchResults([]);
+  };
+
   const reset = () => {
     setForm({ location_name: "", city: "", country: "", latitude: "", longitude: "", date_visited: "", description: "" });
     setSelectedTags([]);
     setUploadedUrls([]);
+    setSearchQuery("");
+    setSearchResults([]);
   };
 
   const handleClose = () => { reset(); onClose(); };
@@ -132,6 +225,79 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng }: Prop
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4">
+
+              {/* ── GEOCODING SEARCH ── */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-purple-200 flex items-center gap-1.5">
+                  <Search className="h-3 w-3" /> Search a Place
+                  <span className="text-purple-400/60 font-normal">(auto-fills coordinates)</span>
+                </Label>
+                <div className="relative" ref={suggestionsRef}>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-purple-400 pointer-events-none" />
+                    {searchLoading && (
+                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-purple-400 animate-spin" />
+                    )}
+                    <Input
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      onFocus={() => searchResults.length > 0 && setShowSuggestions(true)}
+                      placeholder="e.g. Goa, India or Paris, France…"
+                      className="pl-9 pr-9 bg-white/8 border-pink-500/40 text-white placeholder:text-white/30 focus-visible:ring-pink-500/60"
+                    />
+                  </div>
+
+                  {/* Suggestions dropdown */}
+                  <AnimatePresence>
+                    {showSuggestions && searchResults.length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-purple-500/30 bg-[#1a0d2e] shadow-2xl overflow-hidden"
+                      >
+                        {searchResults.map((result, i) => {
+                          const city = result.address.city || result.address.town || result.address.village || "";
+                          const country = result.address.country || "";
+                          const parts = result.display_name.split(",");
+                          const primary = parts[0].trim();
+                          const secondary = parts.slice(1, 3).join(",").trim();
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => handleSelectResult(result)}
+                              className={cn(
+                                "w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-white/8 transition-colors",
+                                i > 0 && "border-t border-purple-500/10"
+                              )}
+                            >
+                              <MapPin className="h-3.5 w-3.5 text-pink-400 shrink-0 mt-0.5" />
+                              <div className="min-w-0">
+                                <div className="text-xs font-medium text-white truncate">{primary}</div>
+                                <div className="text-[10px] text-purple-300/70 truncate">{secondary}</div>
+                                {(city || country) && (
+                                  <div className="text-[10px] text-pink-400/60 mt-0.5">
+                                    {[city, country].filter(Boolean).join(", ")}
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-purple-500/20" />
+                <span className="text-[10px] text-purple-400/60 font-medium">or fill in manually</span>
+                <div className="flex-1 h-px bg-purple-500/20" />
+              </div>
+
               {/* Location name */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-purple-200">Location Name *</Label>
@@ -196,7 +362,7 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng }: Prop
                   />
                 </div>
               </div>
-              <p className="text-[10px] text-purple-400/70">💡 Click anywhere on the map to auto-fill coordinates</p>
+              <p className="text-[10px] text-purple-400/70">💡 Click anywhere on the map or search above to auto-fill coordinates</p>
 
               {/* Date */}
               <div className="space-y-1.5">
