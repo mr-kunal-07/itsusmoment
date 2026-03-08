@@ -33,7 +33,7 @@ interface Props {
   onSelectView: (view: ViewType) => void;
 }
 
-export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Props) {
+export function AppSidebar({ selectedView, onSelectView }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { setOpenMobile } = useSidebar();
