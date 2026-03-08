@@ -80,6 +80,7 @@ export function ChatView() {
     : null;
   const partnerProfile = partnerId ? profiles.find(p => p.user_id === partnerId) : null;
   const { partnerTyping, sendTyping } = useTyping(coupleId, user?.id);
+  const { partnerOnline, partnerLastSeen } = usePresence(coupleId, user?.id, partnerId);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
