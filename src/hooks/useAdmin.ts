@@ -21,6 +21,7 @@ export interface AdminUser {
   avatar_url: string | null;
   plan: string;
   is_shared_plan?: boolean;
+  is_admin?: boolean;
   subscription_status: string | null;
   period_end: string | null;
   storage_used: number;

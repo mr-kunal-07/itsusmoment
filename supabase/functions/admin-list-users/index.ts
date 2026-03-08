@@ -29,18 +29,20 @@ serve(async (req) => {
     // Fetch all auth users
     const { data: { users: authUsers } } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
 
-    // Fetch profiles, subscriptions, media stats, couples in parallel
-    const [profilesRes, subsRes, mediaRes, couplesRes] = await Promise.all([
+    // Fetch profiles, subscriptions, media stats, couples, roles in parallel
+    const [profilesRes, subsRes, mediaRes, couplesRes, rolesRes] = await Promise.all([
       adminClient.from("profiles").select("*"),
       adminClient.from("subscriptions").select("*").eq("status", "active"),
       adminClient.from("media").select("uploaded_by, file_size"),
       adminClient.from("couples").select("*").eq("status", "active"),
+      adminClient.from("user_roles").select("user_id").eq("role", "admin"),
     ]);
 
     const profiles = profilesRes.data ?? [];
     const subscriptions = subsRes.data ?? [];
     const mediaItems = mediaRes.data ?? [];
     const couples = couplesRes.data ?? [];
+    const adminUserIds = new Set((rolesRes.data ?? []).map((r: any) => r.user_id));
 
     // Build a partner map: userId → partnerId
     const partnerMap: Record<string, string> = {};
@@ -90,6 +92,7 @@ serve(async (req) => {
         avatar_url: profile?.avatar_url ?? null,
         plan: effectivePlan,
         is_shared_plan: isShared,
+        is_admin: adminUserIds.has(u.id),
         subscription_status: sub?.status ?? null,
         period_end: sub?.current_period_end ?? null,
         storage_used: storageMap[u.id] ?? 0,
