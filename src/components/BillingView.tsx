@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Check, X, HardDrive, Mic, Upload, Crown, Sparkles, Zap, Heart,
+  Sprout, HeartHandshake, Gem,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,32 +19,75 @@ interface FeatureRow {
 }
 
 const FEATURES: FeatureRow[] = [
-  { icon: HardDrive, text: "Storage",         single: "1 GB",        dating: "5 GB",        soulmate: "50 GB"      },
-  { icon: Upload,    text: "Monthly uploads", single: "10",          dating: "50",          soulmate: "Unlimited"  },
-  { icon: Heart,     text: "Partner access",  single: true,          dating: true,          soulmate: true         },
-  { icon: Mic,       text: "Voice messages",  single: false,         dating: false,         soulmate: true         },
-  { icon: Zap,       text: "Reactions",       single: false,         dating: false,         soulmate: true         },
-  { icon: Sparkles,  text: "All new features",single: false,         dating: false,         soulmate: true         },
-  { icon: Crown,     text: "Priority support",single: false,         dating: false,         soulmate: true         },
+  { icon: HardDrive, text: "Storage",          single: "1 GB",       dating: "5 GB",        soulmate: "50 GB"      },
+  { icon: Upload,    text: "Monthly uploads",  single: "10",         dating: "50",          soulmate: "Unlimited"  },
+  { icon: Heart,     text: "Partner access",   single: true,         dating: true,          soulmate: true         },
+  { icon: Mic,       text: "Voice messages",   single: false,        dating: false,         soulmate: true         },
+  { icon: Zap,       text: "Reactions",        single: false,        dating: false,         soulmate: true         },
+  { icon: Sparkles,  text: "All new features", single: false,        dating: false,         soulmate: true         },
+  { icon: Crown,     text: "Priority support", single: false,        dating: false,         soulmate: true         },
 ];
 
 const PLAN_ORDER: Plan[] = ["single", "dating", "soulmate"];
 
+// Premium icon component for each plan tier
+function PlanIcon({ planId, active }: { planId: Plan; active: boolean }) {
+  const configs: Record<Plan, {
+    Icon: React.ElementType;
+    bg: string;
+    ring: string;
+    iconColor: string;
+    glow?: string;
+  }> = {
+    single: {
+      Icon: Sprout,
+      bg: "bg-muted/60",
+      ring: "ring-1 ring-border",
+      iconColor: "text-muted-foreground",
+    },
+    dating: {
+      Icon: HeartHandshake,
+      bg: "bg-primary/8",
+      ring: "ring-1 ring-primary/20",
+      iconColor: "text-primary",
+    },
+    soulmate: {
+      Icon: Gem,
+      bg: "bg-primary/15",
+      ring: "ring-1 ring-primary/40",
+      iconColor: "text-primary",
+      glow: "shadow-[0_0_18px_hsl(var(--primary)/0.35)]",
+    },
+  };
+
+  const { Icon, bg, ring, iconColor, glow } = configs[planId];
+
+  return (
+    <div className={cn(
+      "h-11 w-11 rounded-xl flex items-center justify-center shrink-0 transition-all",
+      bg, ring, glow,
+      active && "scale-105"
+    )}>
+      <Icon className={cn("h-5 w-5", iconColor)} strokeWidth={1.75} />
+    </div>
+  );
+}
+
 const PLAN_META: Record<Plan, {
-  emoji: string; label: string; tagline: string;
+  label: string; tagline: string;
   price: string | null; period: string; badge: string | null;
 }> = {
   single: {
-    emoji: "🌱", label: "Single", tagline: "Explore the platform.",
-    price: null,  period: "forever free",   badge: null,
+    label: "Single", tagline: "Explore the platform.",
+    price: null,  period: "forever free", badge: null,
   },
   dating: {
-    emoji: "💌", label: "Dating", tagline: "Unlock more experiences together.",
-    price: "₹9",  period: "per month",       badge: null,
+    label: "Dating", tagline: "Unlock more experiences together.",
+    price: "₹9",  period: "per month",    badge: null,
   },
   soulmate: {
-    emoji: "💍", label: "Soulmate", tagline: "Everything for the perfect connection.",
-    price: "₹99", period: "per month",       badge: "Most popular",
+    label: "Soulmate", tagline: "Everything for the perfect connection.",
+    price: "₹99", period: "per month",    badge: "Most popular",
   },
 };
 
@@ -87,7 +131,7 @@ export function BillingView() {
       {plan !== "single" && subscription?.current_period_end && (
         <div className="flex items-center justify-center gap-2.5">
           <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm">
-            <span>{PLAN_META[plan].emoji}</span>
+            <PlanIcon planId={plan} active />
             <span className="font-medium text-foreground">{PLAN_META[plan].label} plan active</span>
             <span className="text-muted-foreground">·</span>
             <span className="text-xs text-muted-foreground">
@@ -128,14 +172,18 @@ export function BillingView() {
 
               {/* Plan header */}
               <div className="mb-6">
-                <div className="flex items-center gap-2.5 mb-1.5">
-                  <span className="text-xl">{meta.emoji}</span>
-                  <span className="font-bold font-heading text-base text-foreground">{meta.label}</span>
-                  {isCurrent && (
-                    <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0">Active</Badge>
-                  )}
+                <div className="flex items-center gap-3 mb-3">
+                  <PlanIcon planId={planId} active={isCurrent} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold font-heading text-base text-foreground">{meta.label}</span>
+                      {isCurrent && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Active</Badge>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{meta.tagline}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">{meta.tagline}</p>
 
                 <div className="mt-5 flex items-baseline gap-1">
                   <span className={cn(
@@ -242,13 +290,15 @@ export function BillingView() {
                 plan === planId && "bg-primary/5"
               )}
             >
-              <span className="text-sm">{PLAN_META[planId].emoji}</span>
-              <p className={cn(
-                "text-xs font-semibold mt-0.5",
-                plan === planId ? "text-primary" : "text-muted-foreground"
-              )}>
-                {PLAN_META[planId].label}
-              </p>
+              <div className="flex flex-col items-center gap-1.5">
+                <PlanIcon planId={planId} active={plan === planId} />
+                <p className={cn(
+                  "text-xs font-semibold",
+                  plan === planId ? "text-primary" : "text-muted-foreground"
+                )}>
+                  {PLAN_META[planId].label}
+                </p>
+              </div>
             </div>
           ))}
         </div>
