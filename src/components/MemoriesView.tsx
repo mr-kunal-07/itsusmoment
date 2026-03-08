@@ -4,7 +4,7 @@ import { useRelationshipStats } from "@/hooks/useMemories";
 import { getPublicUrl } from "@/hooks/useMedia";
 import { format, formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, Image as ImageIcon, Video, Star, HardDrive, CalendarHeart, Clock } from "lucide-react";
+import { Heart, Image as ImageIcon, Video, Star, HardDrive, CalendarHeart, Clock, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function formatSize(bytes: number) {
