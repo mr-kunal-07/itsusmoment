@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Trash2, Lock, Reply, X, Check, CheckCheck, Phone, Video, MoreVertical, Smile, Paperclip, Mic } from "lucide-react";
-import { format, isToday, isYesterday } from "date-fns";
+import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMessages, Message } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyCouple } from "@/hooks/useCouple";
 import { useAllProfiles, useProfile } from "@/hooks/useProfile";
 import { useTyping } from "@/hooks/useTyping";
+import { usePresence } from "@/hooks/usePresence";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { cn } from "@/lib/utils";
 
@@ -79,6 +80,7 @@ export function ChatView() {
     : null;
   const partnerProfile = partnerId ? profiles.find(p => p.user_id === partnerId) : null;
   const { partnerTyping, sendTyping } = useTyping(coupleId, user?.id);
+  const { partnerOnline, partnerLastSeen } = usePresence(coupleId, user?.id, partnerId);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -167,8 +169,11 @@ export function ChatView() {
               {partnerInitials}
             </AvatarFallback>
           </Avatar>
-          {/* Online dot */}
-          <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[hsl(var(--wa-header))]" style={{ background: "hsl(var(--wa-online))" }} />
+          {/* Dynamic online/offline dot */}
+          <span
+            className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[hsl(var(--wa-header))] transition-colors"
+            style={{ background: partnerOnline ? "hsl(var(--wa-online))" : "hsl(var(--wa-meta))" }}
+          />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -176,8 +181,12 @@ export function ChatView() {
           <p className="text-xs mt-0.5 truncate" style={{ color: "hsl(var(--wa-meta))" }}>
             {partnerTyping ? (
               <span style={{ color: "hsl(var(--wa-online))" }}>typing…</span>
+            ) : partnerOnline ? (
+              <span style={{ color: "hsl(var(--wa-online))" }}>online</span>
+            ) : partnerLastSeen ? (
+              <span>last seen {formatDistanceToNow(partnerLastSeen, { addSuffix: true })}</span>
             ) : (
-              "online"
+              <span>offline</span>
             )}
           </p>
         </div>
