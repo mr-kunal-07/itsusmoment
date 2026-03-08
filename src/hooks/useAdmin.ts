@@ -90,6 +90,22 @@ export function useAdminManageUser() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-audit-log"] });
     },
+  });
+}
+
+export function useAdminAuditLog() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["admin-audit-log"],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+      const result = await callAdminFn("admin-audit-log", {}, session.access_token);
+      return result.logs as PlanAuditEntry[];
+    },
+    staleTime: 30_000,
   });
 }
