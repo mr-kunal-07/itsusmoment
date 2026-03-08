@@ -10,9 +10,9 @@ import {
 /* Brevo palette */
 const C = {
   green:     "#0a7c59",   /* Brevo signature green — links, tags, accents */
-  greenBg:   "#d5f5d0",   /* Brevo hero mint bg */
-  greenLight:"#e8f5e9",   /* Very light green surfaces */
-  greenMid:  "#f0fdf4",   /* Section backgrounds */
+  greenBg:   "#ffffff",   /* White hero bg */
+  greenLight:"#f0fdf4",   /* Very light green surfaces */
+  greenMid:  "#f9fafb",   /* Section backgrounds — light gray */
   dark:      "#1b1b2e",   /* Near-black — headlines, dark buttons */
   body:      "#374151",   /* Gray-700 for body text */
   muted:     "#6b7280",   /* Gray-500 for secondary text */
