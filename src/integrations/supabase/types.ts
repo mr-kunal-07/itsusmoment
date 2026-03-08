@@ -208,6 +208,45 @@ export type Database = {
           },
         ]
       }
+      media_tags: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          media_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          media_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          media_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_tags_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_reactions: {
         Row: {
           created_at: string
@@ -242,28 +281,34 @@ export type Database = {
       }
       messages: {
         Row: {
+          audio_url: string | null
           content: string
           couple_id: string
           created_at: string
           id: string
+          message_type: string
           read_at: string | null
           reply_to_id: string | null
           sender_id: string
         }
         Insert: {
+          audio_url?: string | null
           content: string
           couple_id: string
           created_at?: string
           id?: string
+          message_type?: string
           read_at?: string | null
           reply_to_id?: string | null
           sender_id: string
         }
         Update: {
+          audio_url?: string | null
           content?: string
           couple_id?: string
           created_at?: string
           id?: string
+          message_type?: string
           read_at?: string | null
           reply_to_id?: string | null
           sender_id?: string
@@ -394,6 +439,30 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      tags: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }
