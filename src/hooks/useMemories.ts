@@ -29,7 +29,7 @@ export function useOnThisDay() {
   });
 }
 
-/** Returns all media grouped by month-year */
+/** Returns all media grouped by month-year using taken_at (EXIF) if available, else created_at */
 export function useMemoriesTimeline() {
   const { user } = useAuth();
   return useQuery({
@@ -40,13 +40,22 @@ export function useMemoriesTimeline() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      // Group by YYYY-MM
-      const groups: Record<string, Media[]> = {};
-      (data as Media[]).forEach(m => {
-        const d = new Date(m.created_at);
+      // Group by YYYY-MM using taken_at when available, else created_at
+      const groups: Record<string, (Media & { taken_at?: string | null })[]> = {};
+      (data as (Media & { taken_at?: string | null })[]).forEach(m => {
+        const dateStr = m.taken_at ?? m.created_at;
+        const d = new Date(dateStr);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
         if (!groups[key]) groups[key] = [];
         groups[key].push(m);
+      });
+      // Sort each group by the real photo date ascending
+      Object.values(groups).forEach(arr => {
+        arr.sort((a, b) => {
+          const da = new Date(a.taken_at ?? a.created_at).getTime();
+          const db = new Date(b.taken_at ?? b.created_at).getTime();
+          return da - db;
+        });
       });
       return groups;
     },

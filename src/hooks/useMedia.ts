@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Tables } from "@/integrations/supabase/types";
 
-export type Media = Tables<"media"> & { uploader_name?: string | null };
+export type Media = Tables<"media"> & { uploader_name?: string | null; taken_at?: string | null };
 
 const PAGE_SIZE = 30;
 
