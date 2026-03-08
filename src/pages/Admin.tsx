@@ -101,7 +101,7 @@ export default function Admin() {
         <ShieldOff className="h-12 w-12 text-muted-foreground" />
         <h1 className="text-xl font-bold font-heading text-foreground">Access denied</h1>
         <p className="text-sm text-muted-foreground">You don't have admin privileges.</p>
-        <Button variant="outline" onClick={() => navigate("/")}>Go back</Button>
+        <Button variant="outline" onClick={() => navigate("/dashboard")}>Go back</Button>
       </div>
     );
   }
