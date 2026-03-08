@@ -92,6 +92,7 @@ serve(async (req) => {
         avatar_url: profile?.avatar_url ?? null,
         plan: effectivePlan,
         is_shared_plan: isShared,
+        is_admin: adminUserIds.has(u.id),
         subscription_status: sub?.status ?? null,
         period_end: sub?.current_period_end ?? null,
         storage_used: storageMap[u.id] ?? 0,
