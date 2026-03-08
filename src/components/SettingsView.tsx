@@ -12,8 +12,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Camera, Loader2, Save, Heart, Moon, Sun, Link2,
-  Trash2, Crown, LogOut, Smartphone, Download,
+  Camera, Loader2, Save, Heart, Moon, Sun,
+  Crown, LogOut, Smartphone, Download,
+  Fingerprint, Lock, Eye, EyeOff, ShieldCheck, KeyRound,
 } from "lucide-react";
 import { PartnerConnect } from "@/components/PartnerConnect";
 import { usePlan } from "@/hooks/useSubscription";
@@ -24,6 +25,9 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 interface Props { onNavigateBilling: () => void; }
+
+const PIN_KEY = "ourvault_pin";
+const LOCK_KEY = "ourvault_lock_method";
 
 export function SettingsView({ onNavigateBilling }: Props) {
   const navigate = useNavigate();
@@ -41,6 +45,18 @@ export function SettingsView({ onNavigateBilling }: Props) {
   const [displayName, setDisplayName] = useState(profile?.display_name ?? user?.email?.split("@")[0] ?? "");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // ── Security state ──────────────────────────────────────────────────────────
+  const [lockMethod, setLockMethod] = useState<"pin" | "biometric" | null>(() => {
+    const v = localStorage.getItem(LOCK_KEY);
+    return (v === "pin" || v === "biometric") ? v : null;
+  });
+  const [hasPin, setHasPin] = useState(() => !!localStorage.getItem(PIN_KEY));
+  const [pinSetupMode, setPinSetupMode] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [pinConfirm, setPinConfirm] = useState("");
+  const [showPin, setShowPin] = useState(false);
+  const biometricSupported = typeof window !== "undefined" && "PublicKeyCredential" in window;
 
   // ── PWA install state ───────────────────────────────────────────────────────
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -89,6 +105,62 @@ export function SettingsView({ onNavigateBilling }: Props) {
     await installPrompt.prompt();
     const { outcome } = await installPrompt.userChoice;
     if (outcome === "accepted") setInstallPrompt(null);
+  };
+
+  const handleSavePin = () => {
+    if (pinInput.length < 4) { toast({ title: "PIN must be at least 4 digits", variant: "destructive" }); return; }
+    if (pinInput !== pinConfirm) { toast({ title: "PINs don't match", variant: "destructive" }); return; }
+    localStorage.setItem(PIN_KEY, pinInput);
+    localStorage.setItem(LOCK_KEY, "pin");
+    setHasPin(true);
+    setLockMethod("pin");
+    setPinSetupMode(false);
+    setPinInput("");
+    setPinConfirm("");
+    toast({ title: "🔒 PIN lock enabled" });
+  };
+
+  const handleRemovePin = () => {
+    localStorage.removeItem(PIN_KEY);
+    localStorage.removeItem(LOCK_KEY);
+    setHasPin(false);
+    setLockMethod(null);
+    setPinSetupMode(false);
+    toast({ title: "PIN lock removed" });
+  };
+
+  const handleEnableBiometric = async () => {
+    if (!biometricSupported) { toast({ title: "Biometrics not supported on this device", variant: "destructive" }); return; }
+    try {
+      const credential = await navigator.credentials.create({
+        publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          rp: { name: "OurVault", id: window.location.hostname },
+          user: {
+            id: new TextEncoder().encode(user?.id ?? "user"),
+            name: user?.email ?? "user",
+            displayName: profile?.display_name ?? "User",
+          },
+          pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+          authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+          timeout: 60000,
+        },
+      });
+      if (credential) {
+        localStorage.setItem(LOCK_KEY, "biometric");
+        setLockMethod("biometric");
+        toast({ title: "🔒 Biometric lock enabled" });
+      }
+    } catch (err: any) {
+      if (err?.name === "NotAllowedError") toast({ title: "Biometric setup cancelled" });
+      else toast({ title: "Biometric not available on this device", variant: "destructive" });
+    }
+  };
+
+  const handleDisableBiometric = () => {
+    localStorage.removeItem(LOCK_KEY);
+    setLockMethod(null);
+    toast({ title: "Biometric lock disabled" });
   };
 
   return (
@@ -167,6 +239,107 @@ export function SettingsView({ onNavigateBilling }: Props) {
             </div>
             <Switch checked={theme === "dark"} onCheckedChange={toggleTheme} />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* App Lock / Security */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-primary" /> App Lock
+          </CardTitle>
+          <CardDescription className="text-xs">Protect your vault with a PIN or biometrics</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Active lock badge */}
+          {lockMethod && (
+            <div className="flex items-center gap-2 rounded-lg bg-primary/8 border border-primary/15 px-3 py-2.5">
+              {lockMethod === "biometric"
+                ? <Fingerprint className="h-4 w-4 text-primary shrink-0" />
+                : <KeyRound className="h-4 w-4 text-primary shrink-0" />
+              }
+              <span className="text-sm font-medium text-foreground">
+                {lockMethod === "biometric" ? "Biometric lock active ✓" : "PIN lock active ✓"}
+              </span>
+            </div>
+          )}
+
+          {/* Fingerprint / Face ID row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Fingerprint className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">Fingerprint / Face ID</p>
+                <p className="text-xs text-muted-foreground">
+                  {biometricSupported ? "Use device biometrics to unlock" : "Not supported on this device"}
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={lockMethod === "biometric"}
+              onCheckedChange={v => v ? handleEnableBiometric() : handleDisableBiometric()}
+              disabled={!biometricSupported}
+            />
+          </div>
+
+          {/* PIN row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Lock className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">PIN Lock</p>
+                <p className="text-xs text-muted-foreground">{hasPin ? "PIN is set" : "Set a 4–6 digit PIN"}</p>
+              </div>
+            </div>
+            <Switch
+              checked={lockMethod === "pin"}
+              onCheckedChange={v => v ? setPinSetupMode(true) : handleRemovePin()}
+            />
+          </div>
+
+          {/* Inline PIN setup form */}
+          {pinSetupMode && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-3">
+              <p className="text-xs font-medium text-foreground">Set your PIN</p>
+              <div className="relative">
+                <Input
+                  type={showPin ? "text" : "password"}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  placeholder="Enter 4–6 digit PIN"
+                  value={pinInput}
+                  onChange={e => setPinInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="h-8 text-sm pr-9"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(v => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >
+                  {showPin ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+              <Input
+                type={showPin ? "text" : "password"}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                placeholder="Confirm PIN"
+                value={pinConfirm}
+                onChange={e => setPinConfirm(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                className="h-8 text-sm"
+              />
+              <div className="flex gap-2">
+                <Button size="sm" className="flex-1" onClick={handleSavePin} disabled={pinInput.length < 4}>
+                  <Lock className="h-3.5 w-3.5 mr-1.5" /> Set PIN
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => { setPinSetupMode(false); setPinInput(""); setPinConfirm(""); }}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

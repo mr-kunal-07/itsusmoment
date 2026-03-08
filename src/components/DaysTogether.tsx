@@ -55,9 +55,9 @@ export function DaysTogether() {
           <PopoverTrigger asChild>
             <button
               className="w-full text-left group rounded-xl px-3 py-2.5 transition-all"
-              style={{
-                background: "linear-gradient(135deg, hsl(38 80% 12%) 0%, hsl(42 60% 16%) 100%)",
-                border: "1px solid hsl(42 70% 30% / 0.5)",
+            style={{
+                background: "linear-gradient(135deg, hsl(38 60% 22%) 0%, hsl(42 45% 28%) 100%)",
+                border: "1px solid hsl(42 60% 42% / 0.5)",
               }}
             >
               {/* Top row: calendar + edit */}
@@ -150,15 +150,15 @@ export function DaysTogether() {
             <button
               className="w-full flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 group hover:opacity-90 transition-opacity"
               style={{
-                background: "linear-gradient(135deg, hsl(38 80% 12%) 0%, hsl(42 60% 16%) 100%)",
-                border: "1px solid hsl(42 70% 30% / 0.4)",
+                background: "linear-gradient(135deg, hsl(38 60% 22%) 0%, hsl(42 45% 28%) 100%)",
+                border: "1px solid hsl(42 60% 42% / 0.4)",
               }}
             >
               <div
                 className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: "hsl(42 40% 20%)" }}
+                style={{ background: "hsl(42 50% 32%)" }}
               >
-                <Flame className="h-4 w-4" style={{ color: "hsl(42 70% 55%)" }} />
+                <Flame className="h-4 w-4" style={{ color: "hsl(42 90% 68%)" }} />
               </div>
               <div>
                 <p className="text-[11px] font-semibold" style={{ color: "hsl(42 70% 60%)" }}>
