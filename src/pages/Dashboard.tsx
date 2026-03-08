@@ -313,60 +313,65 @@ export default function Dashboard() {
           <UpgradeBanner onUpgrade={() => setSelectedView("billing")} selectedView={selectedView} />
 
           {/* Content */}
-          <main
-            className={cn(
-              "flex-1 overflow-auto pb-20 sm:pb-6",
-              selectedView === "chat" ? "p-0" : "p-3 sm:p-4 md:p-6",
-              dragOverMain && "ring-2 ring-primary ring-inset bg-primary/5"
-            )}
-            onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setDragOverMain(true); }}
-            onDragLeave={() => setDragOverMain(false)}
-            onDrop={handleMainDrop}
-          >
-            <div className={cn(selectedView === "chat" || selectedView === "billing" ? "mb-0" : "mb-4 sm:mb-6")}>
-              {!isSpecialView && (
-                <FolderBreadcrumb folderId={selectedView} folders={folders} onNavigate={setSelectedView} />
-              )}
-              {selectedView !== "chat" && selectedView !== "billing" && (
-                <h1 className="text-xl sm:text-2xl font-bold font-heading tracking-tight">{pageTitle}</h1>
-              )}
-
-              {selectedView === "on-this-day" && onThisDayMedia.length > 0 && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  🗓️ {onThisDayMedia.length} {onThisDayMedia.length === 1 ? "memory" : "memories"} from previous years on this date
-                </p>
-              )}
-
-              {isGridView && !isLoading && selectedView !== "on-this-day" && (
-                <p className="text-sm text-muted-foreground mt-1">{media.length} file{media.length !== 1 ? "s" : ""}</p>
-              )}
-            </div>
-
-            {/* Render correct view */}
-            {selectedView === "timeline" ? (
-              <MemoriesTimeline onPreview={(mediaId) => {
-                const allFlat = media;
-                const idx = allFlat.findIndex(m => m.id === mediaId);
-                setSelectedView("all");
-                setTimeout(() => setPreviewIndex(idx >= 0 ? idx : 0), 100);
-              }} />
-            ) : selectedView === "anniversaries" ? (
-              <AnniversariesView />
-            ) : selectedView === "chat" ? (
+          {selectedView === "chat" ? (
+            /* Chat: fully flush, no padding, no overflow wrapper */
+            <div className="flex-1 overflow-hidden" style={{ background: "#171716" }}>
               <ChatView onBack={() => setSelectedView("all")} />
-            ) : selectedView === "activity" ? (
-              <ActivityFeed />
-            ) : selectedView === "billing" ? (
-              <BillingView />
-            ) : (
-              <MediaGrid
-                media={media}
-                loading={isLoading && !["starred","recent","on-this-day"].includes(selectedView)}
-                onPreview={(m) => setPreviewIndex(media.findIndex(x => x.id === m.id))}
-                viewMode={viewMode}
-              />
-            )}
-          </main>
+            </div>
+          ) : (
+            <main
+              className={cn(
+                "flex-1 overflow-auto pb-20 sm:pb-6",
+                "p-3 sm:p-4 md:p-6",
+                dragOverMain && "ring-2 ring-primary ring-inset bg-primary/5"
+              )}
+              onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setDragOverMain(true); }}
+              onDragLeave={() => setDragOverMain(false)}
+              onDrop={handleMainDrop}
+            >
+              <div className={cn(selectedView === "billing" ? "mb-0" : "mb-4 sm:mb-6")}>
+                {!isSpecialView && (
+                  <FolderBreadcrumb folderId={selectedView} folders={folders} onNavigate={setSelectedView} />
+                )}
+                {selectedView !== "billing" && (
+                  <h1 className="text-xl sm:text-2xl font-bold font-heading tracking-tight">{pageTitle}</h1>
+                )}
+
+                {selectedView === "on-this-day" && onThisDayMedia.length > 0 && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    🗓️ {onThisDayMedia.length} {onThisDayMedia.length === 1 ? "memory" : "memories"} from previous years on this date
+                  </p>
+                )}
+
+                {isGridView && !isLoading && selectedView !== "on-this-day" && (
+                  <p className="text-sm text-muted-foreground mt-1">{media.length} file{media.length !== 1 ? "s" : ""}</p>
+                )}
+              </div>
+
+              {/* Render correct view */}
+              {selectedView === "timeline" ? (
+                <MemoriesTimeline onPreview={(mediaId) => {
+                  const allFlat = media;
+                  const idx = allFlat.findIndex(m => m.id === mediaId);
+                  setSelectedView("all");
+                  setTimeout(() => setPreviewIndex(idx >= 0 ? idx : 0), 100);
+                }} />
+              ) : selectedView === "anniversaries" ? (
+                <AnniversariesView />
+              ) : selectedView === "activity" ? (
+                <ActivityFeed />
+              ) : selectedView === "billing" ? (
+                <BillingView />
+              ) : (
+                <MediaGrid
+                  media={media}
+                  loading={isLoading && !["starred","recent","on-this-day"].includes(selectedView)}
+                  onPreview={(m) => setPreviewIndex(media.findIndex(x => x.id === m.id))}
+                  viewMode={viewMode}
+                />
+              )}
+            </main>
+          )}
         </div>
       </div>
 
