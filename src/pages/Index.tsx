@@ -518,7 +518,7 @@ export default function Index() {
                     </div>
                     <span className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full text-white text-[10px] font-semibold flex items-center justify-center" style={{ background: T.dark }}>{s.n}</span>
                   </div>
-                  <h3 className="font-bold text-[15px] mb-2" style={{ color: T.dark }}>{s.title}</h3>
+                  <h3 className="font-semibold text-[15px] mb-2" style={{ color: T.dark }}>{s.title}</h3>
                   <p className="text-sm leading-[1.7]" style={{ color: T.body }}>{s.desc}</p>
                 </Reveal>
               );
