@@ -284,15 +284,16 @@ export default function Dashboard() {
 
                 <NotificationsPanel />
 
-                <Button onClick={() => setUploadOpen(true)} size="sm" className="gap-1.5 h-9 px-2 sm:px-3">
+                {/* Upload — desktop only (mobile has bottom nav FAB) */}
+                <Button onClick={() => setUploadOpen(true)} size="sm" className="gap-1.5 h-9 px-2 sm:px-3 hidden sm:flex">
                   <Upload className="h-4 w-4" />
                   <span className="hidden sm:inline">Upload</span>
                 </Button>
 
-                {/* Profile chip — desktop only */}
+                {/* Profile — always visible; desktop shows name+plan too */}
                 <button
                   onClick={() => navigate("/profile")}
-                  className="hidden sm:flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-accent transition-colors shrink-0"
+                  className="flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-accent transition-colors shrink-0"
                   aria-label="Go to profile"
                 >
                   <Avatar className="h-7 w-7 ring-2 ring-border">
