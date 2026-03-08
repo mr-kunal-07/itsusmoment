@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [previewIndex, setPreviewIndex] = useState<number>(-1);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [dragOverMain, setDragOverMain] = useState(false);
+  const [fileTypeFilter, setFileTypeFilter] = useState<FileTypeFilter>("all");
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const moveMedia = useMoveMedia();
