@@ -402,8 +402,10 @@ export default function Dashboard() {
       {previewIndex >= 0 && media.length > 0 && (
         <MediaPreview
           media={media}
-          initialIndex={previewIndex}
-          onClose={() => setPreviewIndex(-1)}
+          currentIndex={previewIndex}
+          open={previewIndex >= 0}
+          onOpenChange={(open) => { if (!open) setPreviewIndex(-1); }}
+          onNavigate={(idx) => setPreviewIndex(idx)}
         />
       )}
 
