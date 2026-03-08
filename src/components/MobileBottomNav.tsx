@@ -1,9 +1,9 @@
-import { Home, CalendarHeart, MessageCircleHeart, Upload, Crown, UserCircle } from "lucide-react";
+import { Home, CalendarHeart, MessageCircleHeart, Upload, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ViewType } from "@/components/AppSidebar";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate, useLocation } from "react-router-dom";
+import { usePlan } from "@/hooks/useSubscription";
 
 interface Props {
   selectedView: ViewType;
@@ -11,14 +11,19 @@ interface Props {
   onUpload: () => void;
 }
 
+const PLAN_LABEL: Record<string, string> = {
+  single: "Free",
+  dating: "Dating",
+  soulmate: "Soul",
+};
+
 export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props) {
   const { user } = useAuth();
   const { data: messages = [] } = useMessages();
   const unreadCount = messages.filter(m => m.sender_id !== user?.id && !m.read_at).length;
-  const navigate = useNavigate();
-  const location = useLocation();
+  const plan = usePlan();
 
-  const isProfileActive = location.pathname === "/profile";
+  const isPlanActive = selectedView === "billing";
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-background border-t border-border safe-area-bottom">
@@ -52,23 +57,23 @@ export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props)
           badge={unreadCount}
         />
 
-        {/* Profile */}
+        {/* Plan */}
         <button
-          onClick={() => navigate("/profile")}
-          aria-label="Profile"
+          onClick={() => onSelectView("billing")}
+          aria-label="Plan"
           className={cn(
             "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors relative",
-            isProfileActive ? "text-foreground" : "text-muted-foreground"
+            isPlanActive ? "text-primary" : "text-muted-foreground"
           )}
         >
-          {isProfileActive && (
+          {isPlanActive && (
             <span className="absolute top-1 left-1/2 -translate-x-1/2 h-1 w-5 rounded-full bg-primary" />
           )}
           <span className="mt-1">
-            <UserCircle className={cn("h-5 w-5 transition-transform", isProfileActive && "scale-110")} />
+            <Crown className={cn("h-5 w-5 transition-transform", isPlanActive && "scale-110 fill-primary/20")} />
           </span>
-          <span className={cn("text-[10px] font-medium", isProfileActive ? "text-foreground" : "text-muted-foreground")}>
-            Profile
+          <span className={cn("text-[10px] font-medium", isPlanActive ? "text-primary" : "text-muted-foreground")}>
+            {PLAN_LABEL[plan] ?? "Plan"}
           </span>
         </button>
 
