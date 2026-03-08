@@ -54,7 +54,7 @@ export default function Auth() {
       window.location.href = redirect;
       return null;
     }
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const handleSignIn = async (e: React.FormEvent) => {
