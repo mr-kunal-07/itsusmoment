@@ -277,9 +277,36 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   const [emojiPickerId, setEmojiPickerId] = useState<string | null>(null);
   const [voiceMode, setVoiceMode] = useState(false);
   const [kbOffset, setKbOffset] = useState(0);
+  // ── Long-press / select mode ────────────────────────────────────────────────
+  const [longPressId, setLongPressId] = useState<string | null>(null); // shows floating emoji bar
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selectMode = selectedIds.size > 0;
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const filePickerRef = useRef<HTMLInputElement>(null);
+
+  const startLongPress = (id: string) => {
+    longPressTimer.current = setTimeout(() => {
+      if (navigator.vibrate) navigator.vibrate(30);
+      setLongPressId(id);
+    }, 450);
+  };
+  const cancelLongPress = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  };
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const clearSelect = () => { setSelectedIds(new Set()); };
+  const handleDeleteSelected = async () => {
+    for (const id of selectedIds) await deleteMessage.mutateAsync(id);
+    clearSelect();
+  };
 
   const coupleId = couple?.status === "active" ? couple.id : null;
   const partnerId = couple?.status === "active"
