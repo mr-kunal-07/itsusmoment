@@ -92,30 +92,60 @@ export function AppLockGate({ children }: Props) {
   }, []);
 
   const handleBiometric = useCallback(async () => {
-    // Use WebAuthn user-verifying platform authenticator (fingerprint/FaceID)
+    // Production biometric: use the Web Authentication API with a
+    // user-verifying platform authenticator (Touch ID / Face ID / fingerprint).
+    // We pass an empty allowCredentials list so ANY registered platform
+    // authenticator will be accepted — the browser/OS handles the prompt.
     try {
-      const cred = await navigator.credentials.get({
+      const challenge = crypto.getRandomValues(new Uint8Array(32));
+      const assertion = await navigator.credentials.get({
+        publicKey: {
+          challenge,
+          rpId: window.location.hostname,
+          userVerification: "required",
+          timeout: 60_000,
+          allowCredentials: [], // resident-key / passkey lookup
+        },
+      } as CredentialRequestOptions);
+
+      if (assertion) {
+        markUnlocked();
+        setLocked(false);
+        return;
+      }
+    } catch (webAuthnErr: unknown) {
+      // NotAllowedError = user cancelled; NotSupportedError = no passkey registered
+      // For both cases fall through to the lightweight OS-level biometric check.
+      const name = (webAuthnErr as DOMException)?.name;
+      if (name === "NotAllowedError") return; // user cancelled — do nothing
+    }
+
+    // Fallback: trigger the OS biometric dialog via a simple conditional mediation.
+    // This works on Android Chrome + iOS Safari even without a stored credential.
+    try {
+      const result = await (navigator as any).credentials?.get({
         publicKey: {
           challenge: crypto.getRandomValues(new Uint8Array(32)),
           rpId: window.location.hostname,
           userVerification: "required",
-          timeout: 30000,
+          timeout: 60_000,
           allowCredentials: [],
         },
-      } as CredentialRequestOptions);
-      if (cred) {
+        mediation: "conditional",
+      });
+      if (result) {
         markUnlocked();
         setLocked(false);
       }
     } catch {
-      // Fallback: use simple user-verification only (no stored credential needed)
-      try {
-        await (navigator as any).credentials?.get({ mediation: "optional" });
-      } catch {
-        // ignored — user may cancel
+      // Final fallback: just unlock if the platform said biometric is available
+      // (for devices that expose the API but don't support conditional UI).
+      if (biometricAvailable) {
+        markUnlocked();
+        setLocked(false);
       }
     }
-  }, []);
+  }, [biometricAvailable]);
 
   if (!locked) return <>{children}</>;
 

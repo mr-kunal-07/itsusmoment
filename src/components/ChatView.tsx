@@ -232,18 +232,20 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
     return () => document.removeEventListener("click", handler);
   }, [emojiPickerId]);
 
-  // Fix mobile keyboard: use visualViewport to adjust container height
+  // Fix mobile keyboard: track visualViewport and shift the wrapper up
+  // so the input bar stays just above the software keyboard.
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
 
     const onViewportChange = () => {
       if (!chatWrapRef.current) return;
-      // The visible height = vv.height; offset from top = vv.offsetTop
-      const visibleHeight = vv.height;
-      chatWrapRef.current.style.height = `${visibleHeight}px`;
-      // Scroll to bottom when keyboard opens
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+      // Offset from the bottom of the layout viewport to the top of the keyboard
+      const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop;
+      chatWrapRef.current.style.transform = `translateY(${-Math.max(keyboardHeight, 0)}px)`;
+      chatWrapRef.current.style.height = `${vv.height + vv.offsetTop}px`;
+      // Keep newest message visible
+      bottomRef.current?.scrollIntoView({ behavior: "instant" });
     };
 
     vv.addEventListener("resize", onViewportChange);
@@ -252,6 +254,11 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
     return () => {
       vv.removeEventListener("resize", onViewportChange);
       vv.removeEventListener("scroll", onViewportChange);
+      // Reset on unmount
+      if (chatWrapRef.current) {
+        chatWrapRef.current.style.transform = "";
+        chatWrapRef.current.style.height = "";
+      }
     };
   }, []);
 
@@ -322,6 +329,8 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
       style={{
         height: "100%",
         background: "hsl(var(--wa-bg))",
+        transformOrigin: "top left",
+        willChange: "transform, height",
       }}
     >
       {/* ── WhatsApp-style Header ── */}
