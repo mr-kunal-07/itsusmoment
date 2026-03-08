@@ -39,6 +39,8 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
   const { data: allMedia = [] } = useMedia();
   const { data: storageBytes = 0 } = useStorageUsage();
   const { data: onThisDayMedia = [] } = useOnThisDay();
+  const { data: couple } = useMyCouple();
+  const { data: profiles = [] } = useAllProfiles();
   const createFolder = useCreateFolder();
   const renameFolder = useRenameFolder();
   const deleteFolder = useDeleteFolder();
