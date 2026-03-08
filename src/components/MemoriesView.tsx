@@ -1,10 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import { useMemoriesTimeline } from "@/hooks/useMemories";
 import { useRelationshipStats } from "@/hooks/useMemories";
-import { getPublicUrl } from "@/hooks/useMedia";
+import { getPublicUrl, useBackfillExifDates } from "@/hooks/useMedia";
 import { format, formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, Image as ImageIcon, Video, Star, HardDrive, CalendarHeart, Clock, Camera } from "lucide-react";
+import { Heart, Image as ImageIcon, Video, Star, HardDrive, CalendarHeart, Clock, Camera, ScanLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function formatSize(bytes: number) {
@@ -21,6 +21,24 @@ interface TimelineProps {
 
 export function MemoriesTimeline({ onPreview }: TimelineProps) {
   const { data: groups, isLoading } = useMemoriesTimeline();
+  const backfill = useBackfillExifDates();
+  const hasBackfilled = useRef(false);
+  const [scanning, setScanning] = useState(false);
+
+  // Auto-backfill EXIF dates for photos that don't have taken_at yet
+  useEffect(() => {
+    if (!groups || hasBackfilled.current || backfill.isPending) return;
+    const allMedia = Object.values(groups).flat();
+    const needsBackfill = allMedia.filter(
+      m => !(m as any).taken_at && m.file_type === "image"
+    );
+    if (needsBackfill.length === 0) return;
+    hasBackfilled.current = true;
+    setScanning(true);
+    backfill
+      .mutateAsync(needsBackfill.map(m => ({ id: m.id, file_path: m.file_path })))
+      .finally(() => setScanning(false));
+  }, [groups]); // eslint-disable-line
 
   const sortedKeys = useMemo(() => {
     if (!groups) return [];
@@ -50,6 +68,13 @@ export function MemoriesTimeline({ onPreview }: TimelineProps) {
 
   return (
     <div className="space-y-10">
+      {/* Scanning indicator */}
+      {scanning && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted text-muted-foreground text-xs w-fit">
+          <ScanLine className="h-3.5 w-3.5 animate-pulse text-primary" />
+          Reading photo dates from your images…
+        </div>
+      )}
       {sortedKeys.map(key => {
         const [year, monthStr] = key.split("-");
         const monthName = MONTH_NAMES[parseInt(monthStr) - 1];

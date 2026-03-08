@@ -159,6 +159,50 @@ export function useUpdateMedia() {
   });
 }
 
+/** Backfill taken_at for existing images that don't have it yet.
+ *  exifr fetches only the first few KB of each JPEG — very lightweight. */
+export function useBackfillExifDates() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (items: { id: string; file_path: string }[]) => {
+      const exifr = (await import("exifr")).default;
+      const results: { id: string; taken_at: string }[] = [];
+
+      for (const item of items) {
+        try {
+          const { data: urlData } = supabase.storage.from("media").getPublicUrl(item.file_path);
+          const parsed = await exifr.parse(urlData.publicUrl, ["DateTimeOriginal", "CreateDate", "DateTime"]);
+          const raw = parsed?.DateTimeOriginal ?? parsed?.CreateDate ?? parsed?.DateTime;
+          if (raw instanceof Date && !isNaN(raw.getTime())) {
+            results.push({ id: item.id, taken_at: raw.toISOString() });
+          }
+        } catch {
+          // skip files without EXIF or parse errors
+        }
+      }
+
+      // Batch-update in parallel (max 5 at a time)
+      for (let i = 0; i < results.length; i += 5) {
+        const batch = results.slice(i, i + 5);
+        await Promise.all(
+          batch.map(r =>
+            supabase.from("media").update({ taken_at: r.taken_at } as never).eq("id", r.id)
+          )
+        );
+      }
+
+      return results.length;
+    },
+    onSuccess: (count) => {
+      if (count > 0) {
+        qc.invalidateQueries({ queryKey: ["memories-timeline"] });
+        qc.invalidateQueries({ queryKey: ["media"] });
+      }
+    },
+  });
+}
+
 export function useDeleteMedia() {
   const qc = useQueryClient();
   return useMutation({
