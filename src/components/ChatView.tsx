@@ -439,9 +439,9 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
                             {!nextSame && (
                               <Avatar className="h-7 w-7">
                                 <AvatarImage src={partnerProfile?.avatar_url ?? undefined} />
-                                <AvatarFallback className="text-[10px]" style={{ background: "hsl(var(--wa-avatar))", color: "white" }}>
-                                  {partnerInitials}
-                                </AvatarFallback>
+                <AvatarFallback className="text-[10px]" style={{ background: "hsl(var(--wa-avatar))", color: "hsl(var(--wa-bg))" }}>
+                                   {partnerInitials}
+                                 </AvatarFallback>
                               </Avatar>
                             )}
                           </div>
