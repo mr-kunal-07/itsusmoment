@@ -311,7 +311,7 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <Hash className="h-3 w-3" />
-              Storage used
+              {couple?.status === "active" ? "Shared storage" : "Storage used"}
             </span>
             <span className="font-medium text-foreground">{formatSize(storageBytes)}</span>
           </div>
@@ -324,7 +324,9 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
               style={{ width: `${Math.min((storageBytes / storageLimit) * 100, 100)}%` }}
             />
           </div>
-          <p className="text-xs text-muted-foreground/60">of {storageLabel}</p>
+          <p className="text-xs text-muted-foreground/60">
+            of {storageLabel}{couple?.status === "active" ? " shared between you two" : ""}
+          </p>
         </div>
 
         {/* Billing shortcut */}
