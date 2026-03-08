@@ -51,8 +51,8 @@ function useInView(threshold = 0.06) {
   return { ref, vis };
 }
 
-function Reveal({ children, delay = 0, className = "", up = true }: {
-  children: React.ReactNode; delay?: number; className?: string; up?: boolean;
+function Reveal({ children, delay = 0, className = "", up = true, style }: {
+  children: React.ReactNode; delay?: number; className?: string; up?: boolean; style?: React.CSSProperties;
 }) {
   const { ref, vis } = useInView();
   return (
