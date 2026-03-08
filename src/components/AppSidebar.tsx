@@ -305,6 +305,7 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
           </div>
           <p className="text-xs text-muted-foreground/60">of 500 MB</p>
         </div>
+        <DaysTogether />
       </SidebarFooter>
 
       <AlertDialog open={!!deletingFolder} onOpenChange={open => !open && setDeletingFolder(null)}>
