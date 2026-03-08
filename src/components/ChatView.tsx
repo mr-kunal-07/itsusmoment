@@ -290,11 +290,8 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
 
   return (
     <div
-      className="flex flex-col overflow-hidden"
-      style={{
-        height: "calc(100dvh - 4rem)",
-        background: "#171716",
-      }}
+      className="flex flex-col overflow-hidden h-full"
+      style={{ background: "#171716" }}
     >
       {/* ── WhatsApp-style Header ── */}
       <div
