@@ -569,7 +569,7 @@ export default function Index() {
               Your story deserves<br /><span className="gradient-text">a forever home.</span>
             </h2>
             <p className="text-muted-foreground text-lg mb-10 max-w-xl mx-auto leading-relaxed">
-              Join 50,000+ couples who chose KunalKalyani to hold their most precious memories. Free to start, forever to keep.
+              Join 50,000+ couples who chose OurVault to hold their most precious memories. Free to start, forever to keep.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/auth" className="group flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-xl font-semibold text-base hover:opacity-90 hover:shadow-glow hover:scale-[1.02] transition-all active:scale-[0.98]">
