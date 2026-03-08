@@ -283,6 +283,8 @@
   .bg-dots {
     background-image: radial-gradient(hsl(var(--foreground) / 0.04) 1px, transparent 1px);
     background-size: 24px 24px;
+  }
+
   /* Safe area utilities for notched phones */
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -291,7 +293,6 @@
   .pb-safe {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   }
-}
 }
 
 @keyframes waveBar {
