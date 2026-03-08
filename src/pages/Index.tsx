@@ -167,15 +167,19 @@ function MemoriesCard() {
 
 function ChatCard() {
   return (
-    <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
-      <div style={{ padding: "10px 14px", background: T.surface, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 30, height: 30, borderRadius: "50%", background: T.surface, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>💑</div>
+    <div style={{ background: "#171717", borderRadius: 20, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.28)", border: "1px solid rgba(255,255,255,0.08)" }}>
+      {/* Header */}
+      <div style={{ padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>💑</div>
         <div>
-          <p style={{ fontSize: 12, fontWeight: 600, color: T.ink, margin: 0 }}>Priya</p>
-          <p style={{ fontSize: 10, color: T.muted, margin: 0 }}>● Online now</p>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", margin: 0, letterSpacing: "-0.02em" }}>Priya</p>
+          <p style={{ fontSize: 10, color: "#4ade80", margin: 0 }}>● Online now</p>
         </div>
+        <div style={{ marginLeft: "auto", padding: "3px 10px", borderRadius: 99, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.4)" }}>Private chat</div>
       </div>
-      <div style={{ padding: "12px 12px 8px", minHeight: 140, display: "flex", flexDirection: "column", gap: 8 }}>
+
+      {/* Messages */}
+      <div style={{ padding: "14px 14px 10px", display: "flex", flexDirection: "column", gap: 9 }}>
         {[
           { mine: false, msg: "Remember our first date? 🥹" },
           { mine: true, msg: "How could I ever forget 😄" },
@@ -184,19 +188,21 @@ function ChatCard() {
         ].map((m, i) =>
           <div key={i} style={{ display: "flex", justifyContent: m.mine ? "flex-end" : "flex-start" }}>
             <div style={{
-              maxWidth: "75%", padding: "7px 12px", borderRadius: 14, fontSize: 12,
-              background: m.mine ? T.ink : T.surface,
-              color: m.mine ? "#fff" : T.body,
-              borderBottomRightRadius: m.mine ? 4 : 14,
-              borderBottomLeftRadius: m.mine ? 14 : 4
+              maxWidth: "78%", padding: "8px 13px", borderRadius: 16, fontSize: 12, lineHeight: 1.5,
+              background: m.mine ? "#fff" : "rgba(255,255,255,0.10)",
+              color: m.mine ? "#0a0a0a" : "rgba(255,255,255,0.85)",
+              borderBottomRightRadius: m.mine ? 4 : 16,
+              borderBottomLeftRadius: m.mine ? 16 : 4
             }}>{m.msg}</div>
           </div>
         )}
       </div>
-      <div style={{ padding: "8px 12px 12px", borderTop: `1px solid ${T.border}`, display: "flex", gap: 8 }}>
-        <div style={{ flex: 1, background: T.surface, borderRadius: 10, padding: "8px 12px", fontSize: 11, color: T.muted, border: `1px solid ${T.border}` }}>Type a message…</div>
-        <button style={{ width: 34, height: 34, borderRadius: 10, background: T.ink, border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-          <ArrowRight className="w-3.5 h-3.5 text-white" />
+
+      {/* Input */}
+      <div style={{ padding: "8px 12px 14px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", gap: 8 }}>
+        <div style={{ flex: 1, background: "rgba(255,255,255,0.06)", borderRadius: 10, padding: "9px 13px", fontSize: 12, color: "rgba(255,255,255,0.35)", border: "1px solid rgba(255,255,255,0.08)" }}>Type a message…</div>
+        <button style={{ width: 36, height: 36, borderRadius: 10, background: "#fff", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+          <ArrowRight style={{ width: 14, height: 14, color: "#0a0a0a" }} />
         </button>
       </div>
     </div>
@@ -205,26 +211,38 @@ function ChatCard() {
 
 function TimelineCard() {
   return (
-    <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
-      <div style={{ padding: "10px 14px", background: T.surface, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 8 }}>
-        <Calendar style={{ width: 15, height: 15, color: T.ink }} />
-        <span style={{ fontSize: 12, fontWeight: 600, color: T.ink }}>Love Timeline</span>
+    <div style={{ background: "#171717", borderRadius: 20, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.28)", border: "1px solid rgba(255,255,255,0.08)" }}>
+      {/* Header */}
+      <div style={{ padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 10 }}>
+        <Calendar style={{ width: 15, height: 15, color: "rgba(255,255,255,0.7)" }} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>Anniversaries & Milestones</span>
       </div>
-      <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+
+      {/* Section label */}
+      <div style={{ padding: "12px 16px 8px", display: "flex", alignItems: "center", gap: 8 }}>
+        <Heart style={{ width: 11, height: 11, fill: "#e11d48", color: "#e11d48" }} />
+        <span style={{ fontSize: 10, fontWeight: 700, color: "#e11d48", letterSpacing: "0.08em", textTransform: "uppercase" }}>Anniversaries</span>
+      </div>
+
+      {/* Milestones */}
+      <div style={{ padding: "0 12px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
         {[
-          { e: "💑", l: "First Date", d: "Dec 2, 2024", active: false },
-          { e: "💬", l: "First 'I Love You'", d: "Jan 14, 2025", active: false },
-          { e: "✈️", l: "Goa Trip together", d: "Feb 14, 2025", active: true },
-          { e: "🎂", l: "1 Year Anniversary", d: "Dec 2, 2025", active: false }
+          { e: "💑", l: "Together Since", d: "Dec 1, 2024", sub: "2 years ago", days: "461 days", active: true },
+          { e: "💬", l: "First 'I Love You'", d: "Jan 14, 2025", sub: "1 year ago", days: "372 days", active: false },
+          { e: "✈️", l: "Goa Trip", d: "Feb 14, 2025", sub: "1 year ago", days: "341 days", active: false },
+          { e: "🎂", l: "1 Year Anniversary", d: "Dec 1, 2025", sub: "3 months ago", days: "97 days", active: false }
         ].map((m, i) =>
           <div key={i} style={{
-            display: "flex", alignItems: "center", gap: 12, padding: "9px 12px", borderRadius: 10,
-            background: m.active ? T.ink : T.surface,
-            border: `1px solid ${m.active ? T.ink : T.border}`
+            display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 12,
+            background: m.active ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.04)",
+            border: `1px solid ${m.active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.06)"}`
           }}>
-            <span style={{ fontSize: 16 }}>{m.e}</span>
-            <p style={{ flex: 1, fontSize: 12, fontWeight: 600, color: m.active ? "#fff" : T.ink, margin: 0 }}>{m.l}</p>
-            <span style={{ fontSize: 10, fontWeight: 500, color: m.active ? "rgba(255,255,255,0.6)" : T.muted }}>{m.d}</span>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{m.e}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: "#fff", margin: 0 }}>{m.l}</p>
+              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", margin: 0, marginTop: 2 }}>{m.d} · {m.sub}</p>
+            </div>
+            <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.35)", background: "rgba(255,255,255,0.06)", padding: "3px 8px", borderRadius: 99, whiteSpace: "nowrap" }}>{m.days}</span>
           </div>
         )}
       </div>
