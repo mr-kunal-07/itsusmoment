@@ -644,7 +644,7 @@ export default function Index() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link to="/auth"
-                className="inline-flex items-center gap-2 font-bold text-white px-9 py-4 rounded-xl hover:opacity-90 transition-all text-base shadow-xl"
+                className="inline-flex items-center gap-2 font-semibold text-white px-9 py-4 rounded-xl hover:opacity-90 transition-all text-base shadow-xl"
                 style={{ background: T.accent }}>
                 Start for free today <ArrowRight className="w-4 h-4" />
               </Link>
