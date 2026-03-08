@@ -10,6 +10,7 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 import Join from "./pages/Join";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/join" element={<Join />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

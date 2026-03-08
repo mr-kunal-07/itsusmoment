@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart, CalendarHeart, Play, Trophy, Link2, MessageCircleHeart, Activity, Crown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Clock, FileIcon, Hash, Heart, CalendarHeart, Play, Trophy, Link2, MessageCircleHeart, Activity, Crown, ShieldCheck } from "lucide-react";
 import { usePlan, getStorageLimit, formatStorageLimit } from "@/hooks/useSubscription";
+import { useIsAdmin } from "@/hooks/useAdmin";
 import { DaysTogether } from "@/components/DaysTogether";
 import { useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, Folder } from "@/hooks/useFolders";
 import { useMedia } from "@/hooks/useMedia";
@@ -39,7 +41,9 @@ function formatSize(bytes: number) {
 }
 
 export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Props) {
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const { data: isAdmin } = useIsAdmin();
   const { data: folders = [] } = useFolders();
   const { data: allMedia = [] } = useMedia();
   const { data: storageBytes = 0 } = useStorageUsage();
@@ -321,15 +325,25 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
           onClick={() => onSelectView("billing")}
           className={cn(
             "w-full justify-start gap-2 text-xs",
-            plan === "pro"
+            plan === "soulmate"
               ? "text-primary hover:text-primary"
               : "text-muted-foreground hover:text-foreground",
             selectedView === "billing" && "bg-accent text-accent-foreground"
           )}
         >
           <Crown className="h-3.5 w-3.5 shrink-0" />
-          {plan === "pro" ? "Pro plan active" : "Upgrade to Pro"}
+          {plan === "soulmate" ? "Soulmate plan active" : plan === "dating" ? "Dating plan active" : "Upgrade plan"}
         </SidebarMenuButton>
+
+        {isAdmin && (
+          <SidebarMenuButton
+            onClick={() => navigate("/admin")}
+            className="w-full justify-start gap-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
+            Admin panel
+          </SidebarMenuButton>
+        )}
 
         <DaysTogether />
       </SidebarFooter>
