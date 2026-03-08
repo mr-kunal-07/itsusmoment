@@ -364,7 +364,7 @@ export default function Index() {
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-xs">💑</div>
                     <div>
-                      <p className="text-[9px] font-bold" style={{ color: T.dark }}>You & Priya</p>
+                      <p className="text-[9px] font-semibold" style={{ color: T.dark }}>You & Priya</p>
                       <p className="text-[8px]" style={{ color: T.accent }}>● Online</p>
                     </div>
                   </div>
