@@ -299,11 +299,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
       {/* ── Chat Wallpaper + Messages ── */}
       <div
         className="flex-1 overflow-y-auto px-3 py-2 scroll-smooth"
-        style={{
-          backgroundImage: WA_WALLPAPER_SVG,
-          backgroundRepeat: "repeat",
-          backgroundSize: "400px 400px",
-        }}
+        style={{ background: "#171716" }}
       >
         {isLoading ? (
           <div className="flex items-center justify-center h-32">
