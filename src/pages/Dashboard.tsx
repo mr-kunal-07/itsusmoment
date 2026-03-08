@@ -384,11 +384,13 @@ export default function Dashboard() {
           />
         )}
 
-        <MobileBottomNav
-          selectedView={selectedView}
-          onSelectView={setSelectedView}
-          onUpload={() => setUploadOpen(true)}
-        />
+        {!isChat && (
+          <MobileBottomNav
+            selectedView={selectedView}
+            onSelectView={setSelectedView}
+            onUpload={() => setUploadOpen(true)}
+          />
+        )}
 
         <PWAInstallPrompt />
       </div>
