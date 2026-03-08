@@ -663,7 +663,7 @@ export default function Index() {
             <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: T.accent }}>
               <Heart className="w-3.5 h-3.5 text-white fill-white" />
             </div>
-            <span className="font-extrabold text-base text-white" style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>OurVault</span>
+            <span className="font-semibold text-base text-white" style={{ fontFamily: "'Space Grotesk', system-ui, sans-serif" }}>OurVault</span>
           </div>
           <p className="text-xs text-center" style={{ color: "#6b7280" }}>Made with 💚 for couples everywhere · Always private · Always secure</p>
           <div className="flex items-center gap-6 text-xs font-medium" style={{ color: "#6b7280" }}>
