@@ -208,7 +208,8 @@ export function AppSidebar({ selectedView, onSelectView, onStartSlideshow }: Pro
           <SidebarGroupContent>
             <SidebarMenu>
               {specialItems.map(item => (
-                <SidebarMenuItem key={item.id} className={cn((item.id === "timeline" || item.id === "chat") && "sm:flex hidden")}>
+                // Hide Chat & Timeline on mobile — they live in the bottom nav
+                <SidebarMenuItem key={item.id} className={cn((item.id === "chat" || item.id === "timeline") && "sm:flex hidden")}>
                   <SidebarMenuButton
                     onClick={() => selectView(item.id)}
                     className={cn("justify-between", selectedView === item.id && "bg-accent text-accent-foreground")}
