@@ -41,7 +41,7 @@ export function useSubscription() {
 
 export function usePlan(): Plan {
   const { data } = useSubscription();
-  const raw = data?.plan ?? "single";
+  const raw: string = (data?.plan as string) ?? "single";
   // Map legacy "free" → "single", "pro" → "soulmate"
   if (raw === "free") return "single";
   if (raw === "pro") return "soulmate";
