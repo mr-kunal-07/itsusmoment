@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
 
     const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
     const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
-    const vapidEmail = Deno.env.get("VAPID_EMAIL") ?? "support@ourvault.app";
+    const vapidEmail = Deno.env.get("VAPID_EMAIL") ?? "support@usmoment.in";
 
     const payload = {
       title: title ?? "usMoment",

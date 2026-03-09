@@ -81,7 +81,7 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng }: Prop
       setSearchLoading(true);
       try {
         const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=5&addressdetails=1`;
-        const res = await fetch(url, { headers: { "Accept-Language": "en", "User-Agent": "OurVault-App/1.0" } });
+        const res = await fetch(url, { headers: { "Accept-Language": "en", "User-Agent": "usMoment-App/1.0" } });
         const data: GeoResult[] = await res.json();
         setSearchResults(data);
         setShowSuggestions(data.length > 0);
