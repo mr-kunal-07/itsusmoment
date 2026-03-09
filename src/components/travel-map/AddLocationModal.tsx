@@ -147,7 +147,7 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng }: Prop
         photo_urls: uploadedUrls,
         tags: [],
         visited,
-        folder_id: folderId || undefined,
+        folder_id: folderId === "none" ? undefined : folderId || undefined,
       });
       toast({ title: visited ? "✅ Location marked as visited!" : "📍 Location pinned to your map!" });
       handleClose();
