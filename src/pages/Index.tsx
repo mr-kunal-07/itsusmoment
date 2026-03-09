@@ -1084,7 +1084,7 @@ export default function Index() {
               <span style={{ color: C.muted }}>a home that lasts.</span>
             </h2>
             <p style={{ fontSize: "clamp(15px,2vw,18px)", lineHeight: 1.76, color: C.body, marginBottom: 40 }}>
-              Join 50,000+ couples who trust OurVault with their most precious moments.<br />Free to start. Always private. No credit card.
+              Join 50,000+ couples who trust usMoment with their most precious moments.<br />Free to start. Always private. No credit card.
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 14, justifyContent: "center", alignItems: "center" }}>
               <Link to="/auth" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 16, color: "#fff", background: C.ink, padding: "16px 36px", borderRadius: 14, textDecoration: "none", boxShadow: "0 6px 28px rgba(0,0,0,0.2)", transition: "all 0.2s" }}
