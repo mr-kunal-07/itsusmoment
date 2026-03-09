@@ -9,7 +9,7 @@ self.addEventListener("push", (event) => {
     data = { title: "usMoment", body: event.data ? event.data.text() : "" };
   }
 
-  const title = data.title || "OurVault";
+  const title = data.title || "usMoment";
   const options = {
     body: data.body || "You have a new notification",
     icon: data.icon || "/pwa-icon-192.png",
