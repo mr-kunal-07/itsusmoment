@@ -83,27 +83,27 @@ export function LocationPopup({ location, onClose }: Props) {
           {hasPhotos ? (
             <div className="relative h-44 bg-muted overflow-hidden">
               <img
-                src={photos[photoIndex]}
+                src={allPhotos[photoIndex]}
                 alt={location.location_name}
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-              {photos.length > 1 && (
+              {allPhotos.length > 1 && (
                 <>
                   <button
-                    onClick={() => setPhotoIndex(i => (i - 1 + photos.length) % photos.length)}
+                    onClick={() => setPhotoIndex(i => (i - 1 + allPhotos.length) % allPhotos.length)}
                     className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-black/40 flex items-center justify-center text-white"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => setPhotoIndex(i => (i + 1) % photos.length)}
+                    onClick={() => setPhotoIndex(i => (i + 1) % allPhotos.length)}
                     className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-black/40 flex items-center justify-center text-white"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </button>
                   <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                    {photos.map((_, i) => (
+                    {allPhotos.map((_, i) => (
                       <div key={i} className={cn("h-1.5 rounded-full transition-all", i === photoIndex ? "w-4 bg-white" : "w-1.5 bg-white/50")} />
                     ))}
                   </div>
