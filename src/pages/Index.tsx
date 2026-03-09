@@ -544,7 +544,7 @@ export default function Index() {
           </Link>
 
           {/* Desktop nav */}
-          <nav style={{ flex: 1, display: "flex", justifyContent: "center", gap: 0 }} className="hidden md:flex">
+          <nav className="hidden md:flex flex-1 justify-center gap-0">
             {NAV_LINKS.map(([href, label]) => (
               <a key={href} href={href} style={{ fontSize: 14, fontWeight: 500, color: C.muted, textDecoration: "none", padding: "8px 16px", borderRadius: 8, transition: "all 0.15s" }}
                 onMouseEnter={e => { e.currentTarget.style.color = C.ink; e.currentTarget.style.background = C.surface; }}
@@ -555,7 +555,7 @@ export default function Index() {
           </nav>
 
           {/* Desktop CTA */}
-          <div className="hidden md:flex" style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <div className="hidden md:flex items-center gap-1.5 shrink-0">
             <Link to="/auth" style={{ fontSize: 13, fontWeight: 500, color: C.body, padding: "8px 16px", borderRadius: 9, textDecoration: "none", transition: "background 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.background = C.surface}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
