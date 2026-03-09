@@ -10,6 +10,8 @@ import { useTyping } from "@/hooks/useTyping";
 import { usePresence } from "@/hooks/usePresence";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { cn } from "@/lib/utils";
+import { usePlan, canUseVoiceMessages } from "@/hooks/useSubscription";
+import { UpgradeGateModal } from "@/components/UpgradeGateModal";
 
 const EMOJI_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
