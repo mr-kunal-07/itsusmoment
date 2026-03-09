@@ -266,12 +266,15 @@ function SwipeBackWrapper({
   );
 }
 
-export function ChatView({ onBack }: { onBack?: () => void }) {
+export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade?: () => void }) {
   const { user } = useAuth();
   const { data: couple } = useMyCouple();
   const { data: profiles = [] } = useAllProfiles();
   const { data: myProfile } = useProfile();
   const { data: messages = [], sendMessage, deleteMessage, addReaction, removeReaction, isLoading } = useMessages();
+  const plan = usePlan();
+  const canVoice = canUseVoiceMessages(plan);
+  const canReact = plan !== "single";
 
   const [text, setText] = useState("");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -279,6 +282,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   const [emojiPickerId, setEmojiPickerId] = useState<string | null>(null);
   const [voiceMode, setVoiceMode] = useState(false);
   const [kbOffset, setKbOffset] = useState(0);
+  const [gateModal, setGateModal] = useState<{ feature: string } | null>(null);
   // ── Long-press / select mode ────────────────────────────────────────────────
   const [longPressId, setLongPressId] = useState<string | null>(null); // shows floating emoji bar
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
