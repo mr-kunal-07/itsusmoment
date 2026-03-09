@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Tables } from "@/integrations/supabase/types";
 import { QK, invalidateMedia } from "@/lib/queryKeys";
+import { pushToPartner } from "@/hooks/usePushNotifications";
 
 export type Media = Tables<"media"> & { uploader_name?: string | null; taken_at?: string | null; deleted_at?: string | null };
 
