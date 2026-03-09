@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { QK } from "@/lib/queryKeys";
+import { pushToPartner } from "@/hooks/usePushNotifications";
 
 export interface Milestone {
   id: string;
@@ -38,6 +39,9 @@ export function useAddMilestone() {
     mutationFn: async (values: { title: string; date: string; description?: string; type: "anniversary" | "milestone"; media_id?: string | null }) => {
       const { error } = await supabase.from("milestones").insert({ ...values, created_by: user!.id });
       if (error) throw error;
+      // Push to partner — non-blocking
+      const emoji = values.type === "anniversary" ? "🎉" : "✨";
+      pushToPartner(`${emoji} New ${values.type === "anniversary" ? "Anniversary" : "Milestone"}`, `"${values.title}" was added to OurVault`, "/dashboard/anniversaries");
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: QK.milestones() }),
   });

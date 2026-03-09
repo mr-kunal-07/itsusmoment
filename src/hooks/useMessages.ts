@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyCouple } from "@/hooks/useCouple";
 import { encryptText, decryptMessages } from "@/lib/crypto";
+import { pushToPartner } from "@/hooks/usePushNotifications";
 
 export interface MessageReaction {
   id: string;
@@ -134,6 +135,11 @@ export function useMessages() {
       if (audioUrl) payload.audio_url = audioUrl;
       const { error } = await supabase.from("messages" as never).insert(payload as never);
       if (error) throw error;
+      // Best-effort push to partner (non-blocking)
+      const notifBody = messageType === "audio"
+        ? "🎤 Sent a voice message"
+        : content.length > 80 ? content.slice(0, 80) + "…" : content;
+      pushToPartner("💬 New Message", notifBody, "/dashboard/chat");
     },
   });
 

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Tables } from "@/integrations/supabase/types";
 import { QK, invalidateMedia } from "@/lib/queryKeys";
+import { pushToPartner } from "@/hooks/usePushNotifications";
 
 export type Media = Tables<"media"> & { uploader_name?: string | null; taken_at?: string | null; deleted_at?: string | null };
 
@@ -143,6 +144,8 @@ export function useUploadMedia() {
         ...(takenAt ? { taken_at: takenAt } : {}),
       } as never).select().single();
       if (dbError) throw dbError;
+      // Push to partner — non-blocking
+      pushToPartner("📸 New Memory Added", `${title} was just uploaded to OurVault`, "/dashboard");
       return data;
     },
     onSuccess: () => invalidateMedia(qc),
