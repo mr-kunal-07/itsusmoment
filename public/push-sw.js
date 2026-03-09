@@ -6,7 +6,7 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: "OurVault", body: event.data ? event.data.text() : "" };
+    data = { title: "usMoment", body: event.data ? event.data.text() : "" };
   }
 
   const title = data.title || "OurVault";
