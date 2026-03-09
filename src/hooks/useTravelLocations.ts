@@ -15,6 +15,8 @@ export interface TravelLocation {
   description: string | null;
   photo_urls: string[];
   tags: string[];
+  visited: boolean;
+  folder_id: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -30,6 +32,8 @@ export interface CreateTravelLocation {
   description?: string;
   photo_urls?: string[];
   tags?: string[];
+  visited?: boolean;
+  folder_id?: string;
 }
 
 const QK = {
