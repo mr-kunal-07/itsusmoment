@@ -233,7 +233,7 @@ export default function Dashboard() {
       <div className="flex h-dvh w-full overflow-hidden bg-background">
         <AppSidebar
           selectedView={selectedView}
-          onSelectView={setSelectedView}
+          onSelectView={gatedNavigate}
         />
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
