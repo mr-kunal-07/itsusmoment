@@ -722,13 +722,14 @@ export default function Index() {
             </div>
           </Reveal>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 1, border: `1px solid ${C.border}`, borderRadius: 18, overflow: "hidden" }}>
+          <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, overflow: "hidden" }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES_GRID.map((f, i) => {
               const Icon = f.icon;
               return (
                 <Reveal key={i} delay={i * 35}>
                   <div
-                    style={{ padding: "28px", background: C.white, borderRight: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, transition: "background 0.2s" }}
+                    style={{ padding: "28px", background: C.white, borderRight: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, height: "100%", transition: "background 0.2s" }}
                     onMouseEnter={e => e.currentTarget.style.background = C.bg}
                     onMouseLeave={e => e.currentTarget.style.background = C.white}
                   >
