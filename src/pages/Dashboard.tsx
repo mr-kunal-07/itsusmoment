@@ -119,6 +119,15 @@ export default function Dashboard() {
   const profileInitials = (profile?.display_name ?? user?.email ?? "U").slice(0, 2).toUpperCase();
   const seenMediaRef = useRef<Set<string>>(new Set());
 
+  // Override navigateToView now that `plan` is available
+  const gatedNavigate = useCallback((view: ViewType) => {
+    if (plan === "single" && PAID_VIEWS[view]) {
+      setGateModal(PAID_VIEWS[view]);
+      return;
+    }
+    setSelectedView(view);
+  }, [plan, setSelectedView]);
+
   useEffect(() => { localStorage.setItem(STORAGE_KEY_VIEW, JSON.stringify(viewMode)); }, [viewMode]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_SORT + "_key", JSON.stringify(sortKey)); }, [sortKey]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_SORT + "_dir", JSON.stringify(sortDir)); }, [sortDir]);
