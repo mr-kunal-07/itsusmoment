@@ -34,22 +34,34 @@ export function useMyCouple() {
   });
 
   // Realtime — refresh when couple row changes (partner accepts invite)
+  // Subscribe to BOTH user1_id and user2_id so both partners get updates
   useEffect(() => {
     if (!user) return;
-    const channel = supabase
-      .channel(`couple:${user.id}`) // scoped per user to avoid broadcast storms
+    const invalidate = () => {
+      qc.invalidateQueries({ queryKey: QK.myCouple() });
+      qc.invalidateQueries({ queryKey: QK.mediaAll() });
+      qc.invalidateQueries({ queryKey: QK.folders() });
+    };
+    // Channel 1: when this user is user1 (invite creator)
+    const ch1 = supabase
+      .channel(`couple:user1:${user.id}`)
       .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "couples",
+        event: "*", schema: "public", table: "couples",
         filter: `user1_id=eq.${user.id}`,
-      }, () => {
-        qc.invalidateQueries({ queryKey: QK.myCouple() });
-        qc.invalidateQueries({ queryKey: QK.mediaAll() });
-        qc.invalidateQueries({ queryKey: QK.folders() });
-      })
+      }, invalidate)
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    // Channel 2: when this user is user2 (invite acceptor)
+    const ch2 = supabase
+      .channel(`couple:user2:${user.id}`)
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "couples",
+        filter: `user2_id=eq.${user.id}`,
+      }, invalidate)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch1);
+      supabase.removeChannel(ch2);
+    };
   }, [user, qc]);
 
   return query;
