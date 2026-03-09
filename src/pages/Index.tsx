@@ -283,11 +283,11 @@ const STEPS = [
 ];
 
 const FAQ = [
-  { q: "Is OurVault really 100% private?",  a: "Absolutely. All messages and notes are end-to-end encrypted before they leave your device using AES-256-GCM. Even our team cannot read your content. Your photos are stored in a private vault accessible only to you and your linked partner." },
+  { q: "Is usMoment really 100% private?",  a: "Absolutely. All messages and notes are end-to-end encrypted before they leave your device using AES-256-GCM. Even our team cannot read your content. Your photos are stored in a private vault accessible only to you and your linked partner." },
   { q: "How does the shared plan work?",     a: "When either partner upgrades to a paid tier, both partners automatically get all the benefits — no need for both to pay. One subscription covers both of you completely." },
   { q: "Can I cancel anytime?",              a: "Yes. You can cancel your subscription from the Billing page at any time. There are no lock-in periods, no cancellation fees, and no hidden charges." },
   { q: "What happens to my data if I cancel?",a: "Your vault and all your memories remain accessible on the Free plan indefinitely. You'll be moved to the 1 GB storage limit, but nothing is deleted." },
-  { q: "Is OurVault available on mobile?",   a: "OurVault is a Progressive Web App (PWA) — install it from your browser on iOS and Android for a native-like experience, including offline access and push notifications." },
+  { q: "Is usMoment available on mobile?",   a: "usMoment is a Progressive Web App (PWA) — install it from your browser on iOS and Android for a native-like experience, including offline access and push notifications." },
   { q: "How is storage calculated?",         a: "Both partners share a single storage pool. For example, on the Soulmate plan, you and your partner together have 50 GB shared — both of your uploads count toward that single total." },
 ];
 
