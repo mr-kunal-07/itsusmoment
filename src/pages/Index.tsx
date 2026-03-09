@@ -758,7 +758,7 @@ export default function Index() {
         return (
           <section key={i} style={{ background: i % 2 === 0 ? C.bgAlt : C.white, borderTop: `1px solid ${C.border}`, padding: "84px 0 92px" }}>
             <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "clamp(40px, 8vw, 100px)", alignItems: "center" }} className="grid-cols-1 lg:grid-cols-2">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 items-center">
                 <Reveal delay={30} className={reversed ? "lg:order-2" : ""}>
                   <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.muted, marginBottom: 16 }}>{s.tag}</p>
                   <h2 style={{ ...SG, fontSize: "clamp(26px,3.5vw,44px)", fontWeight: 700, letterSpacing: "-0.035em", lineHeight: 1.1, color: C.ink, marginBottom: 18, whiteSpace: "pre-line" }}>{s.headline}</h2>
