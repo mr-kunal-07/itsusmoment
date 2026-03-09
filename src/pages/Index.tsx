@@ -85,7 +85,7 @@ const NAV_LINKS = [
 ];
 
 const STATS = [
-  { val: "50,000+", label: "Couples", sub: "trusting OurVault daily" },
+  { val: "50,000+", label: "Couples", sub: "trusting usMoment daily" },
   { val: "2M+",     label: "Memories", sub: "safely stored & encrypted" },
   { val: "4.9★",    label: "Rating",   sub: "from verified couples" },
   { val: "100%",    label: "Private",  sub: "no ads, no tracking ever" },
