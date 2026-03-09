@@ -8,10 +8,23 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Heart, Loader2, Mail, Lock, User, ArrowRight, ArrowLeft, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 
 const PARTNER_CODE_KEY = "pending_partner_code";
 
 type Mode = "signin" | "signup" | "forgot";
+
+// Google "G" SVG icon
+function GoogleIcon() {
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
+  );
+}
 
 export default function Auth() {
   const { user, loading, signIn, signUp, resetPasswordForEmail } = useAuth();
@@ -19,6 +32,7 @@ export default function Auth() {
 
   const [mode, setMode] = useState<Mode>("signin");
   const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   // Fields
@@ -35,7 +49,7 @@ export default function Auth() {
     if (!code) return;
     sessionStorage.removeItem(PARTNER_CODE_KEY);
     supabase.rpc("accept_couple_invite", { _invite_code: code.trim().toUpperCase() }).then(({ data, error }) => {
-      if (error || (data as any)?.error) return; // silently ignore if invalid
+      if (error || (data as any)?.error) return;
       toast({ title: "💕 Connected with your partner!", description: "You now share the vault together." });
     });
   }, [user, toast]);
@@ -75,7 +89,6 @@ export default function Auth() {
       toast({ title: "Password too short", description: "Must be at least 6 characters.", variant: "destructive" });
       return;
     }
-    // Save partner code to sessionStorage before signup so we can use it after auth confirms
     if (partnerCode.trim()) {
       sessionStorage.setItem(PARTNER_CODE_KEY, partnerCode.trim().toUpperCase());
     }
@@ -109,6 +122,22 @@ export default function Auth() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    // Save partner code if entered before OAuth redirect
+    if (partnerCode.trim()) {
+      sessionStorage.setItem(PARTNER_CODE_KEY, partnerCode.trim().toUpperCase());
+    }
+    setGoogleLoading(true);
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+    });
+    if (result && 'error' in result && result.error) {
+      setGoogleLoading(false);
+      toast({ title: "Google sign-in failed", description: String(result.error), variant: "destructive" });
+    }
+    // If redirected, page navigates away — loading state stays
+  };
+
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-background overflow-hidden">
       {/* Background decoration */}
@@ -140,6 +169,25 @@ export default function Auth() {
                 <h2 className="text-xl font-bold font-heading">Welcome back</h2>
                 <p className="text-sm text-muted-foreground mt-1">Sign in to your account to continue</p>
               </div>
+
+              {/* Google sign-in */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2.5 h-11 mb-4 border-border/60"
+                onClick={handleGoogleSignIn}
+                disabled={googleLoading}
+              >
+                {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon />}
+                Continue with Google
+              </Button>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px bg-border/60" />
+                <span className="text-xs text-muted-foreground">or</span>
+                <div className="flex-1 h-px bg-border/60" />
+              </div>
+
               <form onSubmit={handleSignIn} className="space-y-4">
                 <Field label="Email" id="email">
                   <InputWithIcon
@@ -188,6 +236,25 @@ export default function Auth() {
                 <h2 className="text-xl font-bold font-heading">Create account</h2>
                 <p className="text-sm text-muted-foreground mt-1">Join the private vault</p>
               </div>
+
+              {/* Google sign-up */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2.5 h-11 mb-4 border-border/60"
+                onClick={handleGoogleSignIn}
+                disabled={googleLoading}
+              >
+                {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon />}
+                Sign up with Google
+              </Button>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px bg-border/60" />
+                <span className="text-xs text-muted-foreground">or</span>
+                <div className="flex-1 h-px bg-border/60" />
+              </div>
+
               <form onSubmit={handleSignUp} className="space-y-4">
                 <Field label="Your Name" id="displayName">
                   <InputWithIcon
