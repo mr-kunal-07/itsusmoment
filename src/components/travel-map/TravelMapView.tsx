@@ -32,11 +32,11 @@ export function TravelMapView() {
   }
 
   return (
-    <div className="relative flex flex-col h-full min-h-0 bg-background">
-      {/* Map */}
+    <div className="relative flex flex-col h-full min-h-0 bg-background" style={{ isolation: "isolate" }}>
+      {/* Map — isolated stacking context prevents Leaflet tiles bleeding over sidebar */}
       <div
         className="relative flex-1 min-h-0"
-        style={{ height: "calc(100dvh - 112px)" }}
+        style={{ height: "calc(100dvh - 112px)", zIndex: 0 }}
       >
         {isLoading ? (
           <div className="flex items-center justify-center h-full bg-muted/30">
