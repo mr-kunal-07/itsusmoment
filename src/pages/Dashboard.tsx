@@ -435,12 +435,21 @@ export default function Dashboard() {
         {!isChat && (
           <MobileBottomNav
             selectedView={selectedView}
-            onSelectView={setSelectedView}
+            onSelectView={gatedNavigate}
             onUpload={() => (selectedView === "all" || !isSpecialView) && setUploadOpen(true)}
           />
         )}
 
         <PWAInstallPrompt />
+
+        {/* ── Upgrade Gate Modal ── */}
+        <UpgradeGateModal
+          open={!!gateModal}
+          onClose={() => setGateModal(null)}
+          onUpgrade={() => { setGateModal(null); setSelectedView("billing"); }}
+          featureName={gateModal?.feature ?? ""}
+          requiredPlan={gateModal?.plan ?? "dating"}
+        />
       </div>
     </SidebarProvider>
   );
