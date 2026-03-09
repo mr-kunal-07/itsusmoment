@@ -65,6 +65,8 @@ export default defineConfig(({ mode }) => ({
       includeAssets: ["favicon.ico", "pwa-icon-192.png", "pwa-icon-512.png"],
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/],
+        // Inject push SW handler into the generated service worker
+        importScripts: ["/push-sw.js"],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         // Limit cache size to prevent stale bloat on mobile devices
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB
