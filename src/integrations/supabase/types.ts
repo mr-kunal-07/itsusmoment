@@ -659,6 +659,7 @@ export type Database = {
           created_by: string
           date_visited: string | null
           description: string | null
+          folder_id: string | null
           id: string
           latitude: number
           location_name: string
@@ -666,6 +667,7 @@ export type Database = {
           photo_urls: string[] | null
           tags: string[] | null
           updated_at: string
+          visited: boolean
         }
         Insert: {
           city?: string | null
@@ -675,6 +677,7 @@ export type Database = {
           created_by: string
           date_visited?: string | null
           description?: string | null
+          folder_id?: string | null
           id?: string
           latitude: number
           location_name: string
@@ -682,6 +685,7 @@ export type Database = {
           photo_urls?: string[] | null
           tags?: string[] | null
           updated_at?: string
+          visited?: boolean
         }
         Update: {
           city?: string | null
@@ -691,6 +695,7 @@ export type Database = {
           created_by?: string
           date_visited?: string | null
           description?: string | null
+          folder_id?: string | null
           id?: string
           latitude?: number
           location_name?: string
@@ -698,6 +703,7 @@ export type Database = {
           photo_urls?: string[] | null
           tags?: string[] | null
           updated_at?: string
+          visited?: boolean
         }
         Relationships: [
           {
@@ -705,6 +711,13 @@ export type Database = {
             columns: ["couple_id"]
             isOneToOne: false
             referencedRelation: "couples"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "travel_locations_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
             referencedColumns: ["id"]
           },
         ]
