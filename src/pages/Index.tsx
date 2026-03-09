@@ -807,7 +807,7 @@ export default function Index() {
             </div>
           </Reveal>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32, position: "relative" }} className="grid-cols-1 md:grid-cols-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
             <div className="hidden md:block" style={{ position: "absolute", top: 42, left: "calc(16.7% + 50px)", right: "calc(16.7% + 50px)", height: 1, background: "rgba(255,255,255,0.08)" }} />
             {STEPS.map((s, i) => {
               const Icon = s.icon;
