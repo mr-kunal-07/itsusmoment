@@ -50,7 +50,7 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng }: Prop
     description: "",
   });
   const [visited, setVisited] = useState(false);
-  const [folderId, setFolderId] = useState<string>("");
+  const [folderId, setFolderId] = useState<string>("none");
   const [uploading, setUploading] = useState(false);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
 
@@ -107,7 +107,7 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng }: Prop
 
   const reset = () => {
     setForm({ location_name: "", city: "", country: "", latitude: "", longitude: "", date_visited: "", description: "" });
-    setVisited(false); setFolderId(""); setUploadedUrls([]); setSearchQuery("");
+    setVisited(false); setFolderId("none"); setUploadedUrls([]); setSearchQuery("");
   };
 
   const handleClose = () => { reset(); onClose(); };
@@ -147,7 +147,7 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng }: Prop
         photo_urls: uploadedUrls,
         tags: [],
         visited,
-        folder_id: folderId || undefined,
+        folder_id: folderId === "none" ? undefined : folderId || undefined,
       });
       toast({ title: visited ? "✅ Location marked as visited!" : "📍 Location pinned to your map!" });
       handleClose();
@@ -298,7 +298,7 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng }: Prop
                   <SelectValue placeholder="Choose a folder…" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No folder</SelectItem>
+                  <SelectItem value="none">No folder</SelectItem>
                   {folders.map(f => (
                     <SelectItem key={f.id} value={f.id}>
                       {f.emoji ? `${f.emoji} ` : ""}{f.name}
