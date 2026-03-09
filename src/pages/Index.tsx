@@ -675,7 +675,7 @@ export default function Index() {
               </div>
               <div style={{ flex: 1, maxWidth: 260, margin: "0 auto", background: C.white, border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 14px", fontSize: 11, color: C.muted, textAlign: "center", display: "flex", alignItems: "center", gap: 5 }}>
                 <Lock style={{ width: 9, height: 9 }} />
-                app.ourvault.in/dashboard
+                app.usmoment.in/dashboard
               </div>
             </div>
             <img src={dashboardImg} alt="OurVault dashboard" style={{ width: "100%", display: "block", objectFit: "cover", objectPosition: "top" }} />
