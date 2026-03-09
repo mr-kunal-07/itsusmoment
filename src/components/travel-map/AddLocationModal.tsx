@@ -107,7 +107,7 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng }: Prop
 
   const reset = () => {
     setForm({ location_name: "", city: "", country: "", latitude: "", longitude: "", date_visited: "", description: "" });
-    setVisited(false); setFolderId(""); setUploadedUrls([]); setSearchQuery("");
+    setVisited(false); setFolderId("none"); setUploadedUrls([]); setSearchQuery("");
   };
 
   const handleClose = () => { reset(); onClose(); };
