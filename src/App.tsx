@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useAppLock } from "@/hooks/useAppLock";
 import { AppLockScreen } from "@/components/AppLockScreen";
+import { usePushSubscription } from "@/hooks/usePushNotifications";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
@@ -14,6 +15,12 @@ import ResetPassword from "./pages/ResetPassword";
 import Join from "./pages/Join";
 import Admin from "./pages/Admin";
 import Index from "./pages/Index";
+
+/** Bootstraps Web Push subscription for the logged-in user */
+function PushBootstrap() {
+  usePushSubscription();
+  return null;
+}
 
 /**
  * Scalability-tuned QueryClient:
