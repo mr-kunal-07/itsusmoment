@@ -1116,7 +1116,7 @@ export default function Index() {
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Heart style={{ width: 16, height: 16, fill: C.ink, color: C.ink }} />
                 </div>
-                <span style={{ ...SG, fontSize: 20, fontWeight: 700, color: "#fff", letterSpacing: "-0.03em" }}>OurVault</span>
+                <span style={{ ...SG, fontSize: 20, fontWeight: 700, color: "#fff", letterSpacing: "-0.03em" }}>usMoment</span>
               </div>
               <p style={{ fontSize: 13, lineHeight: 1.8, color: "rgba(255,255,255,0.4)", maxWidth: 260, marginBottom: 20 }}>
                 The private space your love story deserves. End-to-end encrypted, beautifully designed for couples.
