@@ -688,12 +688,12 @@ export default function Index() {
       ════════════════════════════════════════ */}
       <section style={{ background: C.ink, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-cols-2 md:grid-cols-4">
+          <div className="grid grid-cols-2 md:grid-cols-4">
             {STATS.map((s, i) => (
               <Reveal key={i} delay={i * 50}>
                 <div style={{
                   textAlign: "center", padding: "36px 20px",
-                  borderRight: i < 3 ? "1px solid rgba(255,255,255,0.07)" : "none",
+                  borderRight: i % 2 === 0 ? "1px solid rgba(255,255,255,0.07)" : "none",
                 }}>
                   <div style={{ ...SG, fontSize: "clamp(26px,4vw,34px)", fontWeight: 700, color: "#fff", letterSpacing: "-0.04em", marginBottom: 4 }}>{s.val}</div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.5)", marginBottom: 2 }}>{s.label}</div>
