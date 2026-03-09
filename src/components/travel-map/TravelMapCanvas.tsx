@@ -3,151 +3,71 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { TravelLocation } from "@/hooks/useTravelLocations";
 
-export type DrawnPoint = [number, number];
-
 interface Props {
   locations: TravelLocation[];
   onMapClick: (lat: number, lng: number) => void;
   onPinClick: (location: TravelLocation) => void;
   focusLocation: TravelLocation | null;
-  showHeatmap?: boolean;
-  // Draw-mode props
-  drawMode?: boolean;
-  onDrawComplete?: (points: DrawnPoint[]) => void;
-  manualGeofence?: DrawnPoint[] | null;
 }
 
-// Heart-shaped SVG pin
-function HeartPin(color = "#ec4899") {
+function makePin(visited: boolean) {
+  const color = visited ? "#22c55e" : "#ec4899";
+  const emoji = visited ? "✓" : "♥";
   return `
     <div style="
-      width:36px;height:36px;
-      display:flex;align-items:center;justify-content:center;
-      filter:drop-shadow(0 4px 14px ${color}99);
-      animation:heartBounce 0.5s cubic-bezier(.36,.07,.19,.97) 1;
+      width:36px;height:42px;
+      display:flex;flex-direction:column;align-items:center;
+      filter:drop-shadow(0 3px 8px ${color}88);
     ">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="${color}" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/>
-      </svg>
+      <div style="
+        width:32px;height:32px;border-radius:50% 50% 50% 0;
+        transform:rotate(-45deg);
+        background:${color};
+        display:flex;align-items:center;justify-content:center;
+        border:2.5px solid white;
+        box-shadow:0 2px 8px rgba(0,0,0,0.18);
+      ">
+        <span style="transform:rotate(45deg);font-size:13px;color:white;font-weight:700;">${emoji}</span>
+      </div>
     </div>
   `;
 }
 
-function GlowHeartPin() {
+function makeSelectedPin(visited: boolean) {
+  const color = visited ? "#16a34a" : "#db2777";
+  const emoji = visited ? "✓" : "♥";
   return `
     <div style="
-      width:48px;height:48px;
-      display:flex;align-items:center;justify-content:center;
-      filter:drop-shadow(0 0 10px #f472b6) drop-shadow(0 0 22px #a855f7) drop-shadow(0 0 40px #ec489960);
-      animation:heartBounce 0.3s ease 1;
+      width:44px;height:52px;
+      display:flex;flex-direction:column;align-items:center;
+      filter:drop-shadow(0 4px 16px ${color}cc);
     ">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="#f472b6" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/>
-      </svg>
+      <div style="
+        width:40px;height:40px;border-radius:50% 50% 50% 0;
+        transform:rotate(-45deg);
+        background:${color};
+        display:flex;align-items:center;justify-content:center;
+        border:3px solid white;
+        box-shadow:0 4px 16px rgba(0,0,0,0.25);
+      ">
+        <span style="transform:rotate(45deg);font-size:16px;color:white;font-weight:700;">${emoji}</span>
+      </div>
     </div>
   `;
 }
 
-const GEOFENCE_STYLE: L.PathOptions = {
-  color: "#f472b6",
-  weight: 3,
-  opacity: 1,
-  dashArray: "0",
-  lineCap: "round",
-  lineJoin: "round",
-  fillColor: "#fce7f3",
-  fillOpacity: 0.30,
-};
-
-const GEOFENCE_HOVER: L.PathOptions = {
-  fillOpacity: 0.50,
-  weight: 4.5,
-};
-
-const DRAW_VERTEX_STYLE: L.CircleMarkerOptions = {
-  radius: 6,
-  color: "#f472b6",
-  weight: 2,
-  fillColor: "#ffffff",
-  fillOpacity: 1,
-};
-
-export function TravelMapCanvas({
-  locations,
-  onMapClick,
-  onPinClick,
-  focusLocation,
-  showHeatmap = false,
-  drawMode = false,
-  onDrawComplete,
-  manualGeofence,
-}: Props) {
+export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocation }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const polylineRef = useRef<L.Polyline | null>(null);
-  const geojsonLayerRef = useRef<L.GeoJSON | null>(null);
-  const geofenceLayerRef = useRef<L.GeoJSON | L.Polygon | null>(null);
-  const manualGeofenceLayerRef = useRef<L.Polygon | null>(null);
-
-  // Draw-mode state (refs so closure always sees latest)
-  const drawModeRef = useRef(drawMode);
-  const drawPointsRef = useRef<DrawnPoint[]>([]);
-  const drawVertexMarkersRef = useRef<L.CircleMarker[]>([]);
-  const drawPreviewLineRef = useRef<L.Polyline | null>(null);
-  const drawPreviewPolyRef = useRef<L.Polygon | null>(null);
   const onMapClickRef = useRef(onMapClick);
-  const onDrawCompleteRef = useRef(onDrawComplete);
+  const onPinClickRef = useRef(onPinClick);
 
-  // Keep refs in sync with props
-  useEffect(() => { drawModeRef.current = drawMode; }, [drawMode]);
   useEffect(() => { onMapClickRef.current = onMapClick; }, [onMapClick]);
-  useEffect(() => { onDrawCompleteRef.current = onDrawComplete; }, [onDrawComplete]);
+  useEffect(() => { onPinClickRef.current = onPinClick; }, [onPinClick]);
 
-  // ── Helpers: clear drawing state
-  const clearDrawPreview = () => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-    drawVertexMarkersRef.current.forEach(m => m.remove());
-    drawVertexMarkersRef.current = [];
-    drawPreviewLineRef.current?.remove();
-    drawPreviewLineRef.current = null;
-    drawPreviewPolyRef.current?.remove();
-    drawPreviewPolyRef.current = null;
-  };
-
-  const updateDrawPreview = (points: DrawnPoint[]) => {
-    const map = mapInstanceRef.current;
-    if (!map || points.length === 0) return;
-
-    // Update/redraw preview polygon
-    drawPreviewLineRef.current?.remove();
-    drawPreviewPolyRef.current?.remove();
-
-    if (points.length === 1) {
-      drawPreviewLineRef.current = L.polyline(points, {
-        color: "#f472b6", weight: 2, dashArray: "6 4", opacity: 0.8,
-      }).addTo(map);
-    } else {
-      drawPreviewPolyRef.current = L.polygon(points, {
-        ...GEOFENCE_STYLE,
-        fillOpacity: 0.15,
-        dashArray: "6 4",
-        weight: 2,
-      }).addTo(map);
-    }
-  };
-
-  const completeDrawing = () => {
-    const pts = drawPointsRef.current;
-    if (pts.length >= 3) {
-      onDrawCompleteRef.current?.(pts);
-    }
-    drawPointsRef.current = [];
-    clearDrawPreview();
-  };
-
-  // ── Init map once
+  // Init map once
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
@@ -159,10 +79,10 @@ export function TravelMapCanvas({
       zoomControl: false,
       attributionControl: true,
       worldCopyJump: true,
-      // Disable double-click zoom so we can use it to finish drawing
-      doubleClickZoom: false,
+      doubleClickZoom: true,
     });
 
+    // Clean OSM/CartoDB Voyager tiles — no satellite
     L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
       attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
       subdomains: "abcd",
@@ -172,35 +92,8 @@ export function TravelMapCanvas({
     map.fitBounds([[-75, -180], [85, 180]], { padding: [0, 0] });
     L.control.zoom({ position: "bottomright" }).addTo(map);
 
-    // ── Single click: draw point OR open add-memory modal
     map.on("click", (e: L.LeafletMouseEvent) => {
-      if (drawModeRef.current) {
-        const pt: DrawnPoint = [e.latlng.lat, e.latlng.lng];
-        drawPointsRef.current = [...drawPointsRef.current, pt];
-
-        // Add vertex marker
-        const vm = L.circleMarker(pt, DRAW_VERTEX_STYLE).addTo(map);
-        drawVertexMarkersRef.current.push(vm);
-
-        // First vertex gets click-to-close tooltip
-        if (drawPointsRef.current.length === 1) {
-          vm.bindTooltip("Click to start · Double-click to finish", {
-            permanent: false, direction: "top", offset: [0, -8],
-          });
-        }
-
-        updateDrawPreview(drawPointsRef.current);
-      } else {
-        onMapClickRef.current(e.latlng.lat, e.latlng.lng);
-      }
-    });
-
-    // ── Double-click: finish polygon
-    map.on("dblclick", (e: L.LeafletMouseEvent) => {
-      if (drawModeRef.current) {
-        L.DomEvent.stopPropagation(e);
-        completeDrawing();
-      }
+      onMapClickRef.current(e.latlng.lat, e.latlng.lng);
     });
 
     mapInstanceRef.current = map;
@@ -209,23 +102,14 @@ export function TravelMapCanvas({
       map.remove();
       mapInstanceRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── When draw mode is toggled OFF, clear any in-progress drawing
-  useEffect(() => {
-    if (!drawMode) {
-      drawPointsRef.current = [];
-      clearDrawPreview();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drawMode]);
-
-  // ── Markers + polyline
+  // Sync markers when locations change
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
+    // Remove stale markers
     markersRef.current.forEach((marker, id) => {
       if (!locations.find(l => l.id === id)) {
         marker.remove();
@@ -233,232 +117,100 @@ export function TravelMapCanvas({
       }
     });
 
-    markersRef.current.forEach(marker => {
-      marker.setOpacity(showHeatmap ? 0 : 1);
+    // Add/update markers
+    locations.forEach(loc => {
+      const existing = markersRef.current.get(loc.id);
+      if (existing) {
+        // Update icon in case visited changed
+        existing.setIcon(L.divIcon({
+          html: makePin(loc.visited ?? false),
+          className: "",
+          iconSize: [36, 42],
+          iconAnchor: [18, 42],
+        }));
+        return;
+      }
+
+      const icon = L.divIcon({
+        html: makePin(loc.visited ?? false),
+        className: "",
+        iconSize: [36, 42],
+        iconAnchor: [18, 42],
+        popupAnchor: [0, -44],
+      });
+
+      const marker = L.marker([loc.latitude, loc.longitude], { icon })
+        .addTo(map)
+        .on("click", () => onPinClickRef.current(loc));
+
+      marker.bindTooltip(
+        `<div style="background:white;border:1.5px solid #e2e8f0;color:#1e293b;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.12)">
+          ${loc.visited ? "✅" : "📍"} ${loc.location_name}${loc.city ? `<br><span style="font-weight:400;font-size:10px;color:#64748b">${loc.city}${loc.country ? `, ${loc.country}` : ""}</span>` : ""}
+        </div>`,
+        { permanent: false, direction: "top", offset: [0, -8], opacity: 1 }
+      );
+
+      markersRef.current.set(loc.id, marker);
     });
 
-    if (!showHeatmap) {
-      locations.forEach(loc => {
-        if (markersRef.current.has(loc.id)) return;
-
-        const icon = L.divIcon({
-          html: HeartPin(),
-          className: "",
-          iconSize: [36, 36],
-          iconAnchor: [18, 36],
-          popupAnchor: [0, -36],
-        });
-
-        const hoverIcon = L.divIcon({
-          html: GlowHeartPin(),
-          className: "",
-          iconSize: [48, 48],
-          iconAnchor: [24, 48],
-        });
-
-        const marker = L.marker([loc.latitude, loc.longitude], { icon })
-          .addTo(map)
-          .on("click", () => onPinClick(loc))
-          .on("mouseover", function () { (this as L.Marker).setIcon(hoverIcon); })
-          .on("mouseout", function () { (this as L.Marker).setIcon(icon); });
-
-        marker.bindTooltip(
-          `<div style="background:rgba(255,255,255,0.95);border:1.5px solid #f9a8d4;color:#831843;padding:6px 12px;border-radius:10px;font-size:12px;font-weight:700;box-shadow:0 4px 20px rgba(236,72,153,0.2)">
-            ❤️ ${loc.location_name}${loc.city ? `<br><span style="font-weight:500;font-size:10px;color:#be185d">📍 ${loc.city}</span>` : ""}
-          </div>`,
-          { permanent: false, direction: "top", offset: [0, -8], opacity: 1 }
-        );
-
-        markersRef.current.set(loc.id, marker);
-      });
-    }
-
+    // Journey polyline (only visited locations, sorted by date)
     if (polylineRef.current) {
       polylineRef.current.remove();
       polylineRef.current = null;
     }
 
-    if (!showHeatmap) {
-      const sorted = [...locations]
-        .filter(l => l.date_visited)
-        .sort((a, b) => (a.date_visited ?? "").localeCompare(b.date_visited ?? ""));
+    const visited = locations
+      .filter(l => l.visited && l.date_visited)
+      .sort((a, b) => (a.date_visited ?? "").localeCompare(b.date_visited ?? ""));
 
-      if (sorted.length >= 2) {
-        const points = sorted.map(l => [l.latitude, l.longitude] as [number, number]);
-        L.polyline(points, { color: "#f9a8d4", weight: 6, opacity: 0.18, lineCap: "round" }).addTo(map);
-        polylineRef.current = L.polyline(points, {
-          color: "#ec4899",
-          weight: 2.5,
-          opacity: 0.75,
-          dashArray: "7 9",
-          lineCap: "round",
-          lineJoin: "round",
-        }).addTo(map);
-      }
+    if (visited.length >= 2) {
+      const points = visited.map(l => [l.latitude, l.longitude] as [number, number]);
+      polylineRef.current = L.polyline(points, {
+        color: "#22c55e",
+        weight: 2.5,
+        opacity: 0.6,
+        dashArray: "7 9",
+        lineCap: "round",
+      }).addTo(map);
     }
-  }, [locations, onPinClick, showHeatmap]);
+  }, [locations]);
 
-  // ── Manual geofence polygon (drawn by user)
+  // Focus / fly-to when a pin is selected
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map) return;
+    if (!map || !focusLocation) return;
+    map.flyTo([focusLocation.latitude, focusLocation.longitude], 13, { duration: 1.0 });
 
-    manualGeofenceLayerRef.current?.remove();
-    manualGeofenceLayerRef.current = null;
-
-    if (!manualGeofence || manualGeofence.length < 3) return;
-
-    const poly = L.polygon(manualGeofence, { ...GEOFENCE_STYLE });
-    poly.on("mouseover", function () { poly.setStyle({ ...GEOFENCE_STYLE, ...GEOFENCE_HOVER }); });
-    poly.on("mouseout", function () { poly.setStyle({ ...GEOFENCE_STYLE }); });
-    poly.addTo(map);
-    manualGeofenceLayerRef.current = poly;
-
-    const bounds = poly.getBounds();
-    if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [52, 52], maxZoom: 15 });
-    }
-  }, [manualGeofence]);
-
-  // ── Auto-geofence from focusLocation (Nominatim lookup)
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-
-    if (geofenceLayerRef.current) {
-      (geofenceLayerRef.current as L.Layer).remove();
-      geofenceLayerRef.current = null;
+    // Swap to selected (larger) icon
+    const marker = markersRef.current.get(focusLocation.id);
+    if (marker) {
+      marker.setIcon(L.divIcon({
+        html: makeSelectedPin(focusLocation.visited ?? false),
+        className: "",
+        iconSize: [44, 52],
+        iconAnchor: [22, 52],
+      }));
     }
 
-    if (!map || !focusLocation || manualGeofence) return;
-
-    const isPolygon = (type?: string) => type === "Polygon" || type === "MultiPolygon";
-
-    const applyLayer = (geojson: GeoJSON.Feature | GeoJSON.FeatureCollection) => {
-      if (!mapInstanceRef.current) return;
-      if (geofenceLayerRef.current) (geofenceLayerRef.current as L.Layer).remove();
-
-      const layer = L.geoJSON(geojson, {
-        style: () => ({ ...GEOFENCE_STYLE }),
-        onEachFeature: (_f, fl) => {
-          fl.on("mouseover", function (e: L.LeafletMouseEvent) {
-            (e.target as L.Path).setStyle({ ...GEOFENCE_STYLE, ...GEOFENCE_HOVER });
-          });
-          fl.on("mouseout", function (e: L.LeafletMouseEvent) {
-            (e.target as L.Path).setStyle({ ...GEOFENCE_STYLE });
-          });
-        },
-      });
-
-      layer.addTo(mapInstanceRef.current);
-      geofenceLayerRef.current = layer;
-
-      const bounds = layer.getBounds();
-      if (bounds.isValid()) {
-        mapInstanceRef.current.fitBounds(bounds, { padding: [52, 52], maxZoom: 15 });
+    return () => {
+      // Restore normal icon when focus cleared
+      if (marker) {
+        marker.setIcon(L.divIcon({
+          html: makePin(focusLocation.visited ?? false),
+          className: "",
+          iconSize: [36, 42],
+          iconAnchor: [18, 42],
+        }));
       }
     };
-
-    const applyBboxRect = (bbox: [number, number, number, number]) => {
-      if (!mapInstanceRef.current) return;
-      if (geofenceLayerRef.current) (geofenceLayerRef.current as L.Layer).remove();
-      const bounds: L.LatLngBoundsExpression = [[bbox[1], bbox[0]], [bbox[3], bbox[2]]];
-      const rect = L.rectangle(bounds, { ...GEOFENCE_STYLE });
-      rect.on("mouseover", function () { rect.setStyle({ ...GEOFENCE_STYLE, ...GEOFENCE_HOVER }); });
-      rect.on("mouseout", function () { rect.setStyle({ ...GEOFENCE_STYLE }); });
-      rect.addTo(mapInstanceRef.current);
-      geofenceLayerRef.current = rect as unknown as L.GeoJSON;
-      const lb = L.latLngBounds(bounds as L.LatLngBoundsLiteral);
-      if (lb.isValid()) {
-        mapInstanceRef.current.fitBounds(lb, { padding: [52, 52], maxZoom: 15 });
-      }
-    };
-
-    const { latitude: lat, longitude: lng, location_name, city, country } = focusLocation;
-
-    const fetchBoundary = async () => {
-      const searchQueries = [
-        location_name && city && country ? `${location_name}, ${city}, ${country}` : null,
-        location_name && country        ? `${location_name}, ${country}` : null,
-        city && country                 ? `${city}, ${country}` : null,
-        city                            ? city : null,
-        country                         ? country : null,
-      ].filter(Boolean) as string[];
-
-      let bestBbox: [number, number, number, number] | null = null;
-
-      for (const q of searchQueries) {
-        try {
-          const url =
-            `https://nominatim.openstreetmap.org/search` +
-            `?q=${encodeURIComponent(q)}` +
-            `&format=geojson&polygon_geojson=1&limit=5&accept-language=en`;
-
-          const res = await fetch(url, {
-            headers: { "User-Agent": "OurVault-App/1.0", "Accept": "application/json" },
-          });
-          if (!res.ok) continue;
-
-          const fc = (await res.json()) as GeoJSON.FeatureCollection;
-
-          const match = fc.features?.find(f => isPolygon(f.geometry?.type));
-          if (match && mapInstanceRef.current) {
-            applyLayer(match);
-            return;
-          }
-
-          if (!bestBbox && fc.features?.[0]?.bbox) {
-            const b = fc.features[0].bbox as number[];
-            if (b.length >= 4) bestBbox = [b[0], b[1], b[2], b[3]];
-          }
-        } catch { /* try next query */ }
-      }
-
-      for (const zoom of [14, 12, 10, 8, 6]) {
-        try {
-          const url =
-            `https://nominatim.openstreetmap.org/reverse` +
-            `?lat=${lat}&lon=${lng}` +
-            `&format=geojson&polygon_geojson=1&zoom=${zoom}&accept-language=en`;
-
-          const res = await fetch(url, {
-            headers: { "User-Agent": "OurVault-App/1.0", "Accept": "application/json" },
-          });
-          if (!res.ok) continue;
-
-          const feature = (await res.json()) as GeoJSON.Feature;
-          if (isPolygon(feature?.geometry?.type) && mapInstanceRef.current) {
-            applyLayer(feature);
-            return;
-          }
-          if (!bestBbox && feature?.bbox) {
-            const b = feature.bbox as number[];
-            if (b.length >= 4) bestBbox = [b[0], b[1], b[2], b[3]];
-          }
-        } catch { /* try next zoom */ }
-      }
-
-      if (bestBbox && mapInstanceRef.current) {
-        applyBboxRect(bestBbox);
-        return;
-      }
-
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.flyTo([lat, lng], 14, { duration: 1.2 });
-      }
-    };
-
-    fetchBoundary();
-  }, [focusLocation, manualGeofence]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusLocation]);
 
   return (
     <div
       ref={mapRef}
       className="w-full h-full"
-      style={{
-        minHeight: "70vh",
-        cursor: drawMode ? "crosshair" : showHeatmap ? "default" : "crosshair",
-        isolation: "isolate",
-      }}
+      style={{ minHeight: "300px", cursor: "crosshair" }}
     />
   );
 }
