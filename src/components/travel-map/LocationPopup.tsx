@@ -180,7 +180,10 @@ export function LocationPopup({ location, onClose }: Props) {
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
                 <FolderOpen className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="font-medium text-foreground">{linkedFolder.emoji ? `${linkedFolder.emoji} ` : ""}{linkedFolder.name}</span>
-                <span className="opacity-60">— photos linked to this folder</span>
+                {folderPhotos.length > 0
+                  ? <span className="opacity-60">— {folderPhotos.length} photo{folderPhotos.length !== 1 ? "s" : ""} from folder</span>
+                  : <span className="opacity-60">— no photos in folder yet</span>
+                }
               </div>
             )}
 
