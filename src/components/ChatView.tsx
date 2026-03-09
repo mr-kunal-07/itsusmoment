@@ -909,7 +909,7 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
               </button>
             ) : (
               <button
-                onClick={() => setVoiceMode(true)}
+                onClick={() => canVoice ? setVoiceMode(true) : setGateModal({ feature: "Voice Messages" })}
                 disabled={sendMessage.isPending}
                 className="h-12 w-12 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95 disabled:opacity-50"
                 style={{ background: "hsl(var(--wa-online))" }}
@@ -920,6 +920,15 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
           </>
         )}
       </div>
+
+      {/* ── Upgrade Gate Modal ── */}
+      <UpgradeGateModal
+        open={!!gateModal}
+        onClose={() => setGateModal(null)}
+        onUpgrade={() => { setGateModal(null); onUpgrade?.(); }}
+        featureName={gateModal?.feature ?? ""}
+        requiredPlan="dating"
+      />
     </div>
     </SwipeBackWrapper>
   );
