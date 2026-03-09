@@ -544,7 +544,7 @@ export default function Index() {
           </Link>
 
           {/* Desktop nav */}
-          <nav style={{ flex: 1, display: "flex", justifyContent: "center", gap: 0 }} className="hidden md:flex">
+          <nav className="hidden md:flex flex-1 justify-center gap-0">
             {NAV_LINKS.map(([href, label]) => (
               <a key={href} href={href} style={{ fontSize: 14, fontWeight: 500, color: C.muted, textDecoration: "none", padding: "8px 16px", borderRadius: 8, transition: "all 0.15s" }}
                 onMouseEnter={e => { e.currentTarget.style.color = C.ink; e.currentTarget.style.background = C.surface; }}
@@ -555,7 +555,7 @@ export default function Index() {
           </nav>
 
           {/* Desktop CTA */}
-          <div className="hidden md:flex" style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          <div className="hidden md:flex items-center gap-1.5 shrink-0">
             <Link to="/auth" style={{ fontSize: 13, fontWeight: 500, color: C.body, padding: "8px 16px", borderRadius: 9, textDecoration: "none", transition: "background 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.background = C.surface}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
@@ -688,12 +688,12 @@ export default function Index() {
       ════════════════════════════════════════ */}
       <section style={{ background: C.ink, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }} className="grid-cols-2 md:grid-cols-4">
+          <div className="grid grid-cols-2 md:grid-cols-4">
             {STATS.map((s, i) => (
               <Reveal key={i} delay={i * 50}>
                 <div style={{
                   textAlign: "center", padding: "36px 20px",
-                  borderRight: i < 3 ? "1px solid rgba(255,255,255,0.07)" : "none",
+                  borderRight: i % 2 === 0 ? "1px solid rgba(255,255,255,0.07)" : "none",
                 }}>
                   <div style={{ ...SG, fontSize: "clamp(26px,4vw,34px)", fontWeight: 700, color: "#fff", letterSpacing: "-0.04em", marginBottom: 4 }}>{s.val}</div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.5)", marginBottom: 2 }}>{s.label}</div>
@@ -722,13 +722,14 @@ export default function Index() {
             </div>
           </Reveal>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 1, border: `1px solid ${C.border}`, borderRadius: 18, overflow: "hidden" }}>
+          <div style={{ border: `1px solid ${C.border}`, borderRadius: 18, overflow: "hidden" }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES_GRID.map((f, i) => {
               const Icon = f.icon;
               return (
                 <Reveal key={i} delay={i * 35}>
                   <div
-                    style={{ padding: "28px", background: C.white, borderRight: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, transition: "background 0.2s" }}
+                    style={{ padding: "28px", background: C.white, borderRight: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, height: "100%", transition: "background 0.2s" }}
                     onMouseEnter={e => e.currentTarget.style.background = C.bg}
                     onMouseLeave={e => e.currentTarget.style.background = C.white}
                   >
@@ -757,7 +758,7 @@ export default function Index() {
         return (
           <section key={i} style={{ background: i % 2 === 0 ? C.bgAlt : C.white, borderTop: `1px solid ${C.border}`, padding: "84px 0 92px" }}>
             <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "clamp(40px, 8vw, 100px)", alignItems: "center" }} className="grid-cols-1 lg:grid-cols-2">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 items-center">
                 <Reveal delay={30} className={reversed ? "lg:order-2" : ""}>
                   <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: C.muted, marginBottom: 16 }}>{s.tag}</p>
                   <h2 style={{ ...SG, fontSize: "clamp(26px,3.5vw,44px)", fontWeight: 700, letterSpacing: "-0.035em", lineHeight: 1.1, color: C.ink, marginBottom: 18, whiteSpace: "pre-line" }}>{s.headline}</h2>
@@ -806,7 +807,7 @@ export default function Index() {
             </div>
           </Reveal>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32, position: "relative" }} className="grid-cols-1 md:grid-cols-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
             <div className="hidden md:block" style={{ position: "absolute", top: 42, left: "calc(16.7% + 50px)", right: "calc(16.7% + 50px)", height: 1, background: "rgba(255,255,255,0.08)" }} />
             {STEPS.map((s, i) => {
               const Icon = s.icon;
@@ -851,7 +852,7 @@ export default function Index() {
             </h2>
           </Reveal>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {TESTIMONIALS.map((t, i) => (
               <Reveal key={i} delay={i * 55}>
                 <div style={{
@@ -906,16 +907,17 @@ export default function Index() {
             </div>
           </Reveal>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, alignItems: "start" }} className="grid-cols-1 md:grid-cols-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
             {PLANS.map((plan, i) => (
               <Reveal key={i} delay={i * 70}>
-                <div style={{
+                <div
+                  className={plan.highlight ? "md:scale-105 md:shadow-2xl" : ""}
+                  style={{
                   background: plan.highlight ? C.ink : C.white,
                   border: `1px solid ${plan.highlight ? "rgba(255,255,255,0.1)" : C.border}`,
                   borderRadius: 20, padding: "36px 30px",
                   display: "flex", flexDirection: "column",
                   position: "relative",
-                  transform: plan.highlight ? "scale(1.04)" : "none",
                   boxShadow: plan.highlight ? "0 20px 60px rgba(0,0,0,0.20)" : "none",
                 }}>
                   {plan.badge && (
@@ -1106,7 +1108,7 @@ export default function Index() {
       <footer style={{ background: C.ink, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         {/* Main footer content */}
         <div style={{ maxWidth: 1180, margin: "0 auto", padding: "60px 24px 48px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 40 }} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
 
             {/* Brand col */}
             <div>
