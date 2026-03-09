@@ -66,8 +66,14 @@ export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props)
   const plan = usePlan();
 
   const isPlanActive = selectedView === "billing";
-  // Don't show badge while user is already in chat (messages are being read)
   const chatBadge = selectedView === "chat" ? 0 : unreadCount;
+
+  const SPECIAL_VIEWS = [
+    "all", "starred", "recently-deleted",
+    "timeline", "on-this-day", "anniversaries",
+    "chat", "activity", "billing", "settings", "love-story", "travel-map",
+  ];
+  const isAllFilesView = selectedView === "all" || !SPECIAL_VIEWS.includes(selectedView);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-background border-t border-border safe-area-bottom">
