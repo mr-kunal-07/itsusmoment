@@ -10,6 +10,8 @@ import { useTyping } from "@/hooks/useTyping";
 import { usePresence } from "@/hooks/usePresence";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
 import { cn } from "@/lib/utils";
+import { usePlan, canUseVoiceMessages } from "@/hooks/useSubscription";
+import { UpgradeGateModal } from "@/components/UpgradeGateModal";
 
 const EMOJI_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
@@ -264,12 +266,15 @@ function SwipeBackWrapper({
   );
 }
 
-export function ChatView({ onBack }: { onBack?: () => void }) {
+export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade?: () => void }) {
   const { user } = useAuth();
   const { data: couple } = useMyCouple();
   const { data: profiles = [] } = useAllProfiles();
   const { data: myProfile } = useProfile();
   const { data: messages = [], sendMessage, deleteMessage, addReaction, removeReaction, isLoading } = useMessages();
+  const plan = usePlan();
+  const canVoice = canUseVoiceMessages(plan);
+  const canReact = plan !== "single";
 
   const [text, setText] = useState("");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -277,6 +282,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   const [emojiPickerId, setEmojiPickerId] = useState<string | null>(null);
   const [voiceMode, setVoiceMode] = useState(false);
   const [kbOffset, setKbOffset] = useState(0);
+  const [gateModal, setGateModal] = useState<{ feature: string } | null>(null);
   // ── Long-press / select mode ────────────────────────────────────────────────
   const [longPressId, setLongPressId] = useState<string | null>(null); // shows floating emoji bar
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -378,6 +384,10 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
   };
 
   const handleReact = (msg: Message, emoji: string) => {
+    if (!canReact) {
+      setGateModal({ feature: "Emoji Reactions" });
+      return;
+    }
     const myReaction = (msg.reactions ?? []).find(r => r.user_id === user?.id && r.emoji === emoji);
     if (myReaction) removeReaction.mutate({ messageId: msg.id, emoji });
     else addReaction.mutate({ messageId: msg.id, emoji });
@@ -899,7 +909,7 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
               </button>
             ) : (
               <button
-                onClick={() => setVoiceMode(true)}
+                onClick={() => canVoice ? setVoiceMode(true) : setGateModal({ feature: "Voice Messages" })}
                 disabled={sendMessage.isPending}
                 className="h-12 w-12 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95 disabled:opacity-50"
                 style={{ background: "hsl(var(--wa-online))" }}
@@ -910,6 +920,15 @@ export function ChatView({ onBack }: { onBack?: () => void }) {
           </>
         )}
       </div>
+
+      {/* ── Upgrade Gate Modal ── */}
+      <UpgradeGateModal
+        open={!!gateModal}
+        onClose={() => setGateModal(null)}
+        onUpgrade={() => { setGateModal(null); onUpgrade?.(); }}
+        featureName={gateModal?.feature ?? ""}
+        requiredPlan="dating"
+      />
     </div>
     </SwipeBackWrapper>
   );

@@ -28,6 +28,7 @@ import { SettingsView } from "@/components/SettingsView";
 import { RecentlyDeletedView } from "@/components/RecentlyDeletedView";
 import { LoveStoryView } from "@/components/LoveStoryView";
 import { TravelMapView } from "@/components/travel-map/TravelMapView";
+import { UpgradeGateModal } from "@/components/UpgradeGateModal";
 
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
@@ -92,6 +93,13 @@ export default function Dashboard() {
   const [fileTypeFilter, setFileTypeFilter] = useState<FileTypeFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>(() => loadPref<SortKey>(STORAGE_KEY_SORT + "_key", "created_at"));
   const [sortDir, setSortDir] = useState<SortDir>(() => loadPref<SortDir>(STORAGE_KEY_SORT + "_dir", "desc"));
+  const [gateModal, setGateModal] = useState<{ feature: string; plan: "dating" | "soulmate" } | null>(null);
+
+  // Views that require a paid plan
+  const PAID_VIEWS: Record<string, { feature: string; plan: "dating" | "soulmate" }> = {
+    "love-story": { feature: "Love Story Card", plan: "dating" },
+    "travel-map": { feature: "Travel Map", plan: "dating" },
+  };
   
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
@@ -103,6 +111,15 @@ export default function Dashboard() {
   const plan = usePlan();
   const profileInitials = (profile?.display_name ?? user?.email ?? "U").slice(0, 2).toUpperCase();
   const seenMediaRef = useRef<Set<string>>(new Set());
+
+  // Override navigateToView now that `plan` is available
+  const gatedNavigate = useCallback((view: ViewType) => {
+    if (plan === "single" && PAID_VIEWS[view]) {
+      setGateModal(PAID_VIEWS[view]);
+      return;
+    }
+    setSelectedView(view);
+  }, [plan, setSelectedView]);
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY_VIEW, JSON.stringify(viewMode)); }, [viewMode]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_SORT + "_key", JSON.stringify(sortKey)); }, [sortKey]);
@@ -209,7 +226,7 @@ export default function Dashboard() {
       <div className="flex h-dvh w-full overflow-hidden bg-background">
         <AppSidebar
           selectedView={selectedView}
-          onSelectView={setSelectedView}
+          onSelectView={gatedNavigate}
         />
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -323,7 +340,7 @@ export default function Dashboard() {
           {/* Content */}
           {isChat ? (
             <div className="flex-1 min-h-0 overflow-hidden">
-              <ChatView onBack={() => setSelectedView("all")} />
+              <ChatView onBack={() => setSelectedView("all")} onUpgrade={() => setSelectedView("billing")} />
             </div>
           ) : (
             <main
@@ -411,12 +428,21 @@ export default function Dashboard() {
         {!isChat && (
           <MobileBottomNav
             selectedView={selectedView}
-            onSelectView={setSelectedView}
+            onSelectView={gatedNavigate}
             onUpload={() => (selectedView === "all" || !isSpecialView) && setUploadOpen(true)}
           />
         )}
 
         <PWAInstallPrompt />
+
+        {/* ── Upgrade Gate Modal ── */}
+        <UpgradeGateModal
+          open={!!gateModal}
+          onClose={() => setGateModal(null)}
+          onUpgrade={() => { setGateModal(null); setSelectedView("billing"); }}
+          featureName={gateModal?.feature ?? ""}
+          requiredPlan={gateModal?.plan ?? "dating"}
+        />
       </div>
     </SidebarProvider>
   );
