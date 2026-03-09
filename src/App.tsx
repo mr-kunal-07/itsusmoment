@@ -80,7 +80,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
+            <PushBootstrap />
+            <Routes>
             {/* Public */}
             <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
             <Route path="/auth" element={<Auth />} />

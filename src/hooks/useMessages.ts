@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyCouple } from "@/hooks/useCouple";
 import { encryptText, decryptMessages } from "@/lib/crypto";
+import { pushToPartner } from "@/hooks/usePushNotifications";
 
 export interface MessageReaction {
   id: string;
