@@ -412,7 +412,7 @@ export default function Dashboard() {
           <MobileBottomNav
             selectedView={selectedView}
             onSelectView={setSelectedView}
-            onUpload={() => setUploadOpen(true)}
+            onUpload={() => (selectedView === "all" || !isSpecialView) && setUploadOpen(true)}
           />
         )}
 
