@@ -1060,10 +1060,10 @@ export default function Index() {
                 <p style={{ ...SG, fontSize: 15, fontWeight: 700, color: C.ink, margin: "0 0 4px" }}>Still have questions?</p>
                 <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>We're happy to help. Write to us anytime.</p>
               </div>
-              <a href="mailto:hello@ourvault.in" style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 14, fontWeight: 600, color: "#fff", background: C.ink, padding: "10px 20px", borderRadius: 10, textDecoration: "none", transition: "opacity 0.15s", flexShrink: 0 }}
+              <a href="mailto:hello@usmoment.in" style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 14, fontWeight: 600, color: "#fff", background: C.ink, padding: "10px 20px", borderRadius: 10, textDecoration: "none", transition: "opacity 0.15s", flexShrink: 0 }}
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.82"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-                hello@ourvault.in <ArrowRight style={{ width: 14, height: 14 }} />
+                hello@usmoment.in <ArrowRight style={{ width: 14, height: 14 }} />
               </a>
             </div>
           </Reveal>
