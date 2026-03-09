@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, MapPin, Calendar, Trash2, FolderOpen, ChevronLeft, ChevronRight, CheckCircle2, ExternalLink } from "lucide-react";
 import { TravelLocation, useDeleteTravelLocation, useUpdateTravelLocation } from "@/hooks/useTravelLocations";
 import { useFolders } from "@/hooks/useFolders";
+import { useMedia, getPublicUrl } from "@/hooks/useMedia";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -21,11 +22,23 @@ export function LocationPopup({ location, onClose }: Props) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // Fetch folder media only when a folder is linked
+  const { data: folderMedia = [] } = useMedia(
+    location?.folder_id ?? undefined,
+    undefined
+  );
+
   if (!location) return null;
 
-  const photos = location.photo_urls ?? [];
-  const hasPhotos = photos.length > 0;
   const linkedFolder = location.folder_id ? folders.find(f => f.id === location.folder_id) : null;
+
+  // Merge location's own photo_urls + folder media public URLs (images only, deduped)
+  const ownPhotos = location.photo_urls ?? [];
+  const folderPhotos = folderMedia
+    .filter(m => m.file_type === "image")
+    .map(m => getPublicUrl(m.file_path));
+  const allPhotos = [...ownPhotos, ...folderPhotos.filter(u => !ownPhotos.includes(u))];
+  const hasPhotos = allPhotos.length > 0;
 
   const handleDelete = async () => {
     try {
