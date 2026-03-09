@@ -384,6 +384,10 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
   };
 
   const handleReact = (msg: Message, emoji: string) => {
+    if (!canReact) {
+      setGateModal({ feature: "Emoji Reactions" });
+      return;
+    }
     const myReaction = (msg.reactions ?? []).find(r => r.user_id === user?.id && r.emoji === emoji);
     if (myReaction) removeReaction.mutate({ messageId: msg.id, emoji });
     else addReaction.mutate({ messageId: msg.id, emoji });
