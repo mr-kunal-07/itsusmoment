@@ -33,8 +33,13 @@ export function useAllProfiles() {
   const { user } = useAuth();
   const { data: couple } = useMyCouple();
 
+  // Include couple IDs in the query key so we refetch when partner links
+  const partnerId = couple?.status === "active"
+    ? (couple.user1_id === user?.id ? couple.user2_id : couple.user1_id)
+    : null;
+
   return useQuery({
-    queryKey: QK.profilesAll(),
+    queryKey: [...QK.profilesAll(), partnerId],
     staleTime: 5 * 60_000,
     queryFn: async () => {
       // Build list of relevant user IDs
