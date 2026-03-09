@@ -910,13 +910,14 @@ export default function Index() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
             {PLANS.map((plan, i) => (
               <Reveal key={i} delay={i * 70}>
-                <div style={{
+                <div
+                  className={plan.highlight ? "md:scale-105 md:shadow-2xl" : ""}
+                  style={{
                   background: plan.highlight ? C.ink : C.white,
                   border: `1px solid ${plan.highlight ? "rgba(255,255,255,0.1)" : C.border}`,
                   borderRadius: 20, padding: "36px 30px",
                   display: "flex", flexDirection: "column",
                   position: "relative",
-                  transform: plan.highlight ? "scale(1.04)" : "none",
                   boxShadow: plan.highlight ? "0 20px 60px rgba(0,0,0,0.20)" : "none",
                 }}>
                   {plan.badge && (
