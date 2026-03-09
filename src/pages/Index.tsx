@@ -267,7 +267,7 @@ const TESTIMONIALS = [
     stars: 5,
   },
   {
-    quote: "OurVault feels like a real product built by people who understand relationships. The design is stunning and it just works. Highly recommend.",
+    quote: "usMoment feels like a real product built by people who understand relationships. The design is stunning and it just works. Highly recommend.",
     name: "Tanya & Sameer",
     meta: "2,100+ days together · Delhi",
     init: "T",
