@@ -298,7 +298,7 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng }: Prop
                   <SelectValue placeholder="Choose a folder…" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No folder</SelectItem>
+                  <SelectItem value="none">No folder</SelectItem>
                   {folders.map(f => (
                     <SelectItem key={f.id} value={f.id}>
                       {f.emoji ? `${f.emoji} ` : ""}{f.name}
