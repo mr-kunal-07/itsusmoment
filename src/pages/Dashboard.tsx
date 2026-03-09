@@ -85,13 +85,6 @@ export default function Dashboard() {
     }
   }, [navigate]);
 
-  // Gated navigation — intercepts paid-only views for free users
-  const navigateToView = useCallback((view: ViewType) => {
-    // plan is read below after hooks, so we use a ref-style check via a closure-captured value
-    // This will be resolved by using the plan state declared after hooks
-    setSelectedView(view);
-  }, [setSelectedView]);
-
   const [search, setSearch] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number>(-1);
