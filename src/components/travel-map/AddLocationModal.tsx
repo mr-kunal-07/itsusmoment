@@ -50,7 +50,7 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng }: Prop
     description: "",
   });
   const [visited, setVisited] = useState(false);
-  const [folderId, setFolderId] = useState<string>("");
+  const [folderId, setFolderId] = useState<string>("none");
   const [uploading, setUploading] = useState(false);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
 
