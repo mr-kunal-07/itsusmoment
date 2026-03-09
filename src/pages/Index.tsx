@@ -907,7 +907,7 @@ export default function Index() {
             </div>
           </Reveal>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, alignItems: "start" }} className="grid-cols-1 md:grid-cols-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
             {PLANS.map((plan, i) => (
               <Reveal key={i} delay={i * 70}>
                 <div style={{
