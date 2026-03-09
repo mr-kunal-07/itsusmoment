@@ -540,7 +540,7 @@ export default function Index() {
             <div style={{ width: 34, height: 34, borderRadius: 10, background: C.ink, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}>
               <Heart style={{ width: 15, height: 15, fill: "#fff", color: "#fff" }} />
             </div>
-            <span style={{ ...SG, fontSize: 18, fontWeight: 700, color: C.ink, letterSpacing: "-0.03em" }}>OurVault</span>
+            <span style={{ ...SG, fontSize: 18, fontWeight: 700, color: C.ink, letterSpacing: "-0.03em" }}>usMoment</span>
           </Link>
 
           {/* Desktop nav */}
