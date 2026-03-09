@@ -23,7 +23,7 @@ self.addEventListener("push", (event) => {
       { action: "open", title: "Open" },
       { action: "dismiss", title: "Dismiss" },
     ],
-    tag: data.tag || "ourvault-notification",
+    tag: data.tag || "usmoment-notification",
     renotify: true,
   };
 

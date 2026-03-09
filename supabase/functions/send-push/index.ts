@@ -216,7 +216,7 @@ Deno.serve(async (req) => {
     const vapidEmail = Deno.env.get("VAPID_EMAIL") ?? "support@ourvault.app";
 
     const payload = {
-      title: title ?? "OurVault",
+      title: title ?? "usMoment",
       body: body ?? "You have a new notification",
       icon: "/pwa-icon-192.png",
       badge: "/pwa-icon-192.png",
