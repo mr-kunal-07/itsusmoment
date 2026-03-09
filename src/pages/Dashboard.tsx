@@ -93,6 +93,13 @@ export default function Dashboard() {
   const [fileTypeFilter, setFileTypeFilter] = useState<FileTypeFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>(() => loadPref<SortKey>(STORAGE_KEY_SORT + "_key", "created_at"));
   const [sortDir, setSortDir] = useState<SortDir>(() => loadPref<SortDir>(STORAGE_KEY_SORT + "_dir", "desc"));
+  const [gateModal, setGateModal] = useState<{ feature: string; plan: "dating" | "soulmate" } | null>(null);
+
+  // Views that require a paid plan
+  const PAID_VIEWS: Record<string, { feature: string; plan: "dating" | "soulmate" }> = {
+    "love-story": { feature: "Love Story Card", plan: "dating" },
+    "travel-map": { feature: "Travel Map", plan: "dating" },
+  };
   
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
