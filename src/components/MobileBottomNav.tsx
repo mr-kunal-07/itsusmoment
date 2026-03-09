@@ -79,11 +79,14 @@ export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props)
         {/* Memories */}
         <NavBtn id="timeline" label="Memories" icon={CalendarHeart} selectedView={selectedView} onSelectView={onSelectView} />
 
-        {/* Upload FAB — centre */}
+        {/* Upload FAB — centre; only visible on All Files / folder views */}
         <button
           onClick={onUpload}
           aria-label="Upload"
-          className="relative flex flex-col items-center justify-center flex-1 py-2 group"
+          className={cn(
+            "relative flex flex-col items-center justify-center flex-1 py-2 group",
+            isAllFilesView ? "opacity-100" : "opacity-30 pointer-events-none"
+          )}
         >
           <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center -mt-6 shadow-lg ring-4 ring-background transition-transform active:scale-95 group-active:scale-95">
             <Upload className="h-5 w-5 text-primary-foreground" />
