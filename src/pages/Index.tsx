@@ -1107,7 +1107,7 @@ export default function Index() {
       <footer style={{ background: C.ink, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         {/* Main footer content */}
         <div style={{ maxWidth: 1180, margin: "0 auto", padding: "60px 24px 48px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 40 }} className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
 
             {/* Brand col */}
             <div>
