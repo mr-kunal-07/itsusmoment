@@ -678,7 +678,7 @@ export default function Index() {
                 app.usmoment.in/dashboard
               </div>
             </div>
-            <img src={dashboardImg} alt="OurVault dashboard" style={{ width: "100%", display: "block", objectFit: "cover", objectPosition: "top" }} />
+            <img src={dashboardImg} alt="usMoment dashboard" style={{ width: "100%", display: "block", objectFit: "cover", objectPosition: "top" }} />
           </div>
         </Reveal>
       </section>
