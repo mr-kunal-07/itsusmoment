@@ -287,11 +287,13 @@ export default function Dashboard() {
 
                 <NotificationsPanel />
 
-                {/* Upload — desktop only (mobile has bottom nav FAB) */}
-                <Button onClick={() => setUploadOpen(true)} size="sm" className="gap-1.5 h-9 px-2 sm:px-3 hidden sm:flex">
-                  <Upload className="h-4 w-4" />
-                  <span className="hidden sm:inline">Upload</span>
-                </Button>
+                {/* Upload — only on All Files and folder views (desktop) */}
+                {(selectedView === "all" || !isSpecialView) && (
+                  <Button onClick={() => setUploadOpen(true)} size="sm" className="gap-1.5 h-9 px-2 sm:px-3 hidden sm:flex">
+                    <Upload className="h-4 w-4" />
+                    <span className="hidden sm:inline">Upload</span>
+                  </Button>
+                )}
 
                 {/* Profile — always visible; desktop shows name+plan too */}
                 <button
