@@ -1,142 +1,25 @@
-import { useState, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Map, List, Share2, Download, Loader2, Heart, PenLine, Trash2, Check, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState, useCallback } from "react";
+import { Plus, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 import { useTravelLocations, TravelLocation } from "@/hooks/useTravelLocations";
-import { useMedia } from "@/hooks/useMedia";
 import { useMyCouple } from "@/hooks/useCouple";
-import { useAllProfiles, useProfile } from "@/hooks/useProfile";
-import { useAuth } from "@/hooks/useAuth";
-import { TravelMapCanvas, DrawnPoint } from "./TravelMapCanvas";
+import { TravelMapCanvas } from "./TravelMapCanvas";
 import { AddLocationModal } from "./AddLocationModal";
 import { LocationPopup } from "./LocationPopup";
-import { TravelStats } from "./TravelStats";
-import { TimelineView } from "./TimelineView";
-import { toPng } from "html-to-image";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
-
-type ViewMode = "map" | "timeline";
-
-// Subtle floating hearts — only on desktop
-function FloatingHearts() {
-  const hearts = Array.from({ length: 6 });
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
-      {hearts.map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute select-none opacity-10"
-          style={{ left: `${8 + i * 14}%`, fontSize: `${10 + (i % 3) * 6}px` }}
-          animate={{ y: ["100%", "-10%"], opacity: [0, 0.15, 0] }}
-          transition={{ duration: 6 + i * 0.8, repeat: Infinity, delay: i * 1.1, ease: "easeOut" }}
-        >
-          ❤️
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-const VIEW_TABS: { id: ViewMode; label: string; icon: typeof Map }[] = [
-  { id: "map",      label: "Map",      icon: Map  },
-  { id: "timeline", label: "Timeline", icon: List },
-];
 
 export function TravelMapView() {
-  const { user } = useAuth();
-  const { toast } = useToast();
   const { data: couple } = useMyCouple();
   const { data: locations = [], isLoading } = useTravelLocations();
-  const { data: allMedia = [] } = useMedia();
-  const { data: profile } = useProfile();
-  const { data: profiles = [] } = useAllProfiles();
-  const exportRef = useRef<HTMLDivElement>(null);
 
-  const [mode, setMode] = useState<ViewMode>("map");
   const [addOpen, setAddOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<TravelLocation | null>(null);
   const [focusLocation, setFocusLocation] = useState<TravelLocation | null>(null);
   const [clickedCoords, setClickedCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [exporting, setExporting] = useState(false);
-
-  // Draw geofence state
-  const [drawMode, setDrawMode] = useState(false);
-  const [drawnGeofence, setDrawnGeofence] = useState<DrawnPoint[] | null>(null);
-
-  const partnerId = couple?.status === "active"
-    ? (couple.user1_id === user?.id ? couple.user2_id : couple.user1_id)
-    : null;
-  const partnerProfile = partnerId ? profiles.find(p => p.user_id === partnerId) : null;
-  const coupleName = [
-    profile?.display_name ?? "You",
-    partnerProfile?.display_name ?? "Partner",
-  ].join(" ❤️ ");
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
     setClickedCoords({ lat, lng });
     setAddOpen(true);
   }, []);
-
-  const handleTimelineSelect = (loc: TravelLocation) => {
-    setFocusLocation(loc);
-    setSelectedLocation(loc);
-    setMode("map");
-  };
-
-  const handleDrawComplete = useCallback((points: DrawnPoint[]) => {
-    setDrawnGeofence(points);
-    setDrawMode(false);
-    toast({ title: "✏️ Area drawn!", description: "Your custom geofence is now shown on the map." });
-  }, [toast]);
-
-  const handleCancelDraw = () => {
-    setDrawMode(false);
-  };
-
-  const handleClearGeofence = () => {
-    setDrawnGeofence(null);
-    setFocusLocation(null);
-    toast({ title: "Geofence cleared" });
-  };
-
-  const handleExport = async () => {
-    if (!exportRef.current) return;
-    setExporting(true);
-    try {
-      const dataUrl = await toPng(exportRef.current, { pixelRatio: 2, cacheBust: true });
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = "our-travel-map.png";
-      a.click();
-      toast({ title: "📸 Travel map downloaded!" });
-    } catch {
-      toast({ title: "Export failed", variant: "destructive" });
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  const handleShare = async () => {
-    if (!exportRef.current) return;
-    setExporting(true);
-    try {
-      const dataUrl = await toPng(exportRef.current, { pixelRatio: 2 });
-      const blob = await (await fetch(dataUrl)).blob();
-      const file = new File([blob], "our-travel-map.png", { type: "image/png" });
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: `${coupleName} — Travel Map` });
-      } else {
-        const a = document.createElement("a");
-        a.href = dataUrl;
-        a.download = "our-travel-map.png";
-        a.click();
-        toast({ title: "Image saved — upload from your gallery!" });
-      }
-    } catch { /* cancelled */ } finally {
-      setExporting(false);
-    }
-  };
 
   if (!couple || couple.status !== "active") {
     return (
@@ -149,237 +32,54 @@ export function TravelMapView() {
   }
 
   return (
-    <div className="relative min-h-screen bg-background overflow-hidden">
-      <FloatingHearts />
-
-      {/* ── Header ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -16 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 px-3 sm:px-4 pt-3 pb-1"
+    <div className="relative flex flex-col h-full min-h-0 bg-background">
+      {/* Map */}
+      <div
+        className="relative flex-1 min-h-0"
+        style={{ height: "calc(100dvh - 112px)" }}
       >
-        <div className="flex items-center justify-between gap-2">
-          {/* Title */}
-          <div className="min-w-0">
-            <h1 className="text-base sm:text-lg font-black text-foreground flex items-center gap-2 leading-tight">
-              <span className="text-xl shrink-0">🗺️</span>
-              <span className="bg-gradient-to-r from-pink-500 via-rose-400 to-purple-500 bg-clip-text text-transparent truncate">
-                Our Travel Map
-              </span>
-            </h1>
-            <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{coupleName} · Journey Together</p>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full bg-muted/30">
+            <Loader2 className="h-7 w-7 text-primary animate-spin" />
           </div>
+        ) : (
+          <TravelMapCanvas
+            locations={locations}
+            onMapClick={handleMapClick}
+            onPinClick={(loc) => {
+              setSelectedLocation(loc);
+              setFocusLocation(loc);
+            }}
+            focusLocation={focusLocation}
+          />
+        )}
 
-          {/* Controls */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* View toggle */}
-            <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-secondary border border-border">
-              {VIEW_TABS.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setMode(tab.id)}
-                  className={cn(
-                    "flex items-center gap-1 px-2 py-1.5 rounded-md text-[10px] sm:text-xs font-medium transition-all",
-                    mode === tab.id
-                      ? "bg-card text-foreground shadow-sm border border-border"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <tab.icon className="h-3 w-3 shrink-0" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </button>
-              ))}
-            </div>
-
-            <Button
-              size="sm" variant="outline" onClick={handleExport} disabled={exporting}
-              className="h-7 w-7 p-0 rounded-lg"
+        {/* Empty state overlay */}
+        {locations.length === 0 && !isLoading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <motion.div
+              animate={{ scale: [1, 1.06, 1] }}
+              transition={{ repeat: Infinity, duration: 2.2 }}
+              className="text-4xl mb-2"
             >
-              {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-            </Button>
-            <Button
-              size="sm" variant="outline" onClick={handleShare} disabled={exporting}
-              className="h-7 w-7 p-0 rounded-lg"
-            >
-              <Share2 className="h-3 w-3" />
-            </Button>
+              📍
+            </motion.div>
+            <p className="text-sm font-medium text-foreground/70 bg-background/80 px-3 py-1.5 rounded-full">
+              Tap the map to pin your first memory
+            </p>
           </div>
-        </div>
-      </motion.div>
+        )}
 
-      {/* ── Stats ── */}
-      <TravelStats locations={locations} mediaCount={allMedia.length} />
-
-      {/* ── Main content ── */}
-      <div ref={exportRef} className="relative px-2 sm:px-3 pb-4">
-        <AnimatePresence mode="wait">
-          {mode === "map" ? (
-            <motion.div
-              key="map-container"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="relative"
-            >
-              {/* Draw mode instruction banner */}
-              <AnimatePresence>
-                {drawMode && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    className="mb-2 px-3 py-2 rounded-xl bg-card border border-pink-500/30 flex items-center justify-between gap-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <PenLine className="h-3.5 w-3.5 text-pink-500 shrink-0" />
-                      <p className="text-[11px] text-foreground font-medium">
-                        <span className="font-bold text-pink-500">Click</span> to add points ·{" "}
-                        <span className="font-bold text-pink-500">Double-click</span> to finish
-                        {" "}<span className="text-muted-foreground">(min. 3 points)</span>
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleCancelDraw}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Map */}
-              <div
-                className="relative rounded-2xl overflow-hidden border border-border shadow-card"
-                style={{ height: "clamp(320px, 68vh, 800px)" }}
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center h-full bg-card">
-                    <Loader2 className="h-7 w-7 text-pink-500 animate-spin" />
-                  </div>
-                ) : (
-                  <TravelMapCanvas
-                    locations={locations}
-                    onMapClick={handleMapClick}
-                    onPinClick={loc => {
-                      if (!drawMode) {
-                        setSelectedLocation(loc);
-                        setFocusLocation(loc);
-                      }
-                    }}
-                    focusLocation={focusLocation}
-                    showHeatmap={false}
-                    drawMode={drawMode}
-                    onDrawComplete={handleDrawComplete}
-                    manualGeofence={drawnGeofence}
-                  />
-                )}
-
-                {/* Couple name watermark */}
-                <div className="absolute bottom-3 left-3 pointer-events-none z-10">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card/80 border border-border backdrop-blur-md">
-                    <Heart className="h-2.5 w-2.5 text-pink-500 fill-pink-500" />
-                    <span className="text-[10px] font-semibold text-foreground/80">{coupleName}</span>
-                  </div>
-                </div>
-
-                {/* Empty state */}
-                {locations.length === 0 && !isLoading && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <motion.div
-                      animate={{ scale: [1, 1.06, 1] }}
-                      transition={{ repeat: Infinity, duration: 2.2 }}
-                      className="text-4xl mb-2"
-                    >
-                      📍
-                    </motion.div>
-                    <p className="text-sm font-medium text-foreground/70">Tap the map to pin your first memory</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Bottom action row */}
-              <div className="flex items-center justify-between mt-2 gap-2">
-                {/* Draw geofence button */}
-                <div className="flex items-center gap-1.5">
-                  {!drawMode ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => { setDrawnGeofence(null); setFocusLocation(null); setDrawMode(true); }}
-                      className="h-8 gap-1.5 text-xs border-pink-500/30 text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-950/20"
-                    >
-                      <PenLine className="h-3 w-3" />
-                      Draw Area
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleCancelDraw}
-                      className="h-8 gap-1.5 text-xs"
-                    >
-                      <X className="h-3 w-3" />
-                      Cancel
-                    </Button>
-                  )}
-
-                  {drawnGeofence && !drawMode && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={handleClearGeofence}
-                      className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      Clear Area
-                    </Button>
-                  )}
-                </div>
-
-                {/* Confirm drawn area button */}
-                {drawMode && (
-                  <p className="text-[10px] text-muted-foreground">
-                    Double-click to finish drawing
-                  </p>
-                )}
-              </div>
-
-              {/* FAB — Add Memory (hidden in draw mode) */}
-              {!drawMode && (
-                <motion.button
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
-                  onClick={() => { setClickedCoords(null); setAddOpen(true); }}
-                  className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-20 flex items-center gap-2 pl-4 pr-5 py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-semibold text-sm shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-shadow"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Add Memory</span>
-                </motion.button>
-              )}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="timeline"
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -16 }}
-              className="min-h-[60vh]"
-            >
-              <TimelineView locations={locations} onSelectLocation={handleTimelineSelect} />
-
-              <motion.button
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => { setClickedCoords(null); setAddOpen(true); }}
-                className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-20 flex items-center gap-2 pl-4 pr-5 py-2.5 rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-semibold text-sm shadow-lg shadow-pink-500/30"
-              >
-                <Plus className="h-4 w-4" />
-                Add Memory
-              </motion.button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* FAB */}
+        <motion.button
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.96 }}
+          onClick={() => { setClickedCoords(null); setAddOpen(true); }}
+          className="absolute bottom-5 right-5 z-20 flex items-center gap-2 pl-4 pr-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-lg transition-shadow"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Add Place</span>
+        </motion.button>
       </div>
 
       {/* Modals */}
