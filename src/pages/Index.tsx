@@ -227,7 +227,7 @@ const PLANS = [
 
 const TESTIMONIALS = [
   {
-    quote: "We live in different cities and OurVault is the only place we genuinely feel close. The voice messages make it feel like they're right there with me.",
+    quote: "We live in different cities and usMoment is the only place we genuinely feel close. The voice messages make it feel like they're right there with me.",
     name: "Priya & Arjun",
     meta: "487 days together · Long-distance",
     init: "P",
