@@ -7,6 +7,13 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useAppLock } from "@/hooks/useAppLock";
 import { AppLockScreen } from "@/components/AppLockScreen";
 import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
+import NotFound from "./pages/NotFound";
+import ResetPassword from "./pages/ResetPassword";
+import Join from "./pages/Join";
+import Admin from "./pages/Admin";
+import Index from "./pages/Index";
 
 /**
  * Scalability-tuned QueryClient:
@@ -18,8 +25,8 @@ import Auth from "./pages/Auth";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60_000,          // 1 minute
-      gcTime: 5 * 60_000,         // 5 minutes
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
       retry: 1,
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
@@ -66,8 +73,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-            <PushBootstrap />
-            <Routes>
+          <Routes>
             {/* Public */}
             <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
             <Route path="/auth" element={<Auth />} />
@@ -91,3 +97,4 @@ const App = () => (
 );
 
 export default App;
+
