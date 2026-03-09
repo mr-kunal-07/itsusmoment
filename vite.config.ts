@@ -114,8 +114,8 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       manifest: {
-        name: "OurVault",
-        short_name: "OurVault",
+        name: "usMoment",
+        short_name: "usMoment",
         description: "A private shared space for couples — memories, love notes & more.",
         theme_color: "#171717",
         background_color: "#171717",

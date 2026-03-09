@@ -145,7 +145,7 @@ export function useUploadMedia() {
       } as never).select().single();
       if (dbError) throw dbError;
       // Push to partner — non-blocking
-      pushToPartner("📸 New Memory Added", `${title} was just uploaded to OurVault`, "/dashboard");
+      pushToPartner("📸 New Memory Added", `${title} was just uploaded to usMoment`, "/dashboard");
       return data;
     },
     onSuccess: () => invalidateMedia(qc),

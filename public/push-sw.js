@@ -1,4 +1,4 @@
-// OurVault — Push Notification Service Worker Handler
+// usMoment — Push Notification Service Worker Handler
 // This file is imported by the PWA service worker via importScripts
 
 self.addEventListener("push", (event) => {
