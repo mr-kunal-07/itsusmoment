@@ -1,4 +1,4 @@
-// OurVault — Push Notification Service Worker Handler
+// usMoment — Push Notification Service Worker Handler
 // This file is imported by the PWA service worker via importScripts
 
 self.addEventListener("push", (event) => {
@@ -6,10 +6,10 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: "OurVault", body: event.data ? event.data.text() : "" };
+    data = { title: "usMoment", body: event.data ? event.data.text() : "" };
   }
 
-  const title = data.title || "OurVault";
+  const title = data.title || "usMoment";
   const options = {
     body: data.body || "You have a new notification",
     icon: data.icon || "/pwa-icon-192.png",
@@ -23,7 +23,7 @@ self.addEventListener("push", (event) => {
       { action: "open", title: "Open" },
       { action: "dismiss", title: "Dismiss" },
     ],
-    tag: data.tag || "ourvault-notification",
+    tag: data.tag || "usmoment-notification",
     renotify: true,
   };
 

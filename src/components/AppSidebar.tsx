@@ -128,7 +128,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
             <img src="/pwa-icon-192.png" alt="OurVault" className="h-full w-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-bold font-heading tracking-tight gradient-text">OurVault</h2>
+            <h2 className="text-sm font-bold font-heading tracking-tight gradient-text">usMoment</h2>
             <p className="text-[10px] text-muted-foreground">Shared Media</p>
           </div>
           {couple?.status === "active" ? (

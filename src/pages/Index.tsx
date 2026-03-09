@@ -85,7 +85,7 @@ const NAV_LINKS = [
 ];
 
 const STATS = [
-  { val: "50,000+", label: "Couples", sub: "trusting OurVault daily" },
+  { val: "50,000+", label: "Couples", sub: "trusting usMoment daily" },
   { val: "2M+",     label: "Memories", sub: "safely stored & encrypted" },
   { val: "4.9★",    label: "Rating",   sub: "from verified couples" },
   { val: "100%",    label: "Private",  sub: "no ads, no tracking ever" },
@@ -227,7 +227,7 @@ const PLANS = [
 
 const TESTIMONIALS = [
   {
-    quote: "We live in different cities and OurVault is the only place we genuinely feel close. The voice messages make it feel like they're right there with me.",
+    quote: "We live in different cities and usMoment is the only place we genuinely feel close. The voice messages make it feel like they're right there with me.",
     name: "Priya & Arjun",
     meta: "487 days together · Long-distance",
     init: "P",
@@ -267,7 +267,7 @@ const TESTIMONIALS = [
     stars: 5,
   },
   {
-    quote: "OurVault feels like a real product built by people who understand relationships. The design is stunning and it just works. Highly recommend.",
+    quote: "usMoment feels like a real product built by people who understand relationships. The design is stunning and it just works. Highly recommend.",
     name: "Tanya & Sameer",
     meta: "2,100+ days together · Delhi",
     init: "T",
@@ -283,11 +283,11 @@ const STEPS = [
 ];
 
 const FAQ = [
-  { q: "Is OurVault really 100% private?",  a: "Absolutely. All messages and notes are end-to-end encrypted before they leave your device using AES-256-GCM. Even our team cannot read your content. Your photos are stored in a private vault accessible only to you and your linked partner." },
+  { q: "Is usMoment really 100% private?",  a: "Absolutely. All messages and notes are end-to-end encrypted before they leave your device using AES-256-GCM. Even our team cannot read your content. Your photos are stored in a private vault accessible only to you and your linked partner." },
   { q: "How does the shared plan work?",     a: "When either partner upgrades to a paid tier, both partners automatically get all the benefits — no need for both to pay. One subscription covers both of you completely." },
   { q: "Can I cancel anytime?",              a: "Yes. You can cancel your subscription from the Billing page at any time. There are no lock-in periods, no cancellation fees, and no hidden charges." },
   { q: "What happens to my data if I cancel?",a: "Your vault and all your memories remain accessible on the Free plan indefinitely. You'll be moved to the 1 GB storage limit, but nothing is deleted." },
-  { q: "Is OurVault available on mobile?",   a: "OurVault is a Progressive Web App (PWA) — install it from your browser on iOS and Android for a native-like experience, including offline access and push notifications." },
+  { q: "Is usMoment available on mobile?",   a: "usMoment is a Progressive Web App (PWA) — install it from your browser on iOS and Android for a native-like experience, including offline access and push notifications." },
   { q: "How is storage calculated?",         a: "Both partners share a single storage pool. For example, on the Soulmate plan, you and your partner together have 50 GB shared — both of your uploads count toward that single total." },
 ];
 
@@ -540,7 +540,7 @@ export default function Index() {
             <div style={{ width: 34, height: 34, borderRadius: 10, background: C.ink, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.18)" }}>
               <Heart style={{ width: 15, height: 15, fill: "#fff", color: "#fff" }} />
             </div>
-            <span style={{ ...SG, fontSize: 18, fontWeight: 700, color: C.ink, letterSpacing: "-0.03em" }}>OurVault</span>
+            <span style={{ ...SG, fontSize: 18, fontWeight: 700, color: C.ink, letterSpacing: "-0.03em" }}>usMoment</span>
           </Link>
 
           {/* Desktop nav */}
@@ -675,10 +675,10 @@ export default function Index() {
               </div>
               <div style={{ flex: 1, maxWidth: 260, margin: "0 auto", background: C.white, border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 14px", fontSize: 11, color: C.muted, textAlign: "center", display: "flex", alignItems: "center", gap: 5 }}>
                 <Lock style={{ width: 9, height: 9 }} />
-                app.ourvault.in/dashboard
+                app.usmoment.in/dashboard
               </div>
             </div>
-            <img src={dashboardImg} alt="OurVault dashboard" style={{ width: "100%", display: "block", objectFit: "cover", objectPosition: "top" }} />
+            <img src={dashboardImg} alt="usMoment dashboard" style={{ width: "100%", display: "block", objectFit: "cover", objectPosition: "top" }} />
           </div>
         </Reveal>
       </section>
@@ -1060,10 +1060,10 @@ export default function Index() {
                 <p style={{ ...SG, fontSize: 15, fontWeight: 700, color: C.ink, margin: "0 0 4px" }}>Still have questions?</p>
                 <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>We're happy to help. Write to us anytime.</p>
               </div>
-              <a href="mailto:hello@ourvault.in" style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 14, fontWeight: 600, color: "#fff", background: C.ink, padding: "10px 20px", borderRadius: 10, textDecoration: "none", transition: "opacity 0.15s", flexShrink: 0 }}
+              <a href="mailto:hello@usmoment.in" style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 14, fontWeight: 600, color: "#fff", background: C.ink, padding: "10px 20px", borderRadius: 10, textDecoration: "none", transition: "opacity 0.15s", flexShrink: 0 }}
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.82"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-                hello@ourvault.in <ArrowRight style={{ width: 14, height: 14 }} />
+                hello@usmoment.in <ArrowRight style={{ width: 14, height: 14 }} />
               </a>
             </div>
           </Reveal>
@@ -1084,7 +1084,7 @@ export default function Index() {
               <span style={{ color: C.muted }}>a home that lasts.</span>
             </h2>
             <p style={{ fontSize: "clamp(15px,2vw,18px)", lineHeight: 1.76, color: C.body, marginBottom: 40 }}>
-              Join 50,000+ couples who trust OurVault with their most precious moments.<br />Free to start. Always private. No credit card.
+              Join 50,000+ couples who trust usMoment with their most precious moments.<br />Free to start. Always private. No credit card.
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 14, justifyContent: "center", alignItems: "center" }}>
               <Link to="/auth" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 16, color: "#fff", background: C.ink, padding: "16px 36px", borderRadius: 14, textDecoration: "none", boxShadow: "0 6px 28px rgba(0,0,0,0.2)", transition: "all 0.2s" }}
@@ -1116,7 +1116,7 @@ export default function Index() {
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Heart style={{ width: 16, height: 16, fill: C.ink, color: C.ink }} />
                 </div>
-                <span style={{ ...SG, fontSize: 20, fontWeight: 700, color: "#fff", letterSpacing: "-0.03em" }}>OurVault</span>
+                <span style={{ ...SG, fontSize: 20, fontWeight: 700, color: "#fff", letterSpacing: "-0.03em" }}>usMoment</span>
               </div>
               <p style={{ fontSize: 13, lineHeight: 1.8, color: "rgba(255,255,255,0.4)", maxWidth: 260, marginBottom: 20 }}>
                 The private space your love story deserves. End-to-end encrypted, beautifully designed for couples.

@@ -46,8 +46,8 @@ type FileTypeFilter = "all" | "image" | "video";
 type SortKey = "created_at" | "title" | "file_size";
 type SortDir = "asc" | "desc";
 
-const STORAGE_KEY_SORT = "mediahub_sort";
-const STORAGE_KEY_VIEW = "mediahub_view";
+const STORAGE_KEY_SORT = "usmoment_sort";
+const STORAGE_KEY_VIEW = "usmoment_view";
 
 function loadPref<T>(key: string, fallback: T): T {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }

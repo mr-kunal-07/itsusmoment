@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
-export const PIN_KEY = "ourvault_pin";
-export const LOCK_KEY = "ourvault_lock_method";
+export const PIN_KEY = "usmoment_pin";
+export const LOCK_KEY = "usmoment_lock_method";
 // How many ms of background before re-locking (15 seconds)
 const LOCK_TIMEOUT_MS = 15_000;
 

@@ -153,7 +153,7 @@ export default function Auth() {
               <Heart className="h-5 w-5 text-primary-foreground fill-primary-foreground" />
             </div>
             <h1 className="text-2xl font-bold font-heading tracking-tight">
-              <span className="gradient-text">OurVault</span>
+              <span className="gradient-text">usMoment</span>
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">Your private couple space 💕</p>
