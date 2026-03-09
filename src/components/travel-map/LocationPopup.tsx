@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, MapPin, Calendar, Trash2, FolderOpen, ChevronLeft, ChevronRight, CheckCircle2, ExternalLink } from "lucide-react";
 import { TravelLocation, useDeleteTravelLocation, useUpdateTravelLocation } from "@/hooks/useTravelLocations";
 import { useFolders } from "@/hooks/useFolders";
+import { useMedia, getPublicUrl } from "@/hooks/useMedia";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -21,11 +22,23 @@ export function LocationPopup({ location, onClose }: Props) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // Fetch folder media only when a folder is linked
+  const { data: folderMedia = [] } = useMedia(
+    location?.folder_id ?? undefined,
+    undefined
+  );
+
   if (!location) return null;
 
-  const photos = location.photo_urls ?? [];
-  const hasPhotos = photos.length > 0;
   const linkedFolder = location.folder_id ? folders.find(f => f.id === location.folder_id) : null;
+
+  // Merge location's own photo_urls + folder media public URLs (images only, deduped)
+  const ownPhotos = location.photo_urls ?? [];
+  const folderPhotos = folderMedia
+    .filter(m => m.file_type === "image")
+    .map(m => getPublicUrl(m.file_path));
+  const allPhotos = [...ownPhotos, ...folderPhotos.filter(u => !ownPhotos.includes(u))];
+  const hasPhotos = allPhotos.length > 0;
 
   const handleDelete = async () => {
     try {
@@ -70,27 +83,27 @@ export function LocationPopup({ location, onClose }: Props) {
           {hasPhotos ? (
             <div className="relative h-44 bg-muted overflow-hidden">
               <img
-                src={photos[photoIndex]}
+                src={allPhotos[photoIndex]}
                 alt={location.location_name}
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-              {photos.length > 1 && (
+              {allPhotos.length > 1 && (
                 <>
                   <button
-                    onClick={() => setPhotoIndex(i => (i - 1 + photos.length) % photos.length)}
+                    onClick={() => setPhotoIndex(i => (i - 1 + allPhotos.length) % allPhotos.length)}
                     className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-black/40 flex items-center justify-center text-white"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => setPhotoIndex(i => (i + 1) % photos.length)}
+                    onClick={() => setPhotoIndex(i => (i + 1) % allPhotos.length)}
                     className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-black/40 flex items-center justify-center text-white"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </button>
                   <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                    {photos.map((_, i) => (
+                    {allPhotos.map((_, i) => (
                       <div key={i} className={cn("h-1.5 rounded-full transition-all", i === photoIndex ? "w-4 bg-white" : "w-1.5 bg-white/50")} />
                     ))}
                   </div>
@@ -167,7 +180,10 @@ export function LocationPopup({ location, onClose }: Props) {
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
                 <FolderOpen className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="font-medium text-foreground">{linkedFolder.emoji ? `${linkedFolder.emoji} ` : ""}{linkedFolder.name}</span>
-                <span className="opacity-60">— photos linked to this folder</span>
+                {folderPhotos.length > 0
+                  ? <span className="opacity-60">— {folderPhotos.length} photo{folderPhotos.length !== 1 ? "s" : ""} from folder</span>
+                  : <span className="opacity-60">— no photos in folder yet</span>
+                }
               </div>
             )}
 
