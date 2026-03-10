@@ -118,7 +118,7 @@ function FeatureValue({ val }: { val: boolean | string }) {
 function MobilePlanDots({ planCount, currentPlan, plans }: {
   planCount: number; currentPlan: Plan; plans: Plan[];
 }) {
-  const [activeIdx, setActiveIdx] = React.useState(() => Math.max(0, plans.indexOf(currentPlan)));
+  const [activeIdx, setActiveIdx] = useState(() => Math.max(0, plans.indexOf(currentPlan)));
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
