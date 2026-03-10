@@ -350,32 +350,32 @@ export default function Dashboard() {
           ) : (
             <main
               className={cn(
-                "flex-1 overflow-auto pb-20 sm:pb-6",
-                selectedView !== "settings" && selectedView !== "travel-map" && "p-3 sm:p-4 md:p-6",
+                "flex-1 overflow-auto pb-[72px] sm:pb-6",
+                selectedView !== "settings" && selectedView !== "travel-map" && "px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6",
                 dragOverMain && "ring-2 ring-primary ring-inset"
               )}
               onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setDragOverMain(true); }}
               onDragLeave={() => setDragOverMain(false)}
               onDrop={handleMainDrop}
             >
-              {/* Page header */}
+              {/* Page header — hidden on mobile for non-grid views (title shown in header bar) */}
               {selectedView !== "settings" && selectedView !== "travel-map" && (
-                <div className={cn(selectedView === "billing" ? "mb-0" : "mb-4 sm:mb-6", "p-3 sm:p-4 md:p-6 pt-0 pl-0 pr-0")}>
+                <div className={cn(selectedView === "billing" ? "mb-0" : "mb-3 sm:mb-5")}>
                   {!isSpecialView && (
                     <FolderBreadcrumb folderId={selectedView} folders={folders} onNavigate={setSelectedView} />
                   )}
                   {selectedView !== "billing" && (
-                    <h1 className="text-xl sm:text-2xl font-bold font-heading tracking-tight text-foreground">
+                    <h1 className="hidden sm:block text-xl sm:text-2xl font-bold font-heading tracking-tight text-foreground">
                       {pageTitle}
                     </h1>
                   )}
                   {selectedView === "on-this-day" && onThisDayMedia.length > 0 && (
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                       🗓️ {onThisDayMedia.length} {onThisDayMedia.length === 1 ? "memory" : "memories"} from previous years on this date
                     </p>
                   )}
                   {isGridView && !isLoading && selectedView !== "on-this-day" && (
-                    <p className="text-sm text-muted-foreground mt-1">{media.length} file{media.length !== 1 ? "s" : ""}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{media.length} file{media.length !== 1 ? "s" : ""}</p>
                   )}
                 </div>
               )}
