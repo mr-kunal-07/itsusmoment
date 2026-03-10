@@ -124,21 +124,24 @@ export default function Dashboard() {
   // Swipe navigation order (bottom-nav views only, no chat/settings)
   const SWIPE_ORDER: ViewType[] = ["all", "timeline", "billing"];
   const swipeIndex = SWIPE_ORDER.indexOf(selectedView);
+
+  const handleSwipeLeft = useCallback(() => {
+    if (swipeIndex >= 0 && swipeIndex < SWIPE_ORDER.length - 1)
+      gatedNavigate(SWIPE_ORDER[swipeIndex + 1]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [swipeIndex, gatedNavigate]);
+
+  const handleSwipeRight = useCallback(() => {
+    if (swipeIndex > 0)
+      gatedNavigate(SWIPE_ORDER[swipeIndex - 1]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [swipeIndex, gatedNavigate]);
+
   const swipeHandlers = useSwipeNav({
     threshold: 55,
     maxVerticalDrift: 60,
-    onSwipeLeft: useCallback(() => {
-      // Swipe left → go to next view
-      if (swipeIndex >= 0 && swipeIndex < SWIPE_ORDER.length - 1) {
-        gatedNavigate(SWIPE_ORDER[swipeIndex + 1]);
-      }
-    }, [swipeIndex, gatedNavigate]),
-    onSwipeRight: useCallback(() => {
-      // Swipe right → go to prev view
-      if (swipeIndex > 0) {
-        gatedNavigate(SWIPE_ORDER[swipeIndex - 1]);
-      }
-    }, [swipeIndex, gatedNavigate]),
+    onSwipeLeft: handleSwipeLeft,
+    onSwipeRight: handleSwipeRight,
   });
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY_VIEW, JSON.stringify(viewMode)); }, [viewMode]);
