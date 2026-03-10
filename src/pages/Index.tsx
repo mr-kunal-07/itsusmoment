@@ -525,8 +525,8 @@ export default function Index() {
     <div style={{ ...INTER, background: C.bg, color: C.ink, overflowX: "hidden", minHeight: "100vh" }}>
 
       {/* ════════════════════════════════════════
-           NAVBAR
-        ════════════════════════════════════════ */}
+            NAVBAR
+         ════════════════════════════════════════ */}
       <header style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
         background: scrolled ? "rgba(250,250,250,0.96)" : "transparent",
@@ -598,8 +598,8 @@ export default function Index() {
       </header>
 
       {/* ════════════════════════════════════════
-           HERO
-        ════════════════════════════════════════ */}
+            HERO
+         ════════════════════════════════════════ */}
       <section style={{ background: C.white, paddingTop: 68 }}>
         <div style={{ maxWidth: 860, margin: "0 auto", padding: "72px 24px 56px", textAlign: "center" }}>
 
@@ -626,7 +626,7 @@ export default function Index() {
 
           {/* Subheadline */}
           <Reveal delay={110}>
-            <p style={{ fontSize: "clamp(16px, 2.4vw, 20px)", lineHeight: 1.72, color: C.body, maxWidth: 530, margin: "0 auto 36px" }}>
+            <p style={{ fontSize: "clamp(16px, 2.4vw, 20px)", lineHeight: 1.72, color: C.body, maxWidth: 530, margin: "0 auto 36px" }} className="text-lg">
               Photos, private chat, voice messages, milestones, travel map, and more — all in one beautiful encrypted vault, just for the two of you.
             </p>
           </Reveal>
@@ -684,8 +684,8 @@ export default function Index() {
       </section>
 
       {/* ════════════════════════════════════════
-           STATS STRIP
-        ════════════════════════════════════════ */}
+            STATS STRIP
+         ════════════════════════════════════════ */}
       <section style={{ background: C.ink, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
           <div className="grid grid-cols-2 md:grid-cols-4">
@@ -706,8 +706,8 @@ export default function Index() {
       </section>
 
       {/* ════════════════════════════════════════
-           FEATURE OVERVIEW GRID
-        ════════════════════════════════════════ */}
+            FEATURE OVERVIEW GRID
+         ════════════════════════════════════════ */}
       <section id="features" style={{ background: C.white, padding: "96px 0 100px" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px" }}>
           <Reveal>
@@ -750,8 +750,8 @@ export default function Index() {
       </section>
 
       {/* ════════════════════════════════════════
-           DEEP DIVE SHOWCASES (alternating)
-        ════════════════════════════════════════ */}
+            DEEP DIVE SHOWCASES (alternating)
+         ════════════════════════════════════════ */}
       {SHOWCASE_ITEMS.map((s, i) => {
         const Card = SHOWCASE_CARDS[i];
         const reversed = i % 2 === 1;
@@ -791,8 +791,8 @@ export default function Index() {
       })}
 
       {/* ════════════════════════════════════════
-           HOW IT WORKS
-        ════════════════════════════════════════ */}
+            HOW IT WORKS
+         ════════════════════════════════════════ */}
       <section id="how-it-works" style={{ background: C.ink, padding: "96px 0 100px" }}>
         <div style={{ maxWidth: 1060, margin: "0 auto", padding: "0 24px" }}>
           <Reveal>
@@ -841,8 +841,8 @@ export default function Index() {
       </section>
 
       {/* ════════════════════════════════════════
-           TESTIMONIALS
-        ════════════════════════════════════════ */}
+            TESTIMONIALS
+         ════════════════════════════════════════ */}
       <section id="stories" style={{ background: C.white, borderTop: `1px solid ${C.border}`, padding: "96px 0 100px" }}>
         <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px" }}>
           <Reveal style={{ marginBottom: 56 }}>
@@ -886,8 +886,8 @@ export default function Index() {
       </section>
 
       {/* ════════════════════════════════════════
-           PRICING
-        ════════════════════════════════════════ */}
+            PRICING
+         ════════════════════════════════════════ */}
       <section id="pricing" style={{ background: C.bgAlt, borderTop: `1px solid ${C.border}`, padding: "96px 0 100px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
           <Reveal>
@@ -1008,8 +1008,8 @@ export default function Index() {
       </section>
 
       {/* ════════════════════════════════════════
-           SECURITY TRUST BAND
-        ════════════════════════════════════════ */}
+            SECURITY TRUST BAND
+         ════════════════════════════════════════ */}
       <section style={{ background: C.ink, borderTop: "1px solid rgba(255,255,255,0.06)", padding: "56px 0" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
           <Reveal>
@@ -1039,8 +1039,8 @@ export default function Index() {
       </section>
 
       {/* ════════════════════════════════════════
-           FAQ
-        ════════════════════════════════════════ */}
+            FAQ
+         ════════════════════════════════════════ */}
       <section id="faq" style={{ background: C.white, borderTop: `1px solid ${C.border}`, padding: "96px 0 100px" }}>
         <div style={{ maxWidth: 780, margin: "0 auto", padding: "0 24px" }}>
           <Reveal style={{ marginBottom: 56 }}>
@@ -1071,8 +1071,8 @@ export default function Index() {
       </section>
 
       {/* ════════════════════════════════════════
-           FINAL CTA
-        ════════════════════════════════════════ */}
+            FINAL CTA
+         ════════════════════════════════════════ */}
       <section style={{ background: C.bgAlt, borderTop: `1px solid ${C.border}`, padding: "112px 0" }}>
         <div style={{ maxWidth: 700, margin: "0 auto", padding: "0 24px", textAlign: "center" }}>
           <Reveal>
@@ -1103,8 +1103,8 @@ export default function Index() {
       </section>
 
       {/* ════════════════════════════════════════
-           FOOTER
-        ════════════════════════════════════════ */}
+            FOOTER
+         ════════════════════════════════════════ */}
       <footer style={{ background: C.ink, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         {/* Main footer content */}
         <div style={{ maxWidth: 1180, margin: "0 auto", padding: "60px 24px 48px" }}>
