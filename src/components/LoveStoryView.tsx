@@ -242,24 +242,24 @@ export function LoveStoryView() {
             </div>
 
             {/* Export buttons below card */}
-            <div className="flex flex-wrap gap-2 justify-center">
-              <Button onClick={() => exportCard("png")} disabled={exporting} size="sm" className="gap-2">
-                {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                Download PNG
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center">
+              <Button onClick={() => exportCard("png")} disabled={exporting} size="sm" className="gap-1.5 h-8 text-xs rounded-xl px-3">
+                {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                Download
               </Button>
-              <Button onClick={() => exportCard("story")} disabled={exporting} variant="outline" size="sm" className="gap-2">
-                {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
-                Instagram Story
+              <Button onClick={() => exportCard("story")} disabled={exporting} variant="outline" size="sm" className="gap-1.5 h-8 text-xs rounded-xl px-3">
+                {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3" />}
+                Story
               </Button>
-              <Button onClick={() => exportCard("post")} disabled={exporting} variant="outline" size="sm" className="gap-2">
-                {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
-                Instagram Post
+              <Button onClick={() => exportCard("post")} disabled={exporting} variant="outline" size="sm" className="gap-1.5 h-8 text-xs rounded-xl px-3">
+                {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3" />}
+                Post
               </Button>
             </div>
           </div>
 
           {/* ── Customization Panel ──────────────────────────────────── */}
-          <div className="w-full lg:w-72 shrink-0 space-y-4">
+          <div className="w-full lg:w-72 shrink-0 space-y-3 sm:space-y-4">
 
             {/* Collapse toggle on mobile */}
             <button
