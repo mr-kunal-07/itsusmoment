@@ -220,13 +220,13 @@ export function LoveStoryView() {
         </div>
 
         {/* ── Main 2-column layout ──────────────────────────────────────── */}
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-8 items-start">
 
           {/* Card Preview */}
-          <div className="flex-1 flex flex-col items-center gap-4 min-w-0">
+          <div className="flex-1 flex flex-col items-center gap-3 sm:gap-4 min-w-0">
             <div
-              className="animate-scale-in"
-              style={{ filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.15))", maxWidth: "100%", overflowX: "auto" }}
+              className="animate-scale-in w-full flex justify-center"
+              style={{ filter: "drop-shadow(0 12px 32px rgba(0,0,0,0.15))" }}
             >
               <LoveStoryCard
                 ref={cardRef}
