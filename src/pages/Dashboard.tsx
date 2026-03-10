@@ -378,6 +378,7 @@ export default function Dashboard() {
               onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setDragOverMain(true); }}
               onDragLeave={() => setDragOverMain(false)}
               onDrop={handleMainDrop}
+              {...swipeHandlers}
             >
               {/* Page header — hidden on mobile for non-grid views (title shown in header bar) */}
               {selectedView !== "settings" && selectedView !== "travel-map" && (
