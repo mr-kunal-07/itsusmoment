@@ -95,9 +95,8 @@ export default function Dashboard() {
   const [sortDir, setSortDir] = useState<SortDir>(() => loadPref<SortDir>(STORAGE_KEY_SORT + "_dir", "desc"));
   const [gateModal, setGateModal] = useState<{ feature: string; plan: "dating" | "soulmate" } | null>(null);
 
-  // Views that require a paid plan
+  // Views that require a paid plan (Love Story is free for all)
   const PAID_VIEWS: Record<string, { feature: string; plan: "dating" | "soulmate" }> = {
-    "love-story": { feature: "Love Story Card", plan: "dating" },
     "travel-map": { feature: "Travel Map", plan: "dating" },
   };
   
