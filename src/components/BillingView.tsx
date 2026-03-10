@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Check, X, HardDrive, Mic, Upload, Crown, Sparkles, Zap, Heart,
   Sprout, HeartHandshake, Gem, ShieldCheck, Users,
@@ -111,6 +111,50 @@ function FeatureValue({ val }: { val: boolean | string }) {
   return <span className="text-xs font-semibold text-foreground">{val}</span>;
 }
 
+/**
+ * Mobile-only dot indicators that track which plan card is scrolled into view.
+ * Uses IntersectionObserver on the snap-scroll container's children.
+ */
+function MobilePlanDots({ planCount, currentPlan, plans }: {
+  planCount: number; currentPlan: Plan; plans: Plan[];
+}) {
+  const [activeIdx, setActiveIdx] = useState(() => Math.max(0, plans.indexOf(currentPlan)));
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Find the parent scroll container (sibling of this component's parent)
+    const scrollEl = containerRef.current?.previousElementSibling as HTMLElement | null;
+    if (!scrollEl) return;
+    const cards = Array.from(scrollEl.children) as HTMLElement[];
+    const observers: IntersectionObserver[] = [];
+    cards.forEach((card, i) => {
+      const obs = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting && entry.intersectionRatio > 0.5) setActiveIdx(i); },
+        { root: scrollEl, threshold: 0.5 }
+      );
+      obs.observe(card);
+      observers.push(obs);
+    });
+    return () => observers.forEach(o => o.disconnect());
+  }, []);
+
+  return (
+    <div ref={containerRef} className="flex sm:hidden items-center justify-center gap-1.5 mt-3">
+      {Array.from({ length: planCount }).map((_, i) => (
+        <span
+          key={i}
+          className={cn(
+            "rounded-full transition-all duration-300",
+            i === activeIdx
+              ? "w-5 h-1.5 bg-primary"
+              : "w-1.5 h-1.5 bg-muted-foreground/30"
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function BillingView() {
   const plan        = usePlan();
   const isShared    = useIsSharedPlan();
@@ -179,130 +223,150 @@ export function BillingView() {
         </div>
       </div>
 
-      {/* ── Pricing cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
-        {PLAN_ORDER.map((planId) => {
-          const meta        = PLAN_META[planId];
-          const isCurrent   = plan === planId;
-          const isDowngrade = PLAN_ORDER.indexOf(planId) < currentPlanIndex;
-          const isBilling   = planId === "dating" || planId === "soulmate";
-          const isHighlight = planId === "soulmate";
+      {/* ── Pricing cards — horizontal scroll + snap on mobile, grid on desktop ── */}
+      <div className="relative">
+        {/* Scroll container */}
+        <div
+          data-swipe-ignore
+          className={cn(
+            // Mobile: horizontal scroll with snap
+            "flex sm:grid sm:grid-cols-3 gap-4 sm:gap-5",
+            "overflow-x-auto sm:overflow-visible",
+            "snap-x snap-mandatory sm:snap-none",
+            "-mx-3 px-3 sm:mx-0 sm:px-0",
+            "pb-3 sm:pb-0",
+            // hide scrollbar
+            "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          )}
+        >
+          {PLAN_ORDER.map((planId, cardIdx) => {
+            const meta        = PLAN_META[planId];
+            const isCurrent   = plan === planId;
+            const isDowngrade = PLAN_ORDER.indexOf(planId) < currentPlanIndex;
+            const isBilling   = planId === "dating" || planId === "soulmate";
+            const isHighlight = planId === "soulmate";
 
-          return (
-            <div
-              key={planId}
-              className={cn(
-                "relative flex flex-col rounded-2xl p-5 sm:p-6 transition-all duration-200 bg-card border",
-                isHighlight
-                  ? "border-primary/40 shadow-[0_0_40px_hsl(var(--primary)/0.08)]"
-                  : isCurrent
-                    ? "border-primary/30"
-                    : "border-border"
-              )}
-            >
-              {/* Badge */}
-              {meta.badge && (
-                <div className="absolute -top-3.5 inset-x-0 flex justify-center">
-                  <Badge className="bg-primary text-primary-foreground text-[11px] font-semibold px-3 py-1 rounded-full shadow-md">
-                    {meta.badge}
-                  </Badge>
-                </div>
-              )}
-
-              {/* Plan header */}
-              <div className="mb-5">
-                <div className="flex items-center gap-3 mb-3">
-                  <PlanIcon planId={planId} active={isCurrent} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold font-heading text-base text-foreground">{meta.label}</span>
-                      {isCurrent && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Active</Badge>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">{meta.tagline}</p>
+            return (
+              <div
+                key={planId}
+                // snap alignment + fixed width on mobile
+                className={cn(
+                  "snap-center shrink-0 w-[82vw] sm:w-auto",
+                  "relative flex flex-col rounded-2xl p-5 sm:p-6 transition-all duration-200 bg-card border",
+                  isHighlight
+                    ? "border-primary/40 shadow-[0_0_40px_hsl(var(--primary)/0.08)]"
+                    : isCurrent
+                      ? "border-primary/30"
+                      : "border-border"
+                )}
+              >
+                {/* Badge */}
+                {meta.badge && (
+                  <div className="absolute -top-3.5 inset-x-0 flex justify-center">
+                    <Badge className="bg-primary text-primary-foreground text-[11px] font-semibold px-3 py-1 rounded-full shadow-md">
+                      {meta.badge}
+                    </Badge>
                   </div>
-                </div>
+                )}
 
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className={cn("font-bold font-heading tracking-tight text-foreground", meta.price ? "text-4xl" : "text-3xl")}>
-                    {meta.price ?? "Free"}
-                  </span>
-                  {meta.price && <span className="text-sm text-muted-foreground">{meta.period}</span>}
-                </div>
-                {!meta.price && <p className="text-xs text-muted-foreground mt-0.5">{meta.period}</p>}
-              </div>
-
-              {/* Feature list */}
-              <ul className="space-y-2.5 flex-1 mb-6">
-                {FEATURES.map(({ icon: Icon, text, hint, ...vals }) => {
-                  const val = vals[planId as keyof typeof vals] as boolean | string;
-                  const active = val !== false;
-                  return (
-                    <li
-                      key={text}
-                      className={cn("flex items-start gap-2.5 text-xs", active ? "text-foreground" : "text-muted-foreground/40")}
-                    >
-                      <div className={cn("h-5 w-5 rounded-full flex items-center justify-center shrink-0 mt-px", active ? "bg-primary/10" : "bg-muted/30")}>
-                        <Icon className={cn("h-3 w-3", active ? "text-primary" : "text-muted-foreground/40")} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <span>{text}</span>
-                        {hint && <p className="text-[10px] text-muted-foreground/60 mt-0.5 leading-tight">{hint}</p>}
-                      </div>
-                      <span className="shrink-0">
-                        {typeof val === "string" ? (
-                          <span className="font-semibold text-foreground">{val}</span>
-                        ) : val ? (
-                          <Check className="h-3.5 w-3.5 text-primary" />
-                        ) : (
-                          <X className="h-3.5 w-3.5 text-muted-foreground/25" />
+                {/* Plan header */}
+                <div className="mb-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <PlanIcon planId={planId} active={isCurrent} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold font-heading text-base text-foreground">{meta.label}</span>
+                        {isCurrent && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Active</Badge>
                         )}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{meta.tagline}</p>
+                    </div>
+                  </div>
 
-              {/* CTA */}
-              {isCurrent ? (
-                <Button variant="outline" className="w-full rounded-xl" disabled>
-                  ✓ Current plan
-                </Button>
-              ) : isDowngrade ? (
-                <Button variant="ghost" className="w-full rounded-xl text-muted-foreground text-xs" disabled>
-                  Downgrade
-                </Button>
-              ) : isBilling ? (
-                <>
-                  <Button
-                    className="w-full rounded-xl gap-2 font-semibold"
-                    variant={isHighlight ? "default" : "outline"}
-                    onClick={() => handleCheckout(planId as BillingPlan)}
-                    disabled={loading}
-                    size="lg"
-                  >
-                    {checkingOut === planId ? (
-                      <span className="flex items-center gap-2">
-                        <span className="h-3.5 w-3.5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
-                        Processing…
-                      </span>
-                    ) : (
-                      <>
-                        {isHighlight ? <Crown className="h-4 w-4" /> : <Heart className="h-4 w-4" />}
-                        {planId === "soulmate" ? `Become Soulmates · ${meta.price}` : `Get Dating · ${meta.price}`}
-                      </>
-                    )}
+                  <div className="mt-4 flex items-baseline gap-1">
+                    <span className={cn("font-bold font-heading tracking-tight text-foreground", meta.price ? "text-4xl" : "text-3xl")}>
+                      {meta.price ?? "Free"}
+                    </span>
+                    {meta.price && <span className="text-sm text-muted-foreground">{meta.period}</span>}
+                  </div>
+                  {!meta.price && <p className="text-xs text-muted-foreground mt-0.5">{meta.period}</p>}
+                </div>
+
+                {/* Feature list */}
+                <ul className="space-y-2.5 flex-1 mb-6">
+                  {FEATURES.map(({ icon: Icon, text, hint, ...vals }) => {
+                    const val = vals[planId as keyof typeof vals] as boolean | string;
+                    const active = val !== false;
+                    return (
+                      <li
+                        key={text}
+                        className={cn("flex items-start gap-2.5 text-xs", active ? "text-foreground" : "text-muted-foreground/40")}
+                      >
+                        <div className={cn("h-5 w-5 rounded-full flex items-center justify-center shrink-0 mt-px", active ? "bg-primary/10" : "bg-muted/30")}>
+                          <Icon className={cn("h-3 w-3", active ? "text-primary" : "text-muted-foreground/40")} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span>{text}</span>
+                          {hint && <p className="text-[10px] text-muted-foreground/60 mt-0.5 leading-tight">{hint}</p>}
+                        </div>
+                        <span className="shrink-0">
+                          {typeof val === "string" ? (
+                            <span className="font-semibold text-foreground">{val}</span>
+                          ) : val ? (
+                            <Check className="h-3.5 w-3.5 text-primary" />
+                          ) : (
+                            <X className="h-3.5 w-3.5 text-muted-foreground/25" />
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                {/* CTA */}
+                {isCurrent ? (
+                  <Button variant="outline" className="w-full rounded-xl" disabled>
+                    ✓ Current plan
                   </Button>
-                  <p className="text-[10px] text-center text-muted-foreground mt-2 flex items-center justify-center gap-1">
-                    <ShieldCheck className="h-3 w-3" />
-                    Secure · Cancel anytime · Covers both partners
-                  </p>
-                </>
-              ) : null}
-            </div>
-          );
-        })}
+                ) : isDowngrade ? (
+                  <Button variant="ghost" className="w-full rounded-xl text-muted-foreground text-xs" disabled>
+                    Downgrade
+                  </Button>
+                ) : isBilling ? (
+                  <>
+                    <Button
+                      className="w-full rounded-xl gap-2 font-semibold"
+                      variant={isHighlight ? "default" : "outline"}
+                      onClick={() => handleCheckout(planId as BillingPlan)}
+                      disabled={loading}
+                      size="lg"
+                    >
+                      {checkingOut === planId ? (
+                        <span className="flex items-center gap-2">
+                          <span className="h-3.5 w-3.5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                          Processing…
+                        </span>
+                      ) : (
+                        <>
+                          {isHighlight ? <Crown className="h-4 w-4" /> : <Heart className="h-4 w-4" />}
+                          {planId === "soulmate" ? `Become Soulmates · ${meta.price}` : `Get Dating · ${meta.price}`}
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-[10px] text-center text-muted-foreground mt-2 flex items-center justify-center gap-1">
+                      <ShieldCheck className="h-3 w-3" />
+                      Secure · Cancel anytime · Covers both partners
+                    </p>
+                  </>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Dot indicators — mobile only */}
+        <MobilePlanDots planCount={PLAN_ORDER.length} currentPlan={plan} plans={PLAN_ORDER} />
       </div>
 
       {/* ── Full feature comparison table — desktop only ── */}

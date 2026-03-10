@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSwipeNav } from "@/hooks/useSwipeNav";
 import { Search, Upload, Moon, Sun, LayoutGrid, List, ArrowUpDown, Crown } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -119,6 +120,29 @@ export default function Dashboard() {
     }
     setSelectedView(view);
   }, [plan, setSelectedView]);
+
+  // Swipe navigation order (bottom-nav views only, no chat/settings)
+  const SWIPE_ORDER: ViewType[] = ["all", "timeline", "billing"];
+  const swipeIndex = SWIPE_ORDER.indexOf(selectedView);
+
+  const handleSwipeLeft = useCallback(() => {
+    if (swipeIndex >= 0 && swipeIndex < SWIPE_ORDER.length - 1)
+      gatedNavigate(SWIPE_ORDER[swipeIndex + 1]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [swipeIndex, gatedNavigate]);
+
+  const handleSwipeRight = useCallback(() => {
+    if (swipeIndex > 0)
+      gatedNavigate(SWIPE_ORDER[swipeIndex - 1]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [swipeIndex, gatedNavigate]);
+
+  const swipeHandlers = useSwipeNav({
+    threshold: 55,
+    maxVerticalDrift: 60,
+    onSwipeLeft: handleSwipeLeft,
+    onSwipeRight: handleSwipeRight,
+  });
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY_VIEW, JSON.stringify(viewMode)); }, [viewMode]);
   useEffect(() => { localStorage.setItem(STORAGE_KEY_SORT + "_key", JSON.stringify(sortKey)); }, [sortKey]);
@@ -357,6 +381,7 @@ export default function Dashboard() {
               onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setDragOverMain(true); }}
               onDragLeave={() => setDragOverMain(false)}
               onDrop={handleMainDrop}
+              {...swipeHandlers}
             >
               {/* Page header — hidden on mobile for non-grid views (title shown in header bar) */}
               {selectedView !== "settings" && selectedView !== "travel-map" && (
