@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSwipeNav } from "@/hooks/useSwipeNav";
 import { Search, Upload, Moon, Sun, LayoutGrid, List, ArrowUpDown, Crown } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

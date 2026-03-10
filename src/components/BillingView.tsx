@@ -111,6 +111,50 @@ function FeatureValue({ val }: { val: boolean | string }) {
   return <span className="text-xs font-semibold text-foreground">{val}</span>;
 }
 
+/**
+ * Mobile-only dot indicators that track which plan card is scrolled into view.
+ * Uses IntersectionObserver on the snap-scroll container's children.
+ */
+function MobilePlanDots({ planCount, currentPlan, plans }: {
+  planCount: number; currentPlan: Plan; plans: Plan[];
+}) {
+  const [activeIdx, setActiveIdx] = React.useState(() => Math.max(0, plans.indexOf(currentPlan)));
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Find the parent scroll container (sibling of this component's parent)
+    const scrollEl = containerRef.current?.previousElementSibling as HTMLElement | null;
+    if (!scrollEl) return;
+    const cards = Array.from(scrollEl.children) as HTMLElement[];
+    const observers: IntersectionObserver[] = [];
+    cards.forEach((card, i) => {
+      const obs = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting && entry.intersectionRatio > 0.5) setActiveIdx(i); },
+        { root: scrollEl, threshold: 0.5 }
+      );
+      obs.observe(card);
+      observers.push(obs);
+    });
+    return () => observers.forEach(o => o.disconnect());
+  }, []);
+
+  return (
+    <div ref={containerRef} className="flex sm:hidden items-center justify-center gap-1.5 mt-3">
+      {Array.from({ length: planCount }).map((_, i) => (
+        <span
+          key={i}
+          className={cn(
+            "rounded-full transition-all duration-300",
+            i === activeIdx
+              ? "w-5 h-1.5 bg-primary"
+              : "w-1.5 h-1.5 bg-muted-foreground/30"
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function BillingView() {
   const plan        = usePlan();
   const isShared    = useIsSharedPlan();
