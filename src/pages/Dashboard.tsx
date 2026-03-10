@@ -231,103 +231,109 @@ export default function Dashboard() {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Header — hidden in chat fullscreen on mobile */}
           {!isChat && (
-            <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-3 sm:px-4 h-14 flex items-center gap-2 shadow-sm shrink-0">
-              <SidebarTrigger className="shrink-0" />
+            <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-xl border-b border-border/60 shrink-0"
+              style={{ height: "52px" }}
+            >
+              <div className="flex items-center h-full px-2 sm:px-4 gap-1.5">
+                <SidebarTrigger className="shrink-0 h-9 w-9" />
 
-              {isGridView && (
-                <div className="relative flex-1 min-w-0 max-w-xs sm:max-w-md">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  <Input
-                    placeholder="Search…"
-                    className="pl-9 h-9 text-sm bg-muted/50 border-border"
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                  />
-                </div>
-              )}
-
-              {/* File type filter — desktop only */}
-              {isGridView && (
-                <div className="hidden md:flex items-center gap-0.5 p-0.5 rounded-lg bg-muted shrink-0">
-                  {(["all", "image", "video"] as FileTypeFilter[]).map(f => (
-                    <button
-                      key={f}
-                      onClick={() => setFileTypeFilter(f)}
-                      className={cn(
-                        "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
-                        fileTypeFilter === f
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {f === "all" ? "All" : f === "image" ? "Images" : "Videos"}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex items-center gap-0.5 sm:gap-1 ml-auto shrink-0">
-                {isGridView && (
-                  <>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-9 text-xs gap-1.5 hidden sm:flex">
-                          <ArrowUpDown className="h-3.5 w-3.5" />
-                          <span className="hidden lg:inline">{sortLabel}</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40">
-                        <DropdownMenuItem onClick={() => toggleSort("created_at")} className={cn(sortKey === "created_at" && "font-semibold")}>
-                          Date {sortKey === "created_at" ? (sortDir === "asc" ? "↑" : "↓") : ""}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => toggleSort("title")} className={cn(sortKey === "title" && "font-semibold")}>
-                          Name {sortKey === "title" ? (sortDir === "asc" ? "↑" : "↓") : ""}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => toggleSort("file_size")} className={cn(sortKey === "file_size" && "font-semibold")}>
-                          Size {sortKey === "file_size" ? (sortDir === "asc" ? "↑" : "↓") : ""}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <Button variant="ghost" size="icon" className="h-9 w-9 hidden sm:flex"
-                      onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}
-                    >
-                      {viewMode === "grid" ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
-                    </Button>
-                  </>
-                )}
-
-                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleTheme}>
-                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </Button>
-
-                <NotificationsPanel />
-
-                {/* Upload — only on All Files and folder views (desktop) */}
-                {(selectedView === "all" || !isSpecialView) && (
-                  <Button onClick={() => setUploadOpen(true)} size="sm" className="gap-1.5 h-9 px-2 sm:px-3 hidden sm:flex">
-                    <Upload className="h-4 w-4" />
-                    <span className="hidden sm:inline">Upload</span>
-                  </Button>
-                )}
-
-                {/* Profile — always visible; desktop shows name+plan too */}
-                <button
-                  onClick={() => navigate("/profile")}
-                  className="flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-accent transition-colors shrink-0"
-                  aria-label="Go to profile"
-                >
-                  <Avatar className="h-7 w-7 ring-2 ring-border">
-                    {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt="Profile" />}
-                    <AvatarFallback className="text-[10px] font-semibold">{profileInitials}</AvatarFallback>
-                  </Avatar>
-                  <div className="hidden lg:flex flex-col items-start leading-none">
-                    <span className="text-xs font-medium text-foreground truncate max-w-[80px]">
-                      {profile?.display_name ?? user?.email?.split("@")[0] ?? "You"}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground capitalize">{plan}</span>
+                {/* Mobile: page title; Desktop: search */}
+                {isGridView ? (
+                  <div className="relative flex-1 min-w-0 max-w-[200px] sm:max-w-md">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                    <Input
+                      placeholder="Search…"
+                      className="pl-8 h-8 text-[13px] bg-muted/60 border-transparent focus:border-border rounded-xl"
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                    />
                   </div>
-                </button>
+                ) : (
+                  <h1 className="text-[15px] font-semibold text-foreground truncate flex-1 sm:hidden">{pageTitle}</h1>
+                )}
+
+                {/* File type filter — desktop only */}
+                {isGridView && (
+                  <div className="hidden md:flex items-center gap-0.5 p-0.5 rounded-lg bg-muted shrink-0">
+                    {(["all", "image", "video"] as FileTypeFilter[]).map(f => (
+                      <button
+                        key={f}
+                        onClick={() => setFileTypeFilter(f)}
+                        className={cn(
+                          "px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors",
+                          fileTypeFilter === f
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {f === "all" ? "All" : f === "image" ? "Images" : "Videos"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-0.5 ml-auto shrink-0">
+                  {isGridView && (
+                    <>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hidden sm:flex">
+                            <ArrowUpDown className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem onClick={() => toggleSort("created_at")} className={cn(sortKey === "created_at" && "font-semibold")}>
+                            Date {sortKey === "created_at" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toggleSort("title")} className={cn(sortKey === "title" && "font-semibold")}>
+                            Name {sortKey === "title" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toggleSort("file_size")} className={cn(sortKey === "file_size" && "font-semibold")}>
+                            Size {sortKey === "file_size" ? (sortDir === "asc" ? "↑" : "↓") : ""}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:flex"
+                        onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}
+                      >
+                        {viewMode === "grid" ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+                      </Button>
+                    </>
+                  )}
+
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleTheme}>
+                    {theme === "dark" ? <Sun className="h-[15px] w-[15px]" /> : <Moon className="h-[15px] w-[15px]" />}
+                  </Button>
+
+                  <NotificationsPanel />
+
+                  {/* Upload — desktop only */}
+                  {(selectedView === "all" || !isSpecialView) && (
+                    <Button onClick={() => setUploadOpen(true)} size="sm" className="gap-1.5 h-8 px-3 hidden sm:flex text-xs rounded-xl">
+                      <Upload className="h-3.5 w-3.5" />
+                      Upload
+                    </Button>
+                  )}
+
+                  {/* Profile avatar */}
+                  <button
+                    onClick={() => navigate("/profile")}
+                    className="flex items-center gap-1.5 h-8 pl-1 pr-2 rounded-xl hover:bg-accent transition-colors shrink-0"
+                    aria-label="Go to profile"
+                  >
+                    <Avatar className="h-7 w-7 ring-2 ring-border">
+                      {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt="Profile" />}
+                      <AvatarFallback className="text-[10px] font-semibold">{profileInitials}</AvatarFallback>
+                    </Avatar>
+                    <div className="hidden lg:flex flex-col items-start leading-none">
+                      <span className="text-[11px] font-medium text-foreground truncate max-w-[80px]">
+                        {profile?.display_name ?? user?.email?.split("@")[0] ?? "You"}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground capitalize">{plan}</span>
+                    </div>
+                  </button>
+                </div>
               </div>
             </header>
           )}
