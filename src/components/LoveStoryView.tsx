@@ -193,21 +193,21 @@ export function LoveStoryView() {
   return (
     <div className="min-h-full bg-background">
       {/* Header */}
-      <div className="px-4 sm:px-6 pt-2 pb-5 max-w-6xl mx-auto">
-        <div className="flex items-center gap-2 mb-1">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <h1 className="text-2xl font-bold font-heading tracking-tight text-foreground">Love Story Card</h1>
+      <div className="px-3 sm:px-6 pt-2 pb-3 sm:pb-5 max-w-6xl mx-auto">
+        <div className="flex items-center gap-2 mb-0.5">
+          <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+          <h1 className="text-lg sm:text-2xl font-bold font-heading tracking-tight text-foreground">Love Story Card</h1>
         </div>
-        <p className="text-sm text-muted-foreground">Choose a template, customize it, and export for Instagram.</p>
+        <p className="text-xs sm:text-sm text-muted-foreground">Choose a template, customize, and export.</p>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-28 sm:pb-10">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 pb-24 sm:pb-10">
         {/* ── Template Gallery ─────────────────────────────────────────── */}
-        <div className="mb-6">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
-            <Eye className="h-3.5 w-3.5" /> Choose Template
+        <div className="mb-4 sm:mb-6">
+          <p className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2 sm:mb-3 flex items-center gap-1.5">
+            <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Template
           </p>
-          <div className="grid grid-cols-5 gap-2 sm:gap-3">
+          <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
             {ALL_TEMPLATES.map(t => (
               <TemplateThumbnail
                 key={t}
@@ -220,13 +220,13 @@ export function LoveStoryView() {
         </div>
 
         {/* ── Main 2-column layout ──────────────────────────────────────── */}
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-8 items-start">
 
           {/* Card Preview */}
-          <div className="flex-1 flex flex-col items-center gap-4 min-w-0">
+          <div className="flex-1 flex flex-col items-center gap-3 sm:gap-4 min-w-0">
             <div
-              className="animate-scale-in"
-              style={{ filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.15))", maxWidth: "100%", overflowX: "auto" }}
+              className="animate-scale-in w-full flex justify-center"
+              style={{ filter: "drop-shadow(0 12px 32px rgba(0,0,0,0.15))" }}
             >
               <LoveStoryCard
                 ref={cardRef}
@@ -242,24 +242,24 @@ export function LoveStoryView() {
             </div>
 
             {/* Export buttons below card */}
-            <div className="flex flex-wrap gap-2 justify-center">
-              <Button onClick={() => exportCard("png")} disabled={exporting} size="sm" className="gap-2">
-                {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                Download PNG
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center">
+              <Button onClick={() => exportCard("png")} disabled={exporting} size="sm" className="gap-1.5 h-8 text-xs rounded-xl px-3">
+                {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                Download
               </Button>
-              <Button onClick={() => exportCard("story")} disabled={exporting} variant="outline" size="sm" className="gap-2">
-                {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
-                Instagram Story
+              <Button onClick={() => exportCard("story")} disabled={exporting} variant="outline" size="sm" className="gap-1.5 h-8 text-xs rounded-xl px-3">
+                {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3" />}
+                Story
               </Button>
-              <Button onClick={() => exportCard("post")} disabled={exporting} variant="outline" size="sm" className="gap-2">
-                {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
-                Instagram Post
+              <Button onClick={() => exportCard("post")} disabled={exporting} variant="outline" size="sm" className="gap-1.5 h-8 text-xs rounded-xl px-3">
+                {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3" />}
+                Post
               </Button>
             </div>
           </div>
 
           {/* ── Customization Panel ──────────────────────────────────── */}
-          <div className="w-full lg:w-72 shrink-0 space-y-4">
+          <div className="w-full lg:w-72 shrink-0 space-y-3 sm:space-y-4">
 
             {/* Collapse toggle on mobile */}
             <button

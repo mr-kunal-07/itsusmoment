@@ -44,7 +44,6 @@ function useUnreadCount() {
     staleTime: 0,
   });
 
-  // Realtime: refresh count on any message change
   useEffect(() => {
     if (!coupleId || !user) return;
     channelRef.current = supabase
@@ -76,60 +75,69 @@ export function MobileBottomNav({ selectedView, onSelectView, onUpload }: Props)
   const isAllFilesView = selectedView === "all" || !SPECIAL_VIEWS.includes(selectedView);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-background border-t border-border safe-area-bottom">
-      <div className="flex items-center h-16">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 sm:hidden"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      {/* Frosted glass bar */}
+      <div className="bg-background/90 backdrop-blur-xl border-t border-border/60">
+        <div className="flex items-center h-[56px] px-1">
 
-        {/* Files */}
-        <NavBtn id="all" label="Files" icon={Home} selectedView={selectedView} onSelectView={onSelectView} />
+          {/* Files */}
+          <NavBtn id="all" label="Files" icon={Home} selectedView={selectedView} onSelectView={onSelectView} />
 
-        {/* Memories */}
-        <NavBtn id="timeline" label="Memories" icon={CalendarHeart} selectedView={selectedView} onSelectView={onSelectView} />
+          {/* Memories */}
+          <NavBtn id="timeline" label="Memories" icon={CalendarHeart} selectedView={selectedView} onSelectView={onSelectView} />
 
-        {/* Upload FAB — centre; only visible on All Files / folder views */}
-        <button
-          onClick={onUpload}
-          aria-label="Upload"
-          className={cn(
-            "relative flex flex-col items-center justify-center flex-1 py-2 group",
-            isAllFilesView ? "opacity-100" : "opacity-30 pointer-events-none"
-          )}
-        >
-          <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center -mt-6 shadow-lg ring-4 ring-background transition-transform active:scale-95 group-active:scale-95">
-            <Upload className="h-5 w-5 text-primary-foreground" />
+          {/* Upload FAB — centre */}
+          <div className="flex flex-col items-center justify-center flex-1">
+            <button
+              onClick={isAllFilesView ? onUpload : undefined}
+              aria-label="Upload"
+              className={cn(
+                "flex items-center justify-center transition-all active:scale-90",
+                "h-11 w-11 rounded-2xl bg-primary shadow-lg",
+                "shadow-[0_4px_16px_hsl(var(--primary)/0.45)]",
+                !isAllFilesView && "opacity-30 pointer-events-none"
+              )}
+            >
+              <Upload className="h-[18px] w-[18px] text-primary-foreground" strokeWidth={2.5} />
+            </button>
           </div>
-          <span className="text-[10px] font-medium text-muted-foreground mt-0.5">Upload</span>
-        </button>
 
-        {/* Chat — with unread badge */}
-        <NavBtn
-          id="chat"
-          label="Chat"
-          icon={MessageCircleHeart}
-          selectedView={selectedView}
-          onSelectView={onSelectView}
-          badge={chatBadge}
-        />
+          {/* Chat — with unread badge */}
+          <NavBtn
+            id="chat"
+            label="Chat"
+            icon={MessageCircleHeart}
+            selectedView={selectedView}
+            onSelectView={onSelectView}
+            badge={chatBadge}
+          />
 
-        {/* Plan */}
-        <button
-          onClick={() => onSelectView("billing")}
-          aria-label="Plan"
-          className={cn(
-            "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors relative",
-            isPlanActive ? "text-primary" : "text-muted-foreground"
-          )}
-        >
-          {isPlanActive && (
-            <span className="absolute top-1 left-1/2 -translate-x-1/2 h-1 w-5 rounded-full bg-primary" />
-          )}
-          <span className="mt-1">
-            <Crown className={cn("h-5 w-5 transition-transform", isPlanActive && "scale-110 fill-primary/20")} />
-          </span>
-          <span className={cn("text-[10px] font-medium", isPlanActive ? "text-primary" : "text-muted-foreground")}>
-            {PLAN_LABEL[plan] ?? "Plan"}
-          </span>
-        </button>
+          {/* Plan */}
+          <button
+            onClick={() => onSelectView("billing")}
+            aria-label="Plan"
+            className={cn(
+              "flex flex-col items-center justify-center gap-[3px] flex-1 h-full transition-colors relative",
+              isPlanActive ? "text-primary" : "text-muted-foreground"
+            )}
+          >
+            {isPlanActive && (
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-6 rounded-full bg-primary" />
+            )}
+            <Crown
+              className={cn("h-[22px] w-[22px] transition-all", isPlanActive ? "scale-110" : "")}
+              strokeWidth={isPlanActive ? 2 : 1.75}
+              style={isPlanActive ? { filter: "drop-shadow(0 0 6px hsl(var(--primary)/0.5))" } : undefined}
+            />
+            <span className={cn("text-[10px] font-medium leading-none", isPlanActive ? "text-primary" : "text-muted-foreground")}>
+              {PLAN_LABEL[plan] ?? "Plan"}
+            </span>
+          </button>
 
+        </div>
       </div>
     </nav>
   );
@@ -148,23 +156,27 @@ function NavBtn({
       onClick={() => onSelectView(id)}
       aria-label={label}
       className={cn(
-        "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors relative",
+        "flex flex-col items-center justify-center gap-[3px] flex-1 h-full transition-colors relative",
         isActive ? "text-foreground" : "text-muted-foreground"
       )}
     >
-      {/* Active indicator pill */}
+      {/* Active indicator — top line like Instagram */}
       {isActive && (
-        <span className="absolute top-1 left-1/2 -translate-x-1/2 h-1 w-5 rounded-full bg-primary" />
+        <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-6 rounded-full bg-primary" />
       )}
-      <span className="relative mt-1">
-        <Icon className={cn("h-5 w-5 transition-transform", isActive && "scale-110")} />
+      <span className="relative">
+        <Icon
+          className={cn("h-[22px] w-[22px] transition-all", isActive ? "scale-110" : "")}
+          strokeWidth={isActive ? 2 : 1.75}
+          style={isActive ? { filter: "drop-shadow(0 0 4px hsl(var(--primary)/0.4))" } : undefined}
+        />
         {!!badge && badge > 0 && (
-          <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center px-0.5 leading-none">
+          <span className="absolute -top-1 -right-1.5 min-w-[15px] h-[15px] rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center px-[3px] leading-none border border-background">
             {badge > 99 ? "99+" : badge}
           </span>
         )}
       </span>
-      <span className={cn("text-[10px] font-medium", isActive ? "text-foreground" : "text-muted-foreground")}>
+      <span className={cn("text-[10px] font-medium leading-none", isActive ? "text-foreground" : "text-muted-foreground")}>
         {label}
       </span>
     </button>

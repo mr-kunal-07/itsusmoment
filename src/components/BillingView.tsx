@@ -59,6 +59,14 @@ const FEATURES: FeatureRow[] = [
   },
   {
     icon: Sparkles,
+    text: "Love Story Card",
+    hint: "Generate & share your story",
+    single:   true,
+    dating:   true,
+    soulmate: true,
+  },
+  {
+    icon: Crown,
     text: "All new features",
     single:   false,
     dating:   false,
