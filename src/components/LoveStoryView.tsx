@@ -219,40 +219,43 @@ export function LoveStoryView() {
           </div>
         </div>
 
-        {/* ── Main 2-column layout ──────────────────────────────────────── */}
+        {/* ── Main layout: card on top on mobile, side-by-side on lg ── */}
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-8 items-start">
 
           {/* Card Preview */}
-          <div className="flex-1 flex flex-col items-center gap-3 sm:gap-4 min-w-0">
+          <div className="w-full lg:flex-1 flex flex-col items-center gap-3 sm:gap-4 min-w-0">
+            {/* Horizontally scrollable card area on mobile */}
             <div
-              className="animate-scale-in w-full flex justify-center"
+              className="w-full overflow-x-auto flex justify-center"
               style={{ filter: "drop-shadow(0 12px 32px rgba(0,0,0,0.15))" }}
             >
-              <LoveStoryCard
-                ref={cardRef}
-                templateId={activeTemplate}
-                customization={custom}
-                myProfile={myProfile ?? null}
-                partnerProfile={partnerProfile}
-                coupleStartDate={couple?.created_at ?? null}
-                milestones={milestones}
-                photoCount={media.length}
-                messageCount={messages.length}
-              />
+              <div className="shrink-0 w-full max-w-[340px] sm:max-w-full">
+                <LoveStoryCard
+                  ref={cardRef}
+                  templateId={activeTemplate}
+                  customization={custom}
+                  myProfile={myProfile ?? null}
+                  partnerProfile={partnerProfile}
+                  coupleStartDate={couple?.created_at ?? null}
+                  milestones={milestones}
+                  photoCount={media.length}
+                  messageCount={messages.length}
+                />
+              </div>
             </div>
 
-            {/* Export buttons below card */}
-            <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center">
-              <Button onClick={() => exportCard("png")} disabled={exporting} size="sm" className="gap-1.5 h-8 text-xs rounded-xl px-3">
-                {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+            {/* Export buttons */}
+            <div className="flex gap-2 justify-center w-full px-2 sm:px-0">
+              <Button onClick={() => exportCard("png")} disabled={exporting} size="sm" className="gap-1.5 flex-1 sm:flex-none h-9 text-xs rounded-xl px-3">
+                {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                 Download
               </Button>
-              <Button onClick={() => exportCard("story")} disabled={exporting} variant="outline" size="sm" className="gap-1.5 h-8 text-xs rounded-xl px-3">
-                {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3" />}
+              <Button onClick={() => exportCard("story")} disabled={exporting} variant="outline" size="sm" className="gap-1.5 flex-1 sm:flex-none h-9 text-xs rounded-xl px-3">
+                {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
                 Story
               </Button>
-              <Button onClick={() => exportCard("post")} disabled={exporting} variant="outline" size="sm" className="gap-1.5 h-8 text-xs rounded-xl px-3">
-                {exporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3" />}
+              <Button onClick={() => exportCard("post")} disabled={exporting} variant="outline" size="sm" className="gap-1.5 flex-1 sm:flex-none h-9 text-xs rounded-xl px-3">
+                {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
                 Post
               </Button>
             </div>
