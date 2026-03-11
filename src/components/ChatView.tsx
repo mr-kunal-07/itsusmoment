@@ -324,6 +324,10 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
   const { partnerTyping, sendTyping } = useTyping(coupleId, user?.id);
   const { partnerOnline, partnerLastSeen } = usePresence(coupleId, user?.id, partnerId);
 
+  // ── WebRTC calling ──────────────────────────────────────────────────────────
+  const { callState, callType, incomingCallType, localStream, remoteStream, startCall, acceptCall, rejectCall, hangUp } =
+    useWebRTC({ coupleId, myUserId: user?.id ?? null, partnerUserId: partnerId ?? null });
+
   // ── VisualViewport keyboard offset (mobile keyboard push) ──────────────────
   useEffect(() => {
     const vv = window.visualViewport;
