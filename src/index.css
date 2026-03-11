@@ -108,17 +108,17 @@
 
     --border: 0 0% 18%;             /* #2e2e2e — very subtle dividers */
     --input: 0 0% 16%;
-    --ring: 42 20% 88%;
+    --ring: 0 0% 100%;
 
     /* ── Sidebar — slightly lighter than bg, like the reference ── */
     --sidebar-background: 0 0% 11%;     /* #1c1c1c */
     --sidebar-foreground: 0 0% 50%;     /* #808080 — muted nav items */
-    --sidebar-primary: 42 20% 88%;
-    --sidebar-primary-foreground: 0 0% 8%;
+    --sidebar-primary: 0 0% 0%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 17%;         /* #2b2b2b — active item bg */
     --sidebar-accent-foreground: 0 0% 90%;
     --sidebar-border: 0 0% 15%;         /* #262626 */
-    --sidebar-ring: 42 20% 88%;
+    --sidebar-ring: 0 0% 100%;
 
     /* ── Custom tokens ── */
     --gradient-primary: linear-gradient(135deg, hsl(42 20% 88%), hsl(38 25% 80%));
