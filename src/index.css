@@ -25,11 +25,12 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
 
-    --primary: 42 18% 82%;
-    --primary-foreground: 0 0% 8%;
+    /* Light: primary = white, secondary = black */
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 0 0% 93%;
-    --secondary-foreground: 0 0% 15%;
+    --secondary: 0 0% 0%;
+    --secondary-foreground: 0 0% 100%;
 
     --muted: 0 0% 94%;
     --muted-foreground: 0 0% 46%;
@@ -42,18 +43,18 @@
 
     --border: 0 0% 88%;
     --input: 0 0% 88%;
-    --ring: 42 18% 82%;
+    --ring: 0 0% 0%;
 
     --radius: 0.55rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 0 0% 35%;
-    --sidebar-primary: 42 18% 82%;
-    --sidebar-primary-foreground: 0 0% 8%;
+    --sidebar-primary: 0 0% 0%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 93%;
     --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 42 18% 82%;
+    --sidebar-ring: 0 0% 0%;
 
     --gradient-primary: linear-gradient(135deg, hsl(42 18% 82%), hsl(38 22% 74%));
     --gradient-text: linear-gradient(135deg, hsl(42 15% 40%), hsl(38 18% 30%));
@@ -89,12 +90,12 @@
     --popover: 0 0% 12%;
     --popover-foreground: 0 0% 90%;
 
-    /* ── Accent: keep soft indigo but very restrained ── */
-    --primary: 42 20% 88%;          /* creamy premium white */
-    --primary-foreground: 0 0% 8%;  /* dark text on cream buttons */
+    /* Dark: primary = black, secondary = white */
+    --primary: 0 0% 0%;             /* pure black */
+    --primary-foreground: 0 0% 100%; /* white text on black buttons */
 
-    --secondary: 0 0% 16%;          /* #292929 */
-    --secondary-foreground: 0 0% 72%;
+    --secondary: 0 0% 100%;         /* pure white */
+    --secondary-foreground: 0 0% 0%;
 
     --muted: 0 0% 14%;              /* #242424 */
     --muted-foreground: 0 0% 45%;   /* #737373 */
@@ -107,17 +108,17 @@
 
     --border: 0 0% 18%;             /* #2e2e2e — very subtle dividers */
     --input: 0 0% 16%;
-    --ring: 42 20% 88%;
+    --ring: 0 0% 100%;
 
     /* ── Sidebar — slightly lighter than bg, like the reference ── */
     --sidebar-background: 0 0% 11%;     /* #1c1c1c */
     --sidebar-foreground: 0 0% 50%;     /* #808080 — muted nav items */
-    --sidebar-primary: 42 20% 88%;
-    --sidebar-primary-foreground: 0 0% 8%;
+    --sidebar-primary: 0 0% 0%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 17%;         /* #2b2b2b — active item bg */
     --sidebar-accent-foreground: 0 0% 90%;
     --sidebar-border: 0 0% 15%;         /* #262626 */
-    --sidebar-ring: 42 20% 88%;
+    --sidebar-ring: 0 0% 100%;
 
     /* ── Custom tokens ── */
     --gradient-primary: linear-gradient(135deg, hsl(42 20% 88%), hsl(38 25% 80%));
@@ -223,6 +224,11 @@
 
 /* ── Mobile performance: strip heavy effects on small screens ── */
 @media (max-width: 640px) {
+  /* Increase base font size by 2px on mobile (16→18px) */
+  html {
+    font-size: 18px;
+  }
+
   /* Kill backdrop-blur — very expensive on mobile */
   .backdrop-blur-md,
   .backdrop-blur-sm,

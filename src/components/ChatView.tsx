@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Trash2, Lock, Reply, X, Check, CheckCheck, Smile, Mic, Play, Pause, ArrowLeft, Image as ImageIcon, CheckSquare } from "lucide-react";
+import { Send, Trash2, Lock, Reply, X, Check, CheckCheck, Smile, Mic, Play, Pause, ArrowLeft, Image as ImageIcon, CheckSquare, Phone, Video } from "lucide-react";
 import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMessages, Message } from "@/hooks/useMessages";
@@ -9,6 +9,8 @@ import { useAllProfiles, useProfile } from "@/hooks/useProfile";
 import { useTyping } from "@/hooks/useTyping";
 import { usePresence } from "@/hooks/usePresence";
 import { VoiceRecorder } from "@/components/VoiceRecorder";
+import { CallModal } from "@/components/CallModal";
+import { useWebRTC } from "@/hooks/useWebRTC";
 import { cn } from "@/lib/utils";
 import { usePlan, canUseVoiceMessages } from "@/hooks/useSubscription";
 import { UpgradeGateModal } from "@/components/UpgradeGateModal";
@@ -322,6 +324,10 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
   const { partnerTyping, sendTyping } = useTyping(coupleId, user?.id);
   const { partnerOnline, partnerLastSeen } = usePresence(coupleId, user?.id, partnerId);
 
+  // ── WebRTC calling ──────────────────────────────────────────────────────────
+  const { callState, callType, incomingCallType, localStream, remoteStream, startCall, acceptCall, rejectCall, hangUp } =
+    useWebRTC({ coupleId, myUserId: user?.id ?? null, partnerUserId: partnerId ?? null });
+
   // ── VisualViewport keyboard offset (mobile keyboard push) ──────────────────
   useEffect(() => {
     const vv = window.visualViewport;
@@ -497,8 +503,43 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
               )}
             </p>
           </div>
+
+          {/* Call buttons */}
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => startCall("voice")}
+              className="p-2 rounded-full transition-colors active:scale-95"
+              style={{ color: "hsl(var(--wa-text) / 0.7)" }}
+              title="Voice call"
+            >
+              <Phone className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => startCall("video")}
+              className="p-2 rounded-full transition-colors active:scale-95"
+              style={{ color: "hsl(var(--wa-text) / 0.7)" }}
+              title="Video call"
+            >
+              <Video className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       )}
+
+      {/* ── Call modal (WebRTC, no history saved) ── */}
+      <CallModal
+        callState={callState}
+        callType={callType}
+        incomingCallType={incomingCallType}
+        partnerName={partnerName}
+        partnerAvatarUrl={partnerProfile?.avatar_url ?? undefined}
+        partnerInitials={partnerInitials}
+        localStream={localStream}
+        remoteStream={remoteStream}
+        onAccept={acceptCall}
+        onReject={rejectCall}
+        onHangUp={hangUp}
+      />
 
       {/* ── Messages area ── */}
       <div
