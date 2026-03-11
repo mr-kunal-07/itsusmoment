@@ -224,6 +224,11 @@
 
 /* ── Mobile performance: strip heavy effects on small screens ── */
 @media (max-width: 640px) {
+  /* Increase base font size by 2px on mobile (16→18px) */
+  html {
+    font-size: 18px;
+  }
+
   /* Kill backdrop-blur — very expensive on mobile */
   .backdrop-blur-md,
   .backdrop-blur-sm,
