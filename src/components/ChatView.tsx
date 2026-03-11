@@ -503,8 +503,43 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
               )}
             </p>
           </div>
+
+          {/* Call buttons */}
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => startCall("voice")}
+              className="p-2 rounded-full transition-colors active:scale-95"
+              style={{ color: "hsl(var(--wa-text) / 0.7)" }}
+              title="Voice call"
+            >
+              <Phone className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => startCall("video")}
+              className="p-2 rounded-full transition-colors active:scale-95"
+              style={{ color: "hsl(var(--wa-text) / 0.7)" }}
+              title="Video call"
+            >
+              <Video className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       )}
+
+      {/* ── Call modal (WebRTC, no history saved) ── */}
+      <CallModal
+        callState={callState}
+        callType={callType}
+        incomingCallType={incomingCallType}
+        partnerName={partnerName}
+        partnerAvatarUrl={partnerProfile?.avatar_url ?? undefined}
+        partnerInitials={partnerInitials}
+        localStream={localStream}
+        remoteStream={remoteStream}
+        onAccept={acceptCall}
+        onReject={rejectCall}
+        onHangUp={hangUp}
+      />
 
       {/* ── Messages area ── */}
       <div
