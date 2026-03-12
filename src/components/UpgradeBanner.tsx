@@ -39,10 +39,10 @@ export function UpgradeBanner({ onUpgrade, selectedView }: Props) {
 
   // Only show for free (single) users on media views, not on non-media views
   const NON_MEDIA_VIEWS = ["chat", "activity", "billing", "settings", "recently-deleted", "timeline", "anniversaries", "stats", "bucket-list"];
-  if (plan !== "single" || dismissed || (selectedView && NON_MEDIA_VIEWS.includes(selectedView))) return null;
-
-  const limit = PLAN_UPLOAD_LIMIT.single!; // 50
+  const limit = PLAN_UPLOAD_LIMIT.single!;
   const remaining = Math.max(0, limit - usedCount);
+  if (plan !== "single" || dismissed || remaining > 10 || (selectedView && NON_MEDIA_VIEWS.includes(selectedView))) return null;
+
   const pct = Math.min(100, (usedCount / limit) * 100);
 
   const isWarning = remaining <= 10;
