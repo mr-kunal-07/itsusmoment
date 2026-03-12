@@ -1,6 +1,9 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+
+const PARTNER_CODE_KEY = "pending_partner_code";
+const JOIN_REDIRECT_KEY = "join_redirect";
 
 interface AuthContextType {
   user: User | null;
@@ -18,6 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const postAuthRan = useRef(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -34,6 +38,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Post-auth actions: accept partner code + handle join redirect
+  // Runs once after any login method (email, Google OAuth, etc.)
+  useEffect(() => {
+    if (!user || postAuthRan.current) return;
+    postAuthRan.current = true;
+
+    // 1. Accept pending partner code
+    const code = sessionStorage.getItem(PARTNER_CODE_KEY);
+    if (code) {
+      sessionStorage.removeItem(PARTNER_CODE_KEY);
+      supabase.rpc("accept_couple_invite", { _invite_code: code.trim().toUpperCase() }).then(() => {
+        // Silently handled — toast shown in components
+      });
+    }
+
+    // 2. Handle join redirect (from /join page when user wasn't logged in)
+    const joinRedirect = sessionStorage.getItem(JOIN_REDIRECT_KEY);
+    if (joinRedirect) {
+      sessionStorage.removeItem(JOIN_REDIRECT_KEY);
+      // Use setTimeout to let React finish rendering before navigating
+      setTimeout(() => {
+        window.location.href = joinRedirect;
+      }, 100);
+    }
+  }, [user]);
 
   const signUp = async (email: string, password: string, displayName: string) => {
     const { error } = await supabase.auth.signUp({
@@ -53,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    postAuthRan.current = false;
     await supabase.auth.signOut();
   };
 
