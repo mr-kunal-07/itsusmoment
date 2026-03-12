@@ -42,17 +42,7 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [partnerCode, setPartnerCode] = useState("");
 
-  // Once user is logged in, auto-accept any pending partner code
-  useEffect(() => {
-    if (!user) return;
-    const code = sessionStorage.getItem(PARTNER_CODE_KEY);
-    if (!code) return;
-    sessionStorage.removeItem(PARTNER_CODE_KEY);
-    supabase.rpc("accept_couple_invite", { _invite_code: code.trim().toUpperCase() }).then(({ data, error }) => {
-      if (error || (data as any)?.error) return;
-      toast({ title: "💕 Connected with your partner!", description: "You now share the vault together." });
-    });
-  }, [user, toast]);
+  // Post-auth actions (partner code + join redirect) are now handled in useAuth
 
   if (loading) {
     return (
