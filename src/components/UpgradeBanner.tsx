@@ -43,8 +43,6 @@ export function UpgradeBanner({ onUpgrade, selectedView }: Props) {
   const remaining = Math.max(0, limit - usedCount);
   if (plan !== "single" || dismissed || remaining > 10 || (selectedView && NON_MEDIA_VIEWS.includes(selectedView))) return null;
 
-  const limit = PLAN_UPLOAD_LIMIT.single!; // 50
-  const remaining = Math.max(0, limit - usedCount);
   const pct = Math.min(100, (usedCount / limit) * 100);
 
   const isWarning = remaining <= 10;
