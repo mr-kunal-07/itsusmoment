@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Heart, Loader2, Mail, Lock, User, ArrowRight, ArrowLeft, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+
 import { lovable } from "@/integrations/lovable/index";
 
 const PARTNER_CODE_KEY = "pending_partner_code";
