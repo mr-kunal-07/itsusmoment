@@ -52,12 +52,6 @@ export default function Auth() {
     );
   }
   if (user) {
-    const redirect = sessionStorage.getItem("join_redirect");
-    if (redirect) {
-      sessionStorage.removeItem("join_redirect");
-      window.location.href = redirect;
-      return null;
-    }
     return <Navigate to="/dashboard" replace />;
   }
 
