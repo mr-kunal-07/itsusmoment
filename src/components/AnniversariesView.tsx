@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useMilestones, useAddMilestone, useDeleteMilestone, Milestone } from "@/hooks/useMilestones";
 import { useMedia, getPublicUrl } from "@/hooks/useMedia";
 import { Button } from "@/components/ui/button";
@@ -7,216 +7,272 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format, differenceInDays, addYears, isAfter, startOfDay } from "date-fns";
-import { Plus, Trash2, Heart, Star, Calendar as CalendarIcon, Clock, Image, List } from "lucide-react";
+import { format } from "date-fns";
+import {
+  Plus, Heart, Star, Calendar as CalendarIcon,
+  List, Image, AlertCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import { MilestoneCalendar } from "@/components/MilestoneCalendar";
+import { AnniversaryCard } from "@/components/Anniversarycard";
+import { MilestoneTimelineCard } from "@/components/Milestonetimelinecard";
+import { DeleteConfirmDialog } from "@/components/Deleteconfirmdialog";
+import {
+  daysUntil,
+  MilestoneType,
+  MediaMap,
+} from "@/lib/Milestoneutils";
 
-function getNextOccurrence(dateStr: string): Date {
-  const now = startOfDay(new Date());
-  const d = new Date(dateStr);
-  let next = new Date(now.getFullYear(), d.getMonth(), d.getDate());
-  if (!isAfter(next, now)) next = addYears(next, 1);
-  return next;
-}
-
-function daysUntil(dateStr: string): number {
-  return differenceInDays(getNextOccurrence(dateStr), startOfDay(new Date()));
-}
-
-/** Circular countdown ring */
-function CountdownRing({ days }: { days: number }) {
-  const max = 365;
-  const pct = Math.max(0, Math.min(1, 1 - days / max));
-  const r = 22;
-  const circ = 2 * Math.PI * r;
-  const dash = circ * pct;
-
-  const urgent = days === 0;
-  const soon = days <= 7;
-  const near = days <= 30;
-
-  const ringColor = urgent ? "hsl(var(--primary))" : soon ? "#f87171" : near ? "#fbbf24" : "hsl(var(--muted-foreground))";
-  const textColor = urgent ? "text-primary" : soon ? "text-rose-400" : near ? "text-amber-400" : "text-muted-foreground";
-
-  return (
-    <div className="relative w-14 h-14 shrink-0 flex items-center justify-center">
-      <svg width="56" height="56" className="-rotate-90" viewBox="0 0 56 56">
-        <circle cx="28" cy="28" r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
-        <circle
-          cx="28" cy="28" r={r} fill="none"
-          stroke={ringColor} strokeWidth="3"
-          strokeDasharray={`${dash} ${circ}`}
-          strokeLinecap="round"
-          style={{ transition: "stroke-dasharray 0.6s ease" }}
-        />
-      </svg>
-      <div className={cn("absolute inset-0 flex flex-col items-center justify-center", textColor)}>
-        {urgent ? (
-          <Heart className="h-4 w-4 fill-current" />
-        ) : (
-          <>
-            <span className="text-[11px] font-bold leading-none">{days}</span>
-            <span className="text-[8px] opacity-70 leading-none mt-0.5">days</span>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
 interface AddForm {
   title: string;
   date: string;
   description: string;
-  type: "anniversary" | "milestone";
+  // FIX: typed using shared MilestoneType instead of inline string union
+  type: MilestoneType;
   media_id: string | null;
 }
 
-const defaultForm: AddForm = { title: "", date: "", description: "", type: "milestone", media_id: null };
+// FIX: factory function avoids shared-reference mutation bugs
+const makeDefaultForm = (): AddForm => ({
+  title: "",
+  date: "",
+  description: "",
+  type: "milestone",
+  media_id: null,
+});
+
+// ─── Main View ─────────────────────────────────────────────────────────────────
+
+type ViewMode = "list" | "calendar";
+
+interface PendingDelete {
+  id: string;
+  title: string;
+}
 
 export function AnniversariesView() {
   const { user } = useAuth();
+  const { toast } = useToast();
+
   const { data: milestones = [], isLoading } = useMilestones();
-  const { data: allMedia = [] } = useMedia();
+  const { data: allMedia = [], isLoading: mediaLoading } = useMedia();
   const addMilestone = useAddMilestone();
   const deleteMilestone = useDeleteMilestone();
+
+  // ── UI state ──────────────────────────────────────────────────────────────
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState<AddForm>(defaultForm);
+  const [form, setForm] = useState<AddForm>(makeDefaultForm);
   const [pickMedia, setPickMedia] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
 
-  const anniversaries = milestones
-    .filter(m => m.type === "anniversary")
-    .sort((a, b) => daysUntil(a.date) - daysUntil(b.date));
+  // ── Memoized derived data ─────────────────────────────────────────────────
 
-  const milestoneList = milestones
-    .filter(m => m.type === "milestone")
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  // FIX: mediaMap memoized — no longer rebuilt on every render
+  const mediaMap = useMemo<MediaMap>(
+    () => Object.fromEntries(allMedia.map((x) => [x.id, x])),
+    [allMedia]
+  );
 
-  const mediaMap = Object.fromEntries(allMedia.map(x => [x.id, x]));
+  // FIX: both filtered/sorted lists memoized
+  const anniversaries = useMemo(
+    () =>
+      milestones
+        .filter((m) => m.type === "anniversary")
+        .map((m) => ({ milestone: m, days: daysUntil(m.date) }))
+        .sort((a, b) => a.days - b.days),
+    [milestones]
+  );
+
+  const milestoneList = useMemo(
+    () =>
+      milestones
+        .filter((m) => m.type === "milestone")
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [milestones]
+  );
+
+  // FIX: mediaImages memoized — filtered once, not on every render
+  const mediaImages = useMemo(
+    () => allMedia.filter((m) => m.file_type === "image"),
+    [allMedia]
+  );
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  // FIX: form reset on close, not just on successful submit
+  const handleOpenAdd = useCallback(() => {
+    setForm(makeDefaultForm());
+    setShowAdd(true);
+  }, []);
+
+  const handleCloseAdd = useCallback(() => {
+    setShowAdd(false);
+    // Reset form + close any sub-popovers cleanly
+    setForm(makeDefaultForm());
+    setDatePickerOpen(false);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title || !form.date) return;
-    await addMilestone.mutateAsync({ ...form, description: form.description || undefined, media_id: form.media_id });
-    setForm(defaultForm);
-    setShowAdd(false);
+    if (!form.title.trim() || !form.date) return;
+
+    try {
+      await addMilestone.mutateAsync({
+        ...form,
+        title: form.title.trim(),
+        description: form.description.trim() || undefined,
+        media_id: form.media_id,
+      });
+      handleCloseAdd();
+      toast({ title: "✅ Milestone saved!" });
+    } catch {
+      // FIX: surface mutation errors to the user
+      toast({
+        title: "Failed to save milestone",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const mediaImages = allMedia.filter(m => m.file_type === "image");
+  // FIX: delete now requires confirmation — no immediate fire
+  const handleDeleteRequest = useCallback((id: string, title: string) => {
+    setPendingDelete({ id, title });
+  }, []);
+
+  const handleDeleteConfirm = async () => {
+    if (!pendingDelete) return;
+    try {
+      await deleteMilestone.mutateAsync(pendingDelete.id);
+      toast({ title: "Milestone deleted." });
+    } catch {
+      toast({
+        title: "Failed to delete",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setPendingDelete(null);
+    }
+  };
+
+  const handleDateSelect = useCallback((d: Date | undefined) => {
+    if (!d) return;
+    setForm((f) => ({ ...f, date: format(d, "yyyy-MM-dd") }));
+    setDatePickerOpen(false);
+  }, []);
+
+  const handleMediaSelect = useCallback((id: string) => {
+    setForm((f) => ({ ...f, media_id: id }));
+    setPickMedia(false);
+  }, []);
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold font-heading gradient-text">Our Milestones</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">Anniversaries, special moments &amp; countdowns</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Anniversaries, special moments &amp; countdowns
+          </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {/* View toggle */}
-          <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-1 border border-border/50">
-            <button
-              onClick={() => setViewMode("list")}
-              className={cn(
-                "h-7 w-7 rounded-md flex items-center justify-center transition-all",
-                viewMode === "list"
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="List view"
-            >
-              <List className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => setViewMode("calendar")}
-              className={cn(
-                "h-7 w-7 rounded-md flex items-center justify-center transition-all",
-                viewMode === "calendar"
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="Calendar view"
-            >
-              <CalendarIcon className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <Button
-            onClick={() => setShowAdd(true)}
-            size="sm"
-            className="gap-1.5 h-8 px-3 font-medium"
+          {/* View mode toggle */}
+          <div
+            className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-1 border border-border/50"
+            role="group"
+            aria-label="View mode"
           >
-            <Plus className="h-3.5 w-3.5" />
+            {(["list", "calendar"] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                aria-pressed={viewMode === mode}
+                aria-label={`${mode} view`}
+                className={cn(
+                  "h-7 w-7 rounded-md flex items-center justify-center transition-all",
+                  viewMode === mode
+                    ? "bg-background shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {mode === "list"
+                  ? <List className="h-3.5 w-3.5" aria-hidden />
+                  : <CalendarIcon className="h-3.5 w-3.5" aria-hidden />
+                }
+              </button>
+            ))}
+          </div>
+
+          <Button onClick={handleOpenAdd} size="sm" className="gap-1.5 h-8 px-3 font-medium">
+            <Plus className="h-3.5 w-3.5" aria-hidden />
             <span className="hidden sm:inline">Add</span>
           </Button>
         </div>
       </div>
 
-      {/* ── Calendar view ── */}
+      {/* Calendar view */}
       {viewMode === "calendar" && (
         <MilestoneCalendar milestones={milestones} mediaMap={mediaMap} />
       )}
 
-      {/* ── List view ── */}
+      {/* List view */}
       {viewMode === "list" && (
         <div className="space-y-8">
-          {/* Anniversaries */}
+          {/* Anniversaries section */}
           {anniversaries.length > 0 && (
-            <section className="space-y-3">
-              <div className="flex items-center gap-2.5">
-                <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Heart className="h-3.5 w-3.5 text-primary fill-primary" />
-                </div>
-                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Anniversaries
-                </h3>
-                <div className="flex-1 h-px bg-border/50" />
-                <span className="text-xs text-muted-foreground/60">{anniversaries.length}</span>
-              </div>
+            <section aria-label="Anniversaries" className="space-y-3">
+              <SectionHeader
+                icon={<Heart className="h-3.5 w-3.5 text-primary fill-primary" />}
+                iconBg="bg-primary/10"
+                label="Anniversaries"
+                count={anniversaries.length}
+              />
               <div className="space-y-2.5">
-                {anniversaries.map(m => (
+                {anniversaries.map(({ milestone, days }) => (
                   <AnniversaryCard
-                    key={m.id}
-                    milestone={m}
+                    key={milestone.id}
+                    milestone={milestone}
+                    days={days}
                     mediaMap={mediaMap}
-                    onDelete={() => deleteMilestone.mutate(m.id)}
-                    canDelete={m.created_by === user?.id}
+                    canDelete={milestone.created_by === user?.id}
+                    onDelete={() => handleDeleteRequest(milestone.id, milestone.title)}
                   />
                 ))}
               </div>
             </section>
           )}
 
-          {/* Milestones */}
+          {/* Milestones / special moments section */}
           {milestoneList.length > 0 && (
-            <section className="space-y-3">
-              <div className="flex items-center gap-2.5">
-                <div className="h-7 w-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                  <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
-                </div>
-                <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Special Moments
-                </h3>
-                <div className="flex-1 h-px bg-border/50" />
-                <span className="text-xs text-muted-foreground/60">{milestoneList.length}</span>
-              </div>
-
-              {/* Timeline */}
+            <section aria-label="Special moments" className="space-y-3">
+              <SectionHeader
+                icon={<Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />}
+                iconBg="bg-amber-500/10"
+                label="Special Moments"
+                count={milestoneList.length}
+              />
               <div className="relative pl-6">
-                {/* Vertical line */}
-                <div className="absolute left-2 top-2 bottom-2 w-px bg-border/60" />
+                {/* Vertical timeline line — scoped to this container */}
+                <div className="absolute left-2 top-2 bottom-2 w-px bg-border/60" aria-hidden />
                 <div className="space-y-3">
                   {milestoneList.map((m, i) => (
                     <MilestoneTimelineCard
                       key={m.id}
                       milestone={m}
                       mediaMap={mediaMap}
-                      onDelete={() => deleteMilestone.mutate(m.id)}
-                      canDelete={m.created_by === user?.id}
                       isLast={i === milestoneList.length - 1}
+                      canDelete={m.created_by === user?.id}
+                      onDelete={() => handleDeleteRequest(m.id, m.title)}
                     />
                   ))}
                 </div>
@@ -224,39 +280,27 @@ export function AnniversariesView() {
             </section>
           )}
 
-          {!isLoading && milestones.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-              <div className="h-16 w-16 rounded-2xl bg-primary/8 border border-primary/15 flex items-center justify-center">
-                <Heart className="h-7 w-7 text-primary/40" />
-              </div>
-              <div>
-                <p className="font-semibold font-heading text-foreground">No milestones yet</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Add your first anniversary or a special moment to remember.
-                </p>
-              </div>
-              <Button onClick={() => setShowAdd(true)} size="sm" className="gap-1.5 mt-1">
-                <Plus className="h-3.5 w-3.5" /> Add your first milestone
-              </Button>
-            </div>
-          )}
+          {/* Empty state */}
+          {!isLoading && milestones.length === 0 && <EmptyState onAdd={handleOpenAdd} />}
         </div>
       )}
 
-      {/* ── Add dialog ── */}
-      <Dialog open={showAdd} onOpenChange={open => { setShowAdd(open); if (!open) setDatePickerOpen(false); }}>
+      {/* ── Add milestone dialog ─────────────────────────────────────────── */}
+      <Dialog open={showAdd} onOpenChange={(open) => { if (!open) handleCloseAdd(); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-heading text-base">Add milestone</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             {/* Type selector */}
-            <div className="grid grid-cols-2 gap-2">
-              {(["anniversary", "milestone"] as const).map(t => (
+            <div className="grid grid-cols-2 gap-2" role="group" aria-label="Milestone type">
+              {(["anniversary", "milestone"] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
-                  onClick={() => setForm(f => ({ ...f, type: t }))}
+                  onClick={() => setForm((f) => ({ ...f, type: t }))}
+                  aria-pressed={form.type === t}
                   className={cn(
                     "py-2.5 px-3 rounded-lg text-sm font-medium border transition-all",
                     form.type === t
@@ -269,28 +313,45 @@ export function AnniversariesView() {
               ))}
             </div>
 
-            <Input
-              placeholder="Title (e.g. First Date, Proposal…)"
-              value={form.title}
-              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-              required
-            />
+            {/* Title */}
+            <div className="space-y-1.5">
+              <label htmlFor="milestone-title" className="text-xs text-muted-foreground">
+                Title <span className="text-destructive">*</span>
+              </label>
+              <Input
+                id="milestone-title"
+                placeholder="First Date, Proposal…"
+                value={form.title}
+                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                required
+                autoComplete="off"
+              />
+            </div>
 
             {/* Date picker */}
             <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground flex items-center gap-1">
-                <CalendarIcon className="h-3 w-3" /> Date
+              <label
+                htmlFor="milestone-date-trigger"
+                className="text-xs text-muted-foreground flex items-center gap-1"
+              >
+                <CalendarIcon className="h-3 w-3" aria-hidden />
+                Date <span className="text-destructive">*</span>
               </label>
-              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+              <Popover
+                open={datePickerOpen}
+                onOpenChange={setDatePickerOpen}
+              >
                 <PopoverTrigger asChild>
                   <button
+                    id="milestone-date-trigger"
                     type="button"
                     className={cn(
                       "w-full flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-left transition-colors hover:border-primary/50 focus:outline-none focus:ring-1 focus:ring-ring",
                       !form.date && "text-muted-foreground"
                     )}
+                    aria-label={form.date ? `Selected date: ${form.date}` : "Pick a date"}
                   >
-                    <CalendarIcon className="h-4 w-4 shrink-0 opacity-50" />
+                    <CalendarIcon className="h-4 w-4 shrink-0 opacity-50" aria-hidden />
                     {form.date
                       ? format(new Date(form.date + "T00:00:00"), "MMMM d, yyyy")
                       : "Pick a date"}
@@ -300,12 +361,7 @@ export function AnniversariesView() {
                   <Calendar
                     mode="single"
                     selected={form.date ? new Date(form.date + "T00:00:00") : undefined}
-                    onSelect={d => {
-                      if (d) {
-                        setForm(f => ({ ...f, date: format(d, "yyyy-MM-dd") }));
-                        setDatePickerOpen(false);
-                      }
-                    }}
+                    onSelect={handleDateSelect}
                     initialFocus
                     className="p-3 pointer-events-auto"
                   />
@@ -313,32 +369,24 @@ export function AnniversariesView() {
               </Popover>
             </div>
 
+            {/* Description */}
             <Textarea
               placeholder="Description (optional)"
               value={form.description}
-              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               rows={2}
             />
 
             {/* Attach photo */}
             <div className="space-y-1.5">
               <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Image className="h-3 w-3" /> Attach a photo
+                <Image className="h-3 w-3" aria-hidden /> Attach a photo
               </p>
               {form.media_id ? (
-                <div className="relative w-20 h-20">
-                  <img
-                    src={getPublicUrl(allMedia.find(m => m.id === form.media_id)?.file_path ?? "")}
-                    className="w-full h-full object-cover rounded-lg border border-border/50"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setForm(f => ({ ...f, media_id: null }))}
-                    className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center shadow-sm"
-                  >
-                    ×
-                  </button>
-                </div>
+                <SelectedPhoto
+                  src={getPublicUrl(allMedia.find((m) => m.id === form.media_id)?.file_path ?? "")}
+                  onRemove={() => setForm((f) => ({ ...f, media_id: null }))}
+                />
               ) : (
                 <button
                   type="button"
@@ -350,11 +398,23 @@ export function AnniversariesView() {
               )}
             </div>
 
+            {/* FIX: show mutation error inline */}
+            {addMilestone.isError && (
+              <p className="text-xs text-destructive flex items-center gap-1.5" role="alert">
+                <AlertCircle className="h-3.5 w-3.5" aria-hidden />
+                Failed to save — please try again.
+              </p>
+            )}
+
             <div className="flex justify-end gap-2 pt-1">
-              <Button type="button" variant="ghost" size="sm" onClick={() => setShowAdd(false)}>
+              <Button type="button" variant="ghost" size="sm" onClick={handleCloseAdd}>
                 Cancel
               </Button>
-              <Button type="submit" size="sm" disabled={addMilestone.isPending}>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={addMilestone.isPending || !form.title.trim() || !form.date}
+              >
                 {addMilestone.isPending ? "Saving…" : "Save milestone"}
               </Button>
             </div>
@@ -362,182 +422,129 @@ export function AnniversariesView() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Media picker ── */}
+      {/* ── Media picker dialog ──────────────────────────────────────────── */}
       <Dialog open={pickMedia} onOpenChange={setPickMedia}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Pick a photo</DialogTitle>
+            <DialogTitle className="font-heading text-base">Pick a photo</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-4 gap-2 max-h-72 overflow-y-auto">
-            {mediaImages.map(m => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => { setForm(f => ({ ...f, media_id: m.id })); setPickMedia(false); }}
-                className={cn(
-                  "aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105",
-                  form.media_id === m.id ? "border-primary" : "border-transparent"
-                )}
-              >
-                <img src={getPublicUrl(m.file_path)} className="w-full h-full object-cover" />
-              </button>
-            ))}
-            {mediaImages.length === 0 && (
-              <p className="col-span-4 text-center text-sm text-muted-foreground py-8">No photos yet</p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
 
-/** Anniversary card with countdown ring */
-function AnniversaryCard({
-  milestone, mediaMap, onDelete, canDelete,
-}: {
-  milestone: Milestone;
-  mediaMap: Record<string, { file_path: string; title: string }>;
-  onDelete: () => void;
-  canDelete: boolean;
-}) {
-  const days = daysUntil(milestone.date);
-  const photo = milestone.media_id ? mediaMap[milestone.media_id] : null;
-  const dateObj = new Date(milestone.date);
-  const yearsAgo = new Date().getFullYear() - dateObj.getFullYear();
-  const isToday = days === 0;
-
-  return (
-    <div className={cn(
-      "group relative rounded-2xl border overflow-hidden transition-all hover:border-primary/30",
-      isToday
-        ? "border-primary/40 bg-primary/5"
-        : "border-border/60 bg-card/60 backdrop-blur-sm"
-    )}>
-      {/* Shimmer on today */}
-      {isToday && (
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent animate-pulse pointer-events-none" />
-      )}
-
-      <div className="flex items-stretch">
-        {/* Photo strip */}
-        {photo && (
-          <div className="w-20 shrink-0">
-            <img
-              src={getPublicUrl(photo.file_path)}
-              alt={photo.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
-
-        <div className="flex-1 flex items-center gap-4 px-4 py-4 min-w-0">
-          {/* Countdown ring */}
-          <CountdownRing days={days} />
-
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold font-heading text-sm text-foreground truncate">{milestone.title}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {format(dateObj, "MMMM d")}
-              {yearsAgo > 0 && (
-                <span className="ml-2 text-muted-foreground/50">
-                  · {yearsAgo} year{yearsAgo !== 1 ? "s" : ""} ago
-                </span>
-              )}
-            </p>
-            {milestone.description && (
-              <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-1">{milestone.description}</p>
-            )}
-          </div>
-
-          {/* Label */}
-          <div className="shrink-0 text-right">
-            {isToday ? (
-              <span className="text-xs font-semibold text-primary flex items-center gap-1">
-                <Heart className="h-3 w-3 fill-current" /> Today!
-              </span>
-            ) : days <= 7 ? (
-              <span className="text-xs font-medium text-rose-400">{days}d away</span>
-            ) : days <= 30 ? (
-              <span className="text-xs font-medium text-amber-400">{days}d away</span>
-            ) : (
-              <span className="text-xs text-muted-foreground">{days} days</span>
-            )}
-            {canDelete && (
-              <button
-                onClick={onDelete}
-                className="opacity-0 group-hover:opacity-100 transition-opacity mt-1 block ml-auto h-5 w-5 rounded flex items-center justify-center text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** Milestone on a vertical timeline */
-function MilestoneTimelineCard({
-  milestone, mediaMap, onDelete, canDelete, isLast,
-}: {
-  milestone: Milestone;
-  mediaMap: Record<string, { file_path: string; title: string }>;
-  onDelete: () => void;
-  canDelete: boolean;
-  isLast: boolean;
-}) {
-  const photo = milestone.media_id ? mediaMap[milestone.media_id] : null;
-  const dateObj = new Date(milestone.date);
-
-  return (
-    <div className="relative group">
-      {/* Timeline dot */}
-      <div className="absolute -left-6 top-4 flex flex-col items-center">
-        <div className="h-2.5 w-2.5 rounded-full border-2 border-amber-400 bg-background z-10" />
-      </div>
-
-      <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm overflow-hidden transition-all hover:border-amber-400/30 hover:bg-card/80">
-        <div className="flex items-stretch">
-          {/* Photo strip */}
-          {photo && (
-            <div className="w-16 shrink-0">
-              <img
-                src={getPublicUrl(photo.file_path)}
-                alt={photo.title}
-                className="w-full h-full object-cover"
-              />
+          {/* FIX: show loading state from useMedia */}
+          {mediaLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <span className="text-sm text-muted-foreground animate-pulse">Loading photos…</span>
+            </div>
+          ) : mediaImages.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-8">No photos yet</p>
+          ) : (
+            <div className="grid grid-cols-4 gap-2 max-h-72 overflow-y-auto">
+              {mediaImages.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => handleMediaSelect(m.id)}
+                  aria-pressed={form.media_id === m.id}
+                  aria-label={m.title || "Select photo"}
+                  className={cn(
+                    "aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105",
+                    form.media_id === m.id ? "border-primary" : "border-transparent"
+                  )}
+                >
+                  <img
+                    src={getPublicUrl(m.file_path)}
+                    alt={m.title}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
             </div>
           )}
-          <div className="flex-1 flex items-center gap-3 px-4 py-3.5 min-w-0">
-            {!photo && (
-              <div className="h-9 w-9 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0 text-base">
-                ⭐
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold font-heading text-sm text-foreground truncate">{milestone.title}</p>
-              <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                <Clock className="h-3 w-3 opacity-50" />
-                {format(dateObj, "MMMM d, yyyy")}
-              </p>
-              {milestone.description && (
-                <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-2">{milestone.description}</p>
-              )}
-            </div>
-            {canDelete && (
-              <button
-                onClick={onDelete}
-                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-destructive shrink-0"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete confirmation ──────────────────────────────────────────── */}
+      <DeleteConfirmDialog
+        open={!!pendingDelete}
+        title={`Delete "${pendingDelete?.title}"?`}
+        description="This milestone will be permanently removed and cannot be recovered."
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setPendingDelete(null)}
+        isPending={deleteMilestone.isPending}
+      />
+    </div>
+  );
+}
+
+// ─── Small leaf components ─────────────────────────────────────────────────────
+
+function SectionHeader({
+  icon,
+  iconBg,
+  label,
+  count,
+}: {
+  icon: React.ReactNode;
+  iconBg: string;
+  label: string;
+  count: number;
+}) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center", iconBg)}>
+        {icon}
       </div>
+      <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        {label}
+      </h3>
+      <div className="flex-1 h-px bg-border/50" aria-hidden />
+      <span className="text-xs text-muted-foreground/60" aria-label={`${count} items`}>
+        {count}
+      </span>
+    </div>
+  );
+}
+
+function SelectedPhoto({
+  src,
+  onRemove,
+}: {
+  src: string;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="relative w-20 h-20">
+      <img
+        src={src}
+        alt="Selected photo"
+        className="w-full h-full object-cover rounded-lg border border-border/50"
+      />
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label="Remove selected photo"
+        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center shadow-sm"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+function EmptyState({ onAdd }: { onAdd: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+      <div className="h-16 w-16 rounded-2xl bg-primary/8 border border-primary/15 flex items-center justify-center">
+        <Heart className="h-7 w-7 text-primary/40" aria-hidden />
+      </div>
+      <div>
+        <p className="font-semibold font-heading text-foreground">No milestones yet</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Add your first anniversary or a special moment to remember.
+        </p>
+      </div>
+      <Button onClick={onAdd} size="sm" className="gap-1.5 mt-1">
+        <Plus className="h-3.5 w-3.5" aria-hidden /> Add your first milestone
+      </Button>
     </div>
   );
 }
