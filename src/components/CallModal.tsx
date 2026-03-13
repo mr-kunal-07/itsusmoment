@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Phone, PhoneOff, Video, Mic, MicOff, Volume2, Volume1 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CallState, CallType } from "@/hooks/useWebRTC";
+import { playRingtone, playDialingTone, stopCallSound } from "@/lib/callSounds";
 
 interface Props {
   callState: CallState;
@@ -59,6 +60,18 @@ export function CallModal({
       localVideoRef.current.srcObject = localStream;
     }
   }, [localStream]);
+
+  // Play/stop call sounds based on state
+  useEffect(() => {
+    if (callState === "ringing") {
+      playRingtone();
+    } else if (callState === "calling") {
+      playDialingTone();
+    } else {
+      stopCallSound();
+    }
+    return () => { stopCallSound(); };
+  }, [callState]);
 
   if (callState === "idle") return null;
 
