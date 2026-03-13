@@ -539,6 +539,12 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
         onAccept={acceptCall}
         onReject={rejectCall}
         onHangUp={hangUp}
+        isMuted={isMuted}
+        isSpeaker={isSpeaker}
+        onToggleMute={toggleMute}
+        onToggleSpeaker={toggleSpeaker}
+        callDuration={callDuration}
+        partnerOnline={partnerOnline}
       />
 
       {/* ── Messages area ── */}
