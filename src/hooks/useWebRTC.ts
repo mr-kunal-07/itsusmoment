@@ -8,6 +8,7 @@ interface UseWebRTCProps {
   coupleId: string | null;
   myUserId: string | null;
   partnerUserId: string | null;
+  partnerOnline?: boolean;
 }
 
 interface SignalPayload {
@@ -21,23 +22,26 @@ interface SignalPayload {
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
+  { urls: "stun:stun2.l.google.com:19302" },
 ];
 
-export function useWebRTC({ coupleId, myUserId, partnerUserId }: UseWebRTCProps) {
+export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: UseWebRTCProps) {
   const [callState, setCallState] = useState<CallState>("idle");
   const [callType, setCallType] = useState<CallType>("voice");
   const [incomingCallType, setIncomingCallType] = useState<CallType>("voice");
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isSpeaker, setIsSpeaker] = useState(false);
+  const [callDuration, setCallDuration] = useState(0);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const pendingCandidates = useRef<RTCIceCandidateInit[]>([]);
   const pendingOffer = useRef<RTCSessionDescriptionInit | null>(null);
-
-  const localVideoRef = useRef<HTMLVideoElement | null>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+  const hangUpRef = useRef<() => void>(() => {});
+  const durationTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const channelName = coupleId ? `call:${coupleId}` : null;
 
@@ -56,6 +60,20 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId }: UseWebRTCProps)
     pendingOffer.current = null;
     setLocalStream(null);
     setRemoteStream(null);
+    setIsMuted(false);
+    setIsSpeaker(false);
+    setCallDuration(0);
+    if (durationTimer.current) {
+      clearInterval(durationTimer.current);
+      durationTimer.current = null;
+    }
+  }, []);
+
+  const startDurationTimer = useCallback(() => {
+    setCallDuration(0);
+    durationTimer.current = setInterval(() => {
+      setCallDuration(prev => prev + 1);
+    }, 1000);
   }, []);
 
   const createPC = useCallback(() => {
@@ -68,27 +86,53 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId }: UseWebRTCProps)
     };
 
     pc.ontrack = (e) => {
-      setRemoteStream(e.streams[0]);
+      if (e.streams && e.streams[0]) {
+        setRemoteStream(e.streams[0]);
+      } else {
+        // Fallback: create a new stream from the track
+        const stream = new MediaStream([e.track]);
+        setRemoteStream(stream);
+      }
     };
 
     pc.onconnectionstatechange = () => {
+      if (pc.connectionState === "connected") {
+        startDurationTimer();
+      }
       if (pc.connectionState === "disconnected" || pc.connectionState === "failed") {
-        hangUp();
+        hangUpRef.current();
       }
     };
 
     pcRef.current = pc;
     return pc;
-  }, [myUserId, sendSignal]);
+  }, [myUserId, sendSignal, startDurationTimer]);
 
   const acquireMedia = useCallback(async (type: CallType) => {
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       video: type === "video" ? { facingMode: "user" } : false,
     });
     localStreamRef.current = stream;
     setLocalStream(stream);
     return stream;
+  }, []);
+
+  // ── send push notification for call ─────────────────────
+  const sendCallPush = useCallback(async (type: CallType) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      await supabase.functions.invoke("send-push", {
+        body: {
+          title: "Incoming Call",
+          body: type === "video" ? "📹 Incoming video call" : "📞 Incoming voice call",
+          url: "/dashboard?tab=chat",
+        },
+      });
+    } catch (e) {
+      console.warn("Failed to send call push:", e);
+    }
   }, []);
 
   // ── public actions ──────────────────────────────────────
@@ -104,13 +148,16 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId }: UseWebRTCProps)
     // Signal partner
     sendSignal({ type: "call-request", from: myUserId, callType: type });
 
+    // Send push notification so partner gets notified even if app is in background
+    sendCallPush(type);
+
     // Build peer connection and offer
     const pc = createPC();
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     sendSignal({ type: "offer", from: myUserId, sdp: offer });
-  }, [coupleId, myUserId, partnerUserId, sendSignal, createPC, acquireMedia]);
+  }, [coupleId, myUserId, partnerUserId, sendSignal, createPC, acquireMedia, sendCallPush]);
 
   const acceptCall = useCallback(async () => {
     if (!myUserId) return;
@@ -138,7 +185,7 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId }: UseWebRTCProps)
 
     // Flush buffered ICE candidates
     for (const c of pendingCandidates.current) {
-      await pc.addIceCandidate(c);
+      try { await pc.addIceCandidate(c); } catch (e) { console.warn("ICE add failed:", e); }
     }
     pendingCandidates.current = [];
   }, [myUserId, incomingCallType, sendSignal, createPC, acquireMedia]);
@@ -155,6 +202,31 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId }: UseWebRTCProps)
     cleanup();
     setCallState("idle");
   }, [myUserId, sendSignal, cleanup]);
+
+  // Keep hangUpRef in sync
+  useEffect(() => { hangUpRef.current = hangUp; }, [hangUp]);
+
+  // ── mute / speaker toggles ─────────────────────────────
+
+  const toggleMute = useCallback(() => {
+    const stream = localStreamRef.current;
+    if (!stream) return;
+    const audioTrack = stream.getAudioTracks()[0];
+    if (audioTrack) {
+      audioTrack.enabled = !audioTrack.enabled;
+      setIsMuted(!audioTrack.enabled);
+    }
+  }, []);
+
+  const toggleSpeaker = useCallback(() => {
+    setIsSpeaker(prev => !prev);
+    // On mobile, try to switch audio output if supported
+    const remoteAudio = document.querySelector("video[data-remote-audio]") as HTMLMediaElement | null;
+    if (remoteAudio && "setSinkId" in remoteAudio) {
+      // Toggle between default and speaker (best-effort)
+      (remoteAudio as any).setSinkId?.("").catch(() => {});
+    }
+  }, []);
 
   // ── signaling channel ───────────────────────────────────
 
@@ -186,12 +258,21 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId }: UseWebRTCProps)
 
         case "offer":
           if (payload.sdp) {
-            if (pcRef.current) {
-              // Caller side won't normally receive an offer, but handle gracefully
-              await pcRef.current.setRemoteDescription(payload.sdp);
-              const answer = await pcRef.current.createAnswer();
-              await pcRef.current.setLocalDescription(answer);
-              sendSignal({ type: "answer", from: myUserId, sdp: answer });
+            if (pcRef.current && pcRef.current.signalingState !== "closed") {
+              try {
+                await pcRef.current.setRemoteDescription(payload.sdp);
+                const answer = await pcRef.current.createAnswer();
+                await pcRef.current.setLocalDescription(answer);
+                sendSignal({ type: "answer", from: myUserId, sdp: answer });
+
+                // Flush any buffered ICE candidates now that remote description is set
+                for (const c of pendingCandidates.current) {
+                  try { await pcRef.current.addIceCandidate(c); } catch (e) { console.warn("ICE flush:", e); }
+                }
+                pendingCandidates.current = [];
+              } catch (e) {
+                console.error("Error handling offer:", e);
+              }
             } else {
               // Receiver: buffer the offer until acceptCall creates the PC
               pendingOffer.current = payload.sdp;
@@ -201,14 +282,23 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId }: UseWebRTCProps)
 
         case "answer":
           if (payload.sdp && pcRef.current) {
-            await pcRef.current.setRemoteDescription(payload.sdp);
+            try {
+              await pcRef.current.setRemoteDescription(payload.sdp);
+              // Flush any buffered ICE candidates
+              for (const c of pendingCandidates.current) {
+                try { await pcRef.current.addIceCandidate(c); } catch (e) { console.warn("ICE flush:", e); }
+              }
+              pendingCandidates.current = [];
+            } catch (e) {
+              console.error("Error handling answer:", e);
+            }
           }
           break;
 
         case "ice":
           if (payload.candidate) {
             if (pcRef.current?.remoteDescription) {
-              await pcRef.current.addIceCandidate(payload.candidate);
+              try { await pcRef.current.addIceCandidate(payload.candidate); } catch (e) { console.warn("ICE add:", e); }
             } else {
               pendingCandidates.current.push(payload.candidate);
             }
@@ -229,7 +319,8 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId }: UseWebRTCProps)
   return {
     callState, callType, incomingCallType,
     localStream, remoteStream,
-    localVideoRef, remoteVideoRef,
     startCall, acceptCall, rejectCall, hangUp,
+    isMuted, isSpeaker, toggleMute, toggleSpeaker,
+    callDuration, partnerOnline,
   };
 }
