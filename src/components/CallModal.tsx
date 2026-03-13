@@ -61,6 +61,18 @@ export function CallModal({
     }
   }, [localStream]);
 
+  // Play/stop call sounds based on state
+  useEffect(() => {
+    if (callState === "ringing") {
+      playRingtone();
+    } else if (callState === "calling") {
+      playDialingTone();
+    } else {
+      stopCallSound();
+    }
+    return () => { stopCallSound(); };
+  }, [callState]);
+
   if (callState === "idle") return null;
 
   const isVideo = callState === "ringing" ? incomingCallType === "video" : callType === "video";
