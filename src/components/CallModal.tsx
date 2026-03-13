@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Phone, PhoneOff, Video, VideoOff, Mic, MicOff, X } from "lucide-react";
+import { Phone, PhoneOff, Video, Mic, MicOff, Volume2, Volume1 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
 import { CallState, CallType } from "@/hooks/useWebRTC";
 
 interface Props {
@@ -16,6 +15,18 @@ interface Props {
   onAccept: () => void;
   onReject: () => void;
   onHangUp: () => void;
+  isMuted: boolean;
+  isSpeaker: boolean;
+  onToggleMute: () => void;
+  onToggleSpeaker: () => void;
+  callDuration: number;
+  partnerOnline?: boolean;
+}
+
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 export function CallModal({
@@ -23,13 +34,23 @@ export function CallModal({
   partnerName, partnerAvatarUrl, partnerInitials,
   localStream, remoteStream,
   onAccept, onReject, onHangUp,
+  isMuted, isSpeaker, onToggleMute, onToggleSpeaker,
+  callDuration, partnerOnline,
 }: Props) {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
+
+  // Always attach remote stream to an audio element for voice calls
+  useEffect(() => {
+    if (remoteAudioRef.current && remoteStream) {
+      remoteAudioRef.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
 
@@ -46,8 +67,28 @@ export function CallModal({
   const isCalling = callState === "calling";
   const isRinging = callState === "ringing";
 
+  // Status text with network awareness
+  const getStatusText = () => {
+    if (isCalling) {
+      if (partnerOnline === false) {
+        return isVideo ? "📹 Partner offline — calling…" : "📞 Partner offline — calling…";
+      }
+      return isVideo ? "📹 Ringing…" : "📞 Ringing…";
+    }
+    if (isRinging) {
+      return incomingCallType === "video" ? "📹 Incoming video call" : "📞 Incoming voice call";
+    }
+    if (isConnected) {
+      return isVideo ? `📹 ${formatDuration(callDuration)}` : `📞 ${formatDuration(callDuration)}`;
+    }
+    return "";
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex flex-col" style={{ background: "hsl(var(--background))" }}>
+      {/* Hidden audio element for voice calls - ensures audio always plays */}
+      <audio ref={remoteAudioRef} autoPlay data-remote-audio />
+
       {/* Video background (if video call and connected) */}
       {isVideo && isConnected && remoteStream && (
         <video
@@ -69,24 +110,40 @@ export function CallModal({
 
         {/* Top: partner info */}
         <div className="flex flex-col items-center gap-4 text-center">
-          <Avatar className="h-24 w-24 ring-4 ring-border">
-            <AvatarImage src={partnerAvatarUrl} />
-            <AvatarFallback className="text-2xl font-bold" style={{ background: "hsl(var(--wa-avatar))", color: "hsl(var(--wa-text))" }}>
-              {partnerInitials}
-            </AvatarFallback>
-          </Avatar>
+          {/* Pulsing ring for ringing state */}
+          <div className={`relative ${isRinging ? "animate-pulse" : ""}`}>
+            <Avatar className="h-24 w-24 ring-4 ring-border">
+              <AvatarImage src={partnerAvatarUrl} />
+              <AvatarFallback className="text-2xl font-bold" style={{ background: "hsl(var(--wa-avatar))", color: "hsl(var(--wa-text))" }}>
+                {partnerInitials}
+              </AvatarFallback>
+            </Avatar>
+            {/* Online indicator */}
+            {partnerOnline !== undefined && (
+              <span
+                className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2"
+                style={{
+                  borderColor: "hsl(0 0% 7%)",
+                  background: partnerOnline ? "hsl(142 71% 45%)" : "hsl(0 0% 50%)",
+                }}
+              />
+            )}
+          </div>
           <div>
             <p className="text-2xl font-bold text-white font-heading">{partnerName}</p>
             <p className="text-sm mt-1" style={{ color: "hsl(0 0% 65%)" }}>
-              {isCalling ? (isVideo ? "📹 Video calling…" : "📞 Voice calling…") :
-               isRinging ? (incomingCallType === "video" ? "📹 Incoming video call" : "📞 Incoming voice call") :
-               isConnected ? (isVideo ? "📹 Video call" : "📞 Voice call") : ""}
+              {getStatusText()}
             </p>
             {isConnected && (
               <div className="flex items-center justify-center gap-1.5 mt-2">
                 <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
                 <span className="text-xs text-green-400 font-medium">Connected</span>
               </div>
+            )}
+            {isCalling && partnerOnline === false && (
+              <p className="text-xs mt-2" style={{ color: "hsl(45 100% 60%)" }}>
+                Partner may not see the call right now
+              </p>
             )}
           </div>
         </div>
@@ -103,7 +160,7 @@ export function CallModal({
         )}
 
         {/* Bottom: action buttons */}
-        <div className="flex items-center justify-center gap-8">
+        <div className="flex items-center justify-center gap-6">
           {isRinging ? (
             <>
               {/* Reject */}
@@ -134,15 +191,32 @@ export function CallModal({
             </>
           ) : (
             <>
-              {/* Mute (visual only for now) */}
+              {/* Mute toggle */}
               <div className="flex flex-col items-center gap-2">
                 <button
+                  onClick={onToggleMute}
                   className="h-14 w-14 rounded-full flex items-center justify-center transition-all active:scale-95"
-                  style={{ background: "hsl(0 0% 20%)" }}
+                  style={{ background: isMuted ? "hsl(0 0% 95%)" : "hsl(0 0% 20%)" }}
                 >
-                  <Mic className="h-6 w-6 text-white" />
+                  {isMuted
+                    ? <MicOff className="h-6 w-6" style={{ color: "hsl(0 0% 10%)" }} />
+                    : <Mic className="h-6 w-6 text-white" />}
                 </button>
-                <span className="text-xs text-white/60">Mute</span>
+                <span className="text-xs text-white/60">{isMuted ? "Unmute" : "Mute"}</span>
+              </div>
+
+              {/* Speaker toggle */}
+              <div className="flex flex-col items-center gap-2">
+                <button
+                  onClick={onToggleSpeaker}
+                  className="h-14 w-14 rounded-full flex items-center justify-center transition-all active:scale-95"
+                  style={{ background: isSpeaker ? "hsl(0 0% 95%)" : "hsl(0 0% 20%)" }}
+                >
+                  {isSpeaker
+                    ? <Volume2 className="h-6 w-6" style={{ color: "hsl(0 0% 10%)" }} />
+                    : <Volume1 className="h-6 w-6 text-white" />}
+                </button>
+                <span className="text-xs text-white/60">{isSpeaker ? "Earpiece" : "Speaker"}</span>
               </div>
 
               {/* End call */}
