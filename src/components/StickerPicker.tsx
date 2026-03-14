@@ -4,19 +4,35 @@ import { X } from "lucide-react";
 const STICKER_CATEGORIES = [
   {
     name: "Love",
-    stickers: ["💕", "💖", "💗", "💘", "💝", "💞", "💓", "❤️‍🔥", "🥰", "😍", "😘", "💋", "🫶", "❣️", "💑", "👩‍❤️‍👨"],
+    stickers: ["💕", "💖", "💗", "💘", "💝", "💞", "💓", "❤️‍🔥", "🥰", "😍", "😘", "💋", "🫶", "❣️", "💑", "👩‍❤️‍👨", "💐", "🌹", "🥀", "💒", "💍", "🫂", "👫", "💏"],
   },
   {
     name: "Cute",
-    stickers: ["🐻", "🐰", "🦋", "🌸", "🌺", "🍓", "🧸", "🐱", "🐶", "🦄", "🌈", "⭐", "🎀", "🍰", "🧁", "🍩"],
+    stickers: ["🐻", "🐰", "🦋", "🌸", "🌺", "🍓", "🧸", "🐱", "🐶", "🦄", "🌈", "⭐", "🎀", "🍰", "🧁", "🍩", "🐼", "🐨", "🐷", "🐥", "🦊", "🐸", "🐙", "🦭"],
   },
   {
     name: "Mood",
-    stickers: ["🤗", "😊", "🥺", "😏", "🤭", "😜", "🙈", "🙉", "🙊", "💃", "🕺", "🎉", "🎊", "✨", "🔮", "🎭"],
+    stickers: ["🤗", "😊", "🥺", "😏", "🤭", "😜", "🙈", "🙉", "🙊", "💃", "🕺", "🎉", "🎊", "✨", "🔮", "🎭", "😴", "🤤", "🥳", "😇", "🤩", "😋", "🫣", "🫡"],
   },
   {
-    name: "Fun",
-    stickers: ["🎵", "🎶", "🌙", "☀️", "🌻", "🍕", "🍿", "🧋", "☕", "🍷", "🥂", "🏖️", "✈️", "🎡", "🎢", "🎠"],
+    name: "Food",
+    stickers: ["🍕", "🍔", "🌮", "🍣", "🍜", "🍝", "🥗", "🍱", "🧋", "☕", "🍷", "🥂", "🍿", "🍦", "🎂", "🍫", "🍪", "🥐", "🍙", "🥟", "🍤", "🍨", "🫕", "🧆"],
+  },
+  {
+    name: "Travel",
+    stickers: ["✈️", "🏖️", "🗼", "🎡", "🎢", "🎠", "🚀", "🌍", "🏔️", "🌅", "🏕️", "🛶", "🚗", "🏰", "⛩️", "🗿", "🌋", "🏝️", "🚂", "🎪", "⛱️", "🧳", "🛫", "🌄"],
+  },
+  {
+    name: "Nature",
+    stickers: ["🌻", "🌷", "🌼", "🪻", "🌿", "🍀", "🍂", "🍁", "🌙", "☀️", "🌊", "❄️", "🔥", "🌤️", "🌵", "🪷", "🌾", "🍃", "🫧", "💧", "🌏", "🪴", "🌲", "🦩"],
+  },
+  {
+    name: "Art",
+    stickers: ["🎨", "🎵", "🎶", "🎸", "🎹", "🥁", "📸", "🎬", "📚", "✏️", "🖌️", "🎯", "🏆", "🎲", "🧩", "♟️", "🎮", "🕹️", "📷", "🎤", "🪩", "🎺", "🎻", "🪘"],
+  },
+  {
+    name: "Rare",
+    stickers: ["👑", "💎", "🪬", "🧿", "🫀", "🧠", "👁️‍🗨️", "🦚", "🐉", "🦖", "🪼", "🫧", "🪸", "🪺", "🫎", "🦕", "🧬", "⚡", "🪐", "☄️", "🌌", "🎆", "🎇", "🏮"],
   },
 ];
 
@@ -41,30 +57,32 @@ export function StickerPicker({ onSelect, onClose }: Props) {
         </button>
       </div>
 
-      {/* Category tabs */}
-      <div className="flex border-b border-border">
-        {STICKER_CATEGORIES.map((cat, i) => (
-          <button
-            key={cat.name}
-            onClick={() => setTab(i)}
-            className="flex-1 py-1.5 text-[10px] font-medium transition-colors"
-            style={{
-              color: tab === i ? "hsl(var(--wa-online))" : "hsl(var(--wa-text) / 0.5)",
-              borderBottom: tab === i ? "2px solid hsl(var(--wa-online))" : "2px solid transparent",
-            }}
-          >
-            {cat.name}
-          </button>
-        ))}
+      {/* Category tabs — scrollable */}
+      <div className="overflow-x-auto scrollbar-hide">
+        <div className="flex border-b border-border min-w-max">
+          {STICKER_CATEGORIES.map((cat, i) => (
+            <button
+              key={cat.name}
+              onClick={() => setTab(i)}
+              className="px-3 py-1.5 text-[10px] font-medium transition-colors whitespace-nowrap"
+              style={{
+                color: tab === i ? "hsl(var(--wa-online))" : "hsl(var(--wa-text) / 0.5)",
+                borderBottom: tab === i ? "2px solid hsl(var(--wa-online))" : "2px solid transparent",
+              }}
+            >
+              {cat.stickers[0]} {cat.name}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Sticker grid */}
-      <div className="grid grid-cols-8 gap-1 p-2 max-h-40 overflow-y-auto">
+      <div className="grid grid-cols-6 gap-1 p-2 max-h-48 overflow-y-auto">
         {STICKER_CATEGORIES[tab].stickers.map((s, i) => (
           <button
             key={i}
             onClick={() => onSelect(s)}
-            className="text-2xl h-10 w-10 flex items-center justify-center rounded-lg hover:bg-accent/20 active:scale-110 transition-transform"
+            className="text-2xl h-11 w-11 flex items-center justify-center rounded-lg hover:bg-accent/20 active:scale-125 transition-transform"
           >
             {s}
           </button>

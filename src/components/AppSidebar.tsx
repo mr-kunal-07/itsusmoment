@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Hash, Heart, CalendarHeart, Trophy, Link2, MessageCircleHeart, Crown, ShieldCheck, Settings, Activity, Sparkles, Globe } from "lucide-react";
 import { usePlan, getStorageLimit, formatStorageLimit } from "@/hooks/useSubscription";
@@ -19,6 +19,9 @@ import {
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -255,19 +258,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
             </Button>
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            {creatingFolder && !creatingInParent && (
-              <div className="px-2 pb-2">
-                <Input
-                  value={newFolderName}
-                  onChange={e => setNewFolderName(e.target.value)}
-                  placeholder="Folder name"
-                  className="h-8 text-sm"
-                  autoFocus
-                  onKeyDown={e => { if (e.key === "Enter") handleCreate(null); if (e.key === "Escape") { setCreatingFolder(false); setNewFolderName(""); } }}
-                  onBlur={() => { if (!newFolderName.trim()) { setCreatingFolder(false); setNewFolderName(""); } }}
-                />
-              </div>
-            )}
+            {/* Folder creation is handled by the Dialog below */}
             <SidebarMenu>
               {rootFolders.map(folder => (
                 <FolderItem
@@ -385,6 +376,38 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Folder creation dialog — works well on mobile with floating keyboard */}
+      <Dialog open={creatingFolder} onOpenChange={open => { if (!open) { setCreatingFolder(false); setCreatingInParent(null); setNewFolderName(""); } }}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-sm flex items-center gap-2">
+              <FolderPlus className="h-4 w-4 text-primary" />
+              {creatingInParent ? "New Subfolder" : "New Folder"}
+            </DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={e => { e.preventDefault(); handleCreate(creatingInParent); }}
+            className="space-y-3"
+          >
+            <Input
+              value={newFolderName}
+              onChange={e => setNewFolderName(e.target.value)}
+              placeholder={creatingInParent ? "Subfolder name" : "Folder name"}
+              className="h-10 text-sm"
+              autoFocus
+            />
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={() => { setCreatingFolder(false); setCreatingInParent(null); setNewFolderName(""); }}>
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" disabled={!newFolderName.trim()}>
+                Create
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Sidebar>
   );
 }
@@ -465,20 +488,7 @@ function FolderItem({
         </div>
       )}
 
-      {/* Subfolder creation input */}
-      {creatingInParent === folder.id && (
-        <div className="pl-6 pr-2 pb-1">
-          <Input
-            value={newFolderName}
-            onChange={e => setNewFolderName(e.target.value)}
-            placeholder="Subfolder name"
-            className="h-7 text-sm"
-            autoFocus
-            onKeyDown={e => { if (e.key === "Enter") onSubmitCreate(folder.id); if (e.key === "Escape") onCancelCreate(); }}
-            onBlur={() => { if (!newFolderName.trim()) onCancelCreate(); }}
-          />
-        </div>
-      )}
+      {/* Subfolder creation is handled by the parent Dialog */}
 
       {/* Children */}
       {expanded && children.length > 0 && (
