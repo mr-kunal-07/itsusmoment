@@ -550,6 +550,7 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
         onToggleSpeaker={toggleSpeaker}
         callDuration={callDuration}
         partnerOnline={partnerOnline}
+        onFlipCamera={flipCamera}
       />
 
       {/* ── Messages area ── */}
