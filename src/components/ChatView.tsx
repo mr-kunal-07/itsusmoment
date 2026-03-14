@@ -327,8 +327,11 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
   const { partnerOnline, partnerLastSeen } = usePresence(coupleId, user?.id, partnerId);
 
   // ── WebRTC calling ──────────────────────────────────────────────────────────
-  const { callState, callType, incomingCallType, localStream, remoteStream, startCall, acceptCall, rejectCall, hangUp, isMuted, isSpeaker, toggleMute, toggleSpeaker, callDuration } =
+  const { callState, callType, incomingCallType, localStream, remoteStream, startCall, acceptCall, rejectCall, hangUp, isMuted, isSpeaker, toggleMute, toggleSpeaker, flipCamera, callDuration } =
     useWebRTC({ coupleId, myUserId: user?.id ?? null, partnerUserId: partnerId ?? null, partnerOnline });
+
+  const [showStickers, setShowStickers] = useState(false);
+  const [showDrawing, setShowDrawing] = useState(false);
 
   // ── VisualViewport keyboard offset (mobile keyboard push) ──────────────────
   useEffect(() => {
