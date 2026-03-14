@@ -22,6 +22,7 @@ interface Props {
   onToggleSpeaker: () => void;
   callDuration: number;
   partnerOnline?: boolean;
+  onFlipCamera?: () => void;
 }
 
 function formatDuration(seconds: number): string {
