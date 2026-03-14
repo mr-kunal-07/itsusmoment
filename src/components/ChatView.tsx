@@ -14,6 +14,8 @@ import { useWebRTC } from "@/hooks/useWebRTC";
 import { cn } from "@/lib/utils";
 import { usePlan, canUseVoiceMessages } from "@/hooks/useSubscription";
 import { UpgradeGateModal } from "@/components/UpgradeGateModal";
+import { StickerPicker } from "@/components/StickerPicker";
+import { DrawingCanvas } from "@/components/DrawingCanvas";
 
 const EMOJI_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
