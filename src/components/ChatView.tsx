@@ -598,6 +598,7 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                     const reactions = groupReactions(msg.reactions);
                     const repliedMsg = msg.reply_to_id ? msgMap[msg.reply_to_id] : null;
                     const isVoice = (msg as any).message_type === "voice";
+                    const isDrawing = (msg as any).message_type === "drawing";
                     const audioUrl = (msg as any).audio_url;
 
                     return (
