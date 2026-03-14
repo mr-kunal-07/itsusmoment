@@ -294,7 +294,6 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const filePickerRef = useRef<HTMLInputElement>(null);
 
   const startLongPress = (id: string) => {
     longPressTimer.current = setTimeout(() => {
