@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Trash2, Lock, Reply, X, Check, CheckCheck, Smile, Mic, Play, Pause, ArrowLeft, Image as ImageIcon, CheckSquare, Phone, Video } from "lucide-react";
+import { Send, Trash2, Lock, Reply, X, Check, CheckCheck, Smile, Mic, Play, Pause, ArrowLeft, Pencil, CheckSquare, Phone, Video, Sticker } from "lucide-react";
 import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMessages, Message } from "@/hooks/useMessages";
@@ -14,6 +14,8 @@ import { useWebRTC } from "@/hooks/useWebRTC";
 import { cn } from "@/lib/utils";
 import { usePlan, canUseVoiceMessages } from "@/hooks/useSubscription";
 import { UpgradeGateModal } from "@/components/UpgradeGateModal";
+import { StickerPicker } from "@/components/StickerPicker";
+import { DrawingCanvas } from "@/components/DrawingCanvas";
 
 const EMOJI_REACTIONS = ["❤️", "😂", "😮", "😢", "👍", "🔥"];
 
@@ -292,7 +294,6 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const filePickerRef = useRef<HTMLInputElement>(null);
 
   const startLongPress = (id: string) => {
     longPressTimer.current = setTimeout(() => {
@@ -325,8 +326,11 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
   const { partnerOnline, partnerLastSeen } = usePresence(coupleId, user?.id, partnerId);
 
   // ── WebRTC calling ──────────────────────────────────────────────────────────
-  const { callState, callType, incomingCallType, localStream, remoteStream, startCall, acceptCall, rejectCall, hangUp, isMuted, isSpeaker, toggleMute, toggleSpeaker, callDuration } =
+  const { callState, callType, incomingCallType, localStream, remoteStream, startCall, acceptCall, rejectCall, hangUp, isMuted, isSpeaker, toggleMute, toggleSpeaker, flipCamera, callDuration } =
     useWebRTC({ coupleId, myUserId: user?.id ?? null, partnerUserId: partnerId ?? null, partnerOnline });
+
+  const [showStickers, setShowStickers] = useState(false);
+  const [showDrawing, setShowDrawing] = useState(false);
 
   // ── VisualViewport keyboard offset (mobile keyboard push) ──────────────────
   useEffect(() => {
@@ -545,6 +549,7 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
         onToggleSpeaker={toggleSpeaker}
         callDuration={callDuration}
         partnerOnline={partnerOnline}
+        onFlipCamera={flipCamera}
       />
 
       {/* ── Messages area ── */}
@@ -592,6 +597,7 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                     const reactions = groupReactions(msg.reactions);
                     const repliedMsg = msg.reply_to_id ? msgMap[msg.reply_to_id] : null;
                     const isVoice = (msg as any).message_type === "voice";
+                    const isDrawing = (msg as any).message_type === "drawing";
                     const audioUrl = (msg as any).audio_url;
 
                     return (
@@ -676,6 +682,22 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                                 time={format(new Date(msg.created_at), "h:mm a")}
                                 msg={msg}
                               />
+                            ) : isDrawing && audioUrl ? (
+                              <div className="relative">
+                                <img
+                                  src={audioUrl}
+                                  alt="Drawing"
+                                  className="rounded-lg max-w-[240px] max-h-[300px] object-contain"
+                                  style={{ background: "#fff" }}
+                                />
+                                <span
+                                  className="absolute bottom-1.5 right-2.5 flex items-center gap-0.5 text-[10px] select-none leading-none whitespace-nowrap px-1.5 py-0.5 rounded-full"
+                                  style={{ color: "hsl(var(--wa-meta))", background: "hsl(var(--wa-bubble-out) / 0.8)" }}
+                                >
+                                  {format(new Date(msg.created_at), "h:mm a")}
+                                  <ReadReceipt msg={msg} isMe={isMe} />
+                                </span>
+                              </div>
                             ) : (
                               <>
                                 <span className="break-words">{msg.content}</span>
@@ -929,19 +951,21 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                 autoComplete="off"
               />
               <button
-                onClick={() => filePickerRef.current?.click()}
+                onClick={() => setShowStickers(s => !s)}
                 className="shrink-0 mb-0.5 transition-opacity"
                 style={{ color: "hsl(var(--wa-text) / 0.45)" }}
-                title="Share photo from vault"
+                title="Stickers"
               >
-                <ImageIcon className="h-5 w-5" />
+                <Sticker className="h-5 w-5" />
               </button>
-              <input ref={filePickerRef} type="file" accept="image/*,video/*" className="hidden" onChange={e => {
-                // File selected — for now show a hint; full vault share can be wired later
-                const file = e.target.files?.[0];
-                if (file) setText(prev => prev + (prev ? " " : "") + `[${file.name}]`);
-                e.target.value = "";
-              }} />
+              <button
+                onClick={() => setShowDrawing(true)}
+                className="shrink-0 mb-0.5 transition-opacity"
+                style={{ color: "hsl(var(--wa-text) / 0.45)" }}
+                title="Draw"
+              >
+                <Pencil className="h-5 w-5" />
+              </button>
             </div>
 
             {/* Send / Mic button */}
@@ -967,6 +991,33 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
           </>
         )}
       </div>
+
+      {/* ── Sticker Picker ── */}
+      {showStickers && (
+        <div className="absolute bottom-20 left-3 right-3 z-50">
+          <StickerPicker
+            onSelect={(sticker) => {
+              setShowStickers(false);
+              sendMessage.mutateAsync({ content: sticker, replyToId: replyTo?.id ?? null, messageType: "text" });
+              setReplyTo(null);
+            }}
+            onClose={() => setShowStickers(false)}
+          />
+        </div>
+      )}
+
+      {/* ── Drawing Canvas ── */}
+      {showDrawing && (
+        <DrawingCanvas
+          onSend={(dataUrl) => {
+            setShowDrawing(false);
+            // Send drawing as a special message with the data URL embedded
+            sendMessage.mutateAsync({ content: `🎨 Drawing`, replyToId: replyTo?.id ?? null, messageType: "drawing", audioUrl: dataUrl });
+            setReplyTo(null);
+          }}
+          onClose={() => setShowDrawing(false)}
+        />
+      )}
 
       {/* ── Upgrade Gate Modal ── */}
       <UpgradeGateModal

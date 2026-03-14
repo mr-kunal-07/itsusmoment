@@ -220,11 +220,35 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: 
 
   const toggleSpeaker = useCallback(() => {
     setIsSpeaker(prev => !prev);
-    // On mobile, try to switch audio output if supported
     const remoteAudio = document.querySelector("video[data-remote-audio]") as HTMLMediaElement | null;
     if (remoteAudio && "setSinkId" in remoteAudio) {
-      // Toggle between default and speaker (best-effort)
       (remoteAudio as any).setSinkId?.("").catch(() => {});
+    }
+  }, []);
+
+  const flipCamera = useCallback(async () => {
+    const stream = localStreamRef.current;
+    if (!stream) return;
+    const videoTrack = stream.getVideoTracks()[0];
+    if (!videoTrack) return;
+    const settings = videoTrack.getSettings();
+    const newFacing = settings.facingMode === "environment" ? "user" : "environment";
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: newFacing },
+        audio: false,
+      });
+      const newTrack = newStream.getVideoTracks()[0];
+      // Replace track in peer connection
+      const sender = pcRef.current?.getSenders().find(s => s.track?.kind === "video");
+      if (sender) await sender.replaceTrack(newTrack);
+      // Replace track in local stream
+      stream.removeTrack(videoTrack);
+      videoTrack.stop();
+      stream.addTrack(newTrack);
+      setLocalStream(new MediaStream(stream.getTracks()));
+    } catch (e) {
+      console.warn("Camera flip failed:", e);
     }
   }, []);
 
@@ -321,6 +345,7 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: 
     localStream, remoteStream,
     startCall, acceptCall, rejectCall, hangUp,
     isMuted, isSpeaker, toggleMute, toggleSpeaker,
+    flipCamera,
     callDuration, partnerOnline,
   };
 }

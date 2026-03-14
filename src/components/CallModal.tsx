@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Phone, PhoneOff, Video, Mic, MicOff, Volume2, Volume1 } from "lucide-react";
+import { Phone, PhoneOff, Video, Mic, MicOff, Volume2, Volume1, SwitchCamera } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CallState, CallType } from "@/hooks/useWebRTC";
 import { playRingtone, playDialingTone, stopCallSound } from "@/lib/callSounds";
@@ -22,6 +22,7 @@ interface Props {
   onToggleSpeaker: () => void;
   callDuration: number;
   partnerOnline?: boolean;
+  onFlipCamera?: () => void;
 }
 
 function formatDuration(seconds: number): string {
@@ -36,7 +37,7 @@ export function CallModal({
   localStream, remoteStream,
   onAccept, onReject, onHangUp,
   isMuted, isSpeaker, onToggleMute, onToggleSpeaker,
-  callDuration, partnerOnline,
+  callDuration, partnerOnline, onFlipCamera,
 }: Props) {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -244,16 +245,17 @@ export function CallModal({
                 <span className="text-xs text-white/70">End</span>
               </div>
 
-              {/* Camera toggle (video only) */}
+              {/* Camera flip (video only) */}
               {isVideo && (
                 <div className="flex flex-col items-center gap-2">
                   <button
+                    onClick={onFlipCamera}
                     className="h-14 w-14 rounded-full flex items-center justify-center transition-all active:scale-95"
                     style={{ background: "hsl(0 0% 20%)" }}
                   >
-                    <Video className="h-6 w-6 text-white" />
+                    <SwitchCamera className="h-6 w-6 text-white" />
                   </button>
-                  <span className="text-xs text-white/60">Camera</span>
+                  <span className="text-xs text-white/60">Flip</span>
                 </div>
               )}
             </>
