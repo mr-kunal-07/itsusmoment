@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 const STICKER_CATEGORIES = [
   {
