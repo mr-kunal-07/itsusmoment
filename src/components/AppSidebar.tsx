@@ -488,20 +488,7 @@ function FolderItem({
         </div>
       )}
 
-      {/* Subfolder creation input */}
-      {creatingInParent === folder.id && (
-        <div className="pl-6 pr-2 pb-1">
-          <Input
-            value={newFolderName}
-            onChange={e => setNewFolderName(e.target.value)}
-            placeholder="Subfolder name"
-            className="h-7 text-sm"
-            autoFocus
-            onKeyDown={e => { if (e.key === "Enter") onSubmitCreate(folder.id); if (e.key === "Escape") onCancelCreate(); }}
-            onBlur={() => { if (!newFolderName.trim()) onCancelCreate(); }}
-          />
-        </div>
-      )}
+      {/* Subfolder creation is handled by the parent Dialog */}
 
       {/* Children */}
       {expanded && children.length > 0 && (
