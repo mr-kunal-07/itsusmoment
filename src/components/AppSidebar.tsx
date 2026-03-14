@@ -376,6 +376,38 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Folder creation dialog — works well on mobile with floating keyboard */}
+      <Dialog open={creatingFolder} onOpenChange={open => { if (!open) { setCreatingFolder(false); setCreatingInParent(null); setNewFolderName(""); } }}>
+        <DialogContent className="sm:max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-sm flex items-center gap-2">
+              <FolderPlus className="h-4 w-4 text-primary" />
+              {creatingInParent ? "New Subfolder" : "New Folder"}
+            </DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={e => { e.preventDefault(); handleCreate(creatingInParent); }}
+            className="space-y-3"
+          >
+            <Input
+              value={newFolderName}
+              onChange={e => setNewFolderName(e.target.value)}
+              placeholder={creatingInParent ? "Subfolder name" : "Folder name"}
+              className="h-10 text-sm"
+              autoFocus
+            />
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={() => { setCreatingFolder(false); setCreatingInParent(null); setNewFolderName(""); }}>
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" disabled={!newFolderName.trim()}>
+                Create
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Sidebar>
   );
 }
