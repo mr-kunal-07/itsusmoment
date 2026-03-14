@@ -245,16 +245,17 @@ export function CallModal({
                 <span className="text-xs text-white/70">End</span>
               </div>
 
-              {/* Camera toggle (video only) */}
+              {/* Camera flip (video only) */}
               {isVideo && (
                 <div className="flex flex-col items-center gap-2">
                   <button
+                    onClick={onFlipCamera}
                     className="h-14 w-14 rounded-full flex items-center justify-center transition-all active:scale-95"
                     style={{ background: "hsl(0 0% 20%)" }}
                   >
-                    <Video className="h-6 w-6 text-white" />
+                    <SwitchCamera className="h-6 w-6 text-white" />
                   </button>
-                  <span className="text-xs text-white/60">Camera</span>
+                  <span className="text-xs text-white/60">Flip</span>
                 </div>
               )}
             </>
