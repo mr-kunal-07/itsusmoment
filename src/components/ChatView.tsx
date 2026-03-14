@@ -935,19 +935,21 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                 autoComplete="off"
               />
               <button
-                onClick={() => filePickerRef.current?.click()}
+                onClick={() => setShowStickers(s => !s)}
                 className="shrink-0 mb-0.5 transition-opacity"
                 style={{ color: "hsl(var(--wa-text) / 0.45)" }}
-                title="Share photo from vault"
+                title="Stickers"
               >
-                <ImageIcon className="h-5 w-5" />
+                <Sticker className="h-5 w-5" />
               </button>
-              <input ref={filePickerRef} type="file" accept="image/*,video/*" className="hidden" onChange={e => {
-                // File selected — for now show a hint; full vault share can be wired later
-                const file = e.target.files?.[0];
-                if (file) setText(prev => prev + (prev ? " " : "") + `[${file.name}]`);
-                e.target.value = "";
-              }} />
+              <button
+                onClick={() => setShowDrawing(true)}
+                className="shrink-0 mb-0.5 transition-opacity"
+                style={{ color: "hsl(var(--wa-text) / 0.45)" }}
+                title="Draw"
+              >
+                <Pencil className="h-5 w-5" />
+              </button>
             </div>
 
             {/* Send / Mic button */}
