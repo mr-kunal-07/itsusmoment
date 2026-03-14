@@ -976,6 +976,33 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
         )}
       </div>
 
+      {/* ── Sticker Picker ── */}
+      {showStickers && (
+        <div className="absolute bottom-20 left-3 right-3 z-50">
+          <StickerPicker
+            onSelect={(sticker) => {
+              setShowStickers(false);
+              sendMessage.mutateAsync({ content: sticker, replyToId: replyTo?.id ?? null, messageType: "text" });
+              setReplyTo(null);
+            }}
+            onClose={() => setShowStickers(false)}
+          />
+        </div>
+      )}
+
+      {/* ── Drawing Canvas ── */}
+      {showDrawing && (
+        <DrawingCanvas
+          onSend={(dataUrl) => {
+            setShowDrawing(false);
+            // Send drawing as a special message with the data URL embedded
+            sendMessage.mutateAsync({ content: `🎨 Drawing`, replyToId: replyTo?.id ?? null, messageType: "drawing", audioUrl: dataUrl });
+            setReplyTo(null);
+          }}
+          onClose={() => setShowDrawing(false)}
+        />
+      )}
+
       {/* ── Upgrade Gate Modal ── */}
       <UpgradeGateModal
         open={!!gateModal}
