@@ -59,7 +59,7 @@ export function StickerPicker({ onSelect, onClose }: Props) {
       </div>
 
       {/* Category tabs — scrollable */}
-      <ScrollArea className="w-full" orientation="horizontal">
+      <div className="overflow-x-auto scrollbar-hide">
         <div className="flex border-b border-border min-w-max">
           {STICKER_CATEGORIES.map((cat, i) => (
             <button
