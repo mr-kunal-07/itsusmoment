@@ -345,6 +345,7 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: 
     localStream, remoteStream,
     startCall, acceptCall, rejectCall, hangUp,
     isMuted, isSpeaker, toggleMute, toggleSpeaker,
+    flipCamera,
     callDuration, partnerOnline,
   };
 }
