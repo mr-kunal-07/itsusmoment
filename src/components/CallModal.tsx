@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Phone, PhoneOff, Video, Mic, MicOff, Volume2, Volume1 } from "lucide-react";
+import { Phone, PhoneOff, Video, Mic, MicOff, Volume2, Volume1, SwitchCamera } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CallState, CallType } from "@/hooks/useWebRTC";
 import { playRingtone, playDialingTone, stopCallSound } from "@/lib/callSounds";
