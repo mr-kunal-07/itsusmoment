@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Hash, Heart, CalendarHeart, Trophy, Link2, MessageCircleHeart, Crown, ShieldCheck, Settings, Activity, Sparkles, Globe } from "lucide-react";
 import { usePlan, getStorageLimit, formatStorageLimit } from "@/hooks/useSubscription";
