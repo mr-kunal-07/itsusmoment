@@ -258,19 +258,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
             </Button>
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            {creatingFolder && !creatingInParent && (
-              <div className="px-2 pb-2">
-                <Input
-                  value={newFolderName}
-                  onChange={e => setNewFolderName(e.target.value)}
-                  placeholder="Folder name"
-                  className="h-8 text-sm"
-                  autoFocus
-                  onKeyDown={e => { if (e.key === "Enter") handleCreate(null); if (e.key === "Escape") { setCreatingFolder(false); setNewFolderName(""); } }}
-                  onBlur={() => { if (!newFolderName.trim()) { setCreatingFolder(false); setNewFolderName(""); } }}
-                />
-              </div>
-            )}
+            {/* Folder creation is handled by the Dialog below */}
             <SidebarMenu>
               {rootFolders.map(folder => (
                 <FolderItem
