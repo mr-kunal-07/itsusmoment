@@ -683,6 +683,22 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                                 time={format(new Date(msg.created_at), "h:mm a")}
                                 msg={msg}
                               />
+                            ) : isDrawing && audioUrl ? (
+                              <div className="relative">
+                                <img
+                                  src={audioUrl}
+                                  alt="Drawing"
+                                  className="rounded-lg max-w-[240px] max-h-[300px] object-contain"
+                                  style={{ background: "#fff" }}
+                                />
+                                <span
+                                  className="absolute bottom-1.5 right-2.5 flex items-center gap-0.5 text-[10px] select-none leading-none whitespace-nowrap px-1.5 py-0.5 rounded-full"
+                                  style={{ color: "hsl(var(--wa-meta))", background: "hsl(var(--wa-bubble-out) / 0.8)" }}
+                                >
+                                  {format(new Date(msg.created_at), "h:mm a")}
+                                  <ReadReceipt msg={msg} isMe={isMe} />
+                                </span>
+                              </div>
                             ) : (
                               <>
                                 <span className="break-words">{msg.content}</span>
