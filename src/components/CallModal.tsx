@@ -37,7 +37,7 @@ export function CallModal({
   localStream, remoteStream,
   onAccept, onReject, onHangUp,
   isMuted, isSpeaker, onToggleMute, onToggleSpeaker,
-  callDuration, partnerOnline,
+  callDuration, partnerOnline, onFlipCamera,
 }: Props) {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
