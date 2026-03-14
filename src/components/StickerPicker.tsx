@@ -75,7 +75,7 @@ export function StickerPicker({ onSelect, onClose }: Props) {
             </button>
           ))}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Sticker grid */}
       <div className="grid grid-cols-6 gap-1 p-2 max-h-48 overflow-y-auto">
