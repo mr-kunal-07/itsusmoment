@@ -22,7 +22,7 @@ import { AnniversariesView } from "@/components/AnniversariesView";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { PartnerBanner } from "@/components/PartnerBanner";
 import { UpgradeBanner } from "@/components/UpgradeBanner";
-import { ChatView } from "@/components/ChatView";
+import { ChatView } from "@/components/chat/ChatView";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { BillingView } from "@/components/BillingView";
 import { SettingsView } from "@/components/SettingsView";
@@ -100,7 +100,7 @@ export default function Dashboard() {
   const PAID_VIEWS: Record<string, { feature: string; plan: "dating" | "soulmate" }> = {
     "travel-map": { feature: "Travel Map", plan: "dating" },
   };
-  
+
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   const moveMedia = useMoveMedia();
@@ -128,13 +128,13 @@ export default function Dashboard() {
   const handleSwipeLeft = useCallback(() => {
     if (swipeIndex >= 0 && swipeIndex < SWIPE_ORDER.length - 1)
       gatedNavigate(SWIPE_ORDER[swipeIndex + 1]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [swipeIndex, gatedNavigate]);
 
   const handleSwipeRight = useCallback(() => {
     if (swipeIndex > 0)
       gatedNavigate(SWIPE_ORDER[swipeIndex - 1]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [swipeIndex, gatedNavigate]);
 
   const swipeHandlers = useSwipeNav({
@@ -173,7 +173,7 @@ export default function Dashboard() {
 
   const folderId = selectedView === "all" ? undefined
     : isSpecialView ? undefined
-    : selectedView;
+      : selectedView;
 
   const { data: regularMedia = [], isLoading } = useMedia(
     isSpecialView && selectedView !== "starred" ? undefined : folderId,
@@ -184,7 +184,7 @@ export default function Dashboard() {
 
   const rawMedia = selectedView === "starred" ? starredMedia
     : selectedView === "on-this-day" ? onThisDayMedia
-    : regularMedia;
+      : regularMedia;
 
   const typeFiltered = fileTypeFilter === "all" ? rawMedia
     : rawMedia.filter(m => m.file_type === fileTypeFilter);
@@ -200,17 +200,17 @@ export default function Dashboard() {
   const currentFolder = !isSpecialView ? folders.find(f => f.id === selectedView) : null;
   const pageTitle = selectedView === "all" ? "All Files"
     : selectedView === "starred" ? "Starred"
-    : selectedView === "recently-deleted" ? "Recently Deleted"
-    : selectedView === "timeline" ? "Memories Timeline"
-    : selectedView === "on-this-day" ? `On This Day · ${format(new Date(), "MMMM d")}`
-    : selectedView === "anniversaries" ? "Anniversaries & Milestones"
-    : selectedView === "chat" ? "Chat with Partner 💬"
-    : selectedView === "activity" ? "Activity Feed"
-    : selectedView === "billing" ? "Billing & Plan"
-    : selectedView === "settings" ? "Settings"
-    : selectedView === "love-story" ? "Love Story"
-    : selectedView === "travel-map" ? "Travel Map"
-    : currentFolder?.name || "Folder";
+      : selectedView === "recently-deleted" ? "Recently Deleted"
+        : selectedView === "timeline" ? "Memories Timeline"
+          : selectedView === "on-this-day" ? `On This Day · ${format(new Date(), "MMMM d")}`
+            : selectedView === "anniversaries" ? "Anniversaries & Milestones"
+              : selectedView === "chat" ? "Chat with Partner 💬"
+                : selectedView === "activity" ? "Activity Feed"
+                  : selectedView === "billing" ? "Billing & Plan"
+                    : selectedView === "settings" ? "Settings"
+                      : selectedView === "love-story" ? "Love Story"
+                        : selectedView === "travel-map" ? "Travel Map"
+                          : currentFolder?.name || "Folder";
 
   const avatarUrl = profile?.avatar_url ?? null;
 
@@ -237,8 +237,6 @@ export default function Dashboard() {
     if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortKey(key); setSortDir("desc"); }
   };
-
-  const sortLabel = { created_at: "Date", title: "Name", file_size: "Size" }[sortKey] + (sortDir === "asc" ? " ↑" : " ↓");
 
   const NON_GRID_VIEWS = ["timeline", "anniversaries", "chat", "activity", "billing", "settings", "recently-deleted", "love-story", "travel-map"];
   const isGridView = !NON_GRID_VIEWS.includes(selectedView);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Hash, Heart, CalendarHeart, Trophy, Link2, MessageCircleHeart, Crown, ShieldCheck, Settings, Activity, Sparkles, Globe } from "lucide-react";
 import { usePlan, getStorageLimit, formatStorageLimit } from "@/hooks/useSubscription";
@@ -134,15 +134,6 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
             <h2 className="text-sm font-bold font-heading tracking-tight gradient-text">usMoment</h2>
             <p className="text-[10px] text-muted-foreground">Shared Media</p>
           </div>
-          {couple?.status === "active" ? (
-            <span title="Partner linked" className="h-5 w-5 flex items-center justify-center rounded-full bg-primary/15 shrink-0">
-              <Heart className="h-2.5 w-2.5 text-primary fill-primary" />
-            </span>
-          ) : (
-            <span title="No partner linked" className="h-5 w-5 flex items-center justify-center rounded-full bg-muted shrink-0">
-              <Link2 className="h-2.5 w-2.5 text-muted-foreground" />
-            </span>
-          )}
         </div>
 
         {couple?.status === "active" && (

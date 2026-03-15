@@ -1,216 +1,298 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, memo, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { TravelLocation } from "@/hooks/useTravelLocations";
 
+// ─── Reverse Geocode ──────────────────────────────────────────────────────────
+
+export interface ReverseGeoResult {
+  city: string;
+  country: string;
+  /** Short name to pre-fill the "place name" field */
+  display: string;
+}
+
+async function reverseGeocode(lat: number, lng: number): Promise<ReverseGeoResult | undefined> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`,
+      { headers: { "Accept-Language": "en", "User-Agent": "usMoment-App/1.0" } }
+    );
+    const data = await res.json();
+    if (!data?.address) return undefined;
+    const a = data.address;
+    return {
+      city: a.city || a.town || a.village || a.county || a.state || "",
+      country: a.country || "",
+      display: a.neighbourhood || a.suburb || a.quarter || a.amenity ||
+        a.city || a.town || a.village || a.county || "",
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+// ─── GPS Locate Control ───────────────────────────────────────────────────────
+
+function makeLocateControl(onLocate: () => void): L.Control {
+  const Ctrl = L.Control.extend({
+    onAdd() {
+      const btn = L.DomUtil.create("button", "");
+      btn.setAttribute("aria-label", "Jump to my location");
+      btn.setAttribute("title", "My location");
+      btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8" stroke-opacity="0.2"/></svg>`;
+      Object.assign(btn.style, {
+        width: "34px", height: "34px",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: "white", border: "2px solid rgba(0,0,0,0.2)",
+        borderRadius: "6px", cursor: "pointer", color: "#374151",
+        boxShadow: "0 1px 5px rgba(0,0,0,0.15)", outline: "none",
+        transition: "background 0.12s, color 0.12s",
+        marginBottom: "4px",
+      });
+      btn.onmouseover = () => { btn.style.background = "#eff6ff"; btn.style.color = "#2563eb"; };
+      btn.onmouseout = () => { btn.style.background = "white"; btn.style.color = "#374151"; };
+      L.DomEvent.on(btn, "click", L.DomEvent.stopPropagation);
+      L.DomEvent.on(btn, "click", onLocate);
+      return btn;
+    },
+    onRemove() { },
+  });
+  return new Ctrl({ position: "bottomright" });
+}
+
+function makeUserDot(): L.DivIcon {
+  return L.divIcon({
+    html: `<div style="width:16px;height:16px;border-radius:50%;background:#3b82f6;border:3px solid white;box-shadow:0 0 0 4px rgba(59,130,246,0.28)"></div>`,
+    className: "",
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+}
+
+// ─── Pin HTML ─────────────────────────────────────────────────────────────────
+
+const PIN_CONFIG = {
+  normal: { size: 32, border: 2.5, fontSize: 13 },
+  selected: { size: 40, border: 3, fontSize: 16 },
+} as const;
+
+function buildPinHtml(visited: boolean, variant: "normal" | "selected"): string {
+  const color = visited
+    ? variant === "selected" ? "#16a34a" : "#22c55e"
+    : variant === "selected" ? "#db2777" : "#ec4899";
+  const symbol = visited ? "✓" : "♥";
+  const cfg = PIN_CONFIG[variant];
+  const outer = cfg.size + 4;
+  return `<div style="width:${outer}px;height:${outer + 8}px;display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 ${variant === "selected" ? "4px 16px" : "3px 8px"} ${color}${variant === "selected" ? "cc" : "88"})"><div style="width:${cfg.size}px;height:${cfg.size}px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};display:flex;align-items:center;justify-content:center;border:${cfg.border}px solid white;box-shadow:0 ${variant === "selected" ? "4px 16px" : "2px 8px"} rgba(0,0,0,${variant === "selected" ? "0.25" : "0.18"})"><span style="transform:rotate(45deg);font-size:${cfg.fontSize}px;color:white;font-weight:700">${symbol}</span></div></div>`;
+}
+
+function makeDivIcon(visited: boolean, variant: "normal" | "selected"): L.DivIcon {
+  const sel = variant === "selected";
+  const w = sel ? 44 : 36, h = sel ? 52 : 42;
+  return L.divIcon({ html: buildPinHtml(visited, variant), className: "", iconSize: [w, h], iconAnchor: [w / 2, h], popupAnchor: [0, -(h + 2)] });
+}
+
+function buildTooltipHtml(loc: TravelLocation): string {
+  const sub = loc.city ? `<br><span style="font-weight:400;font-size:10px;color:#64748b">${loc.city}${loc.country ? `, ${loc.country}` : ""}</span>` : "";
+  return `<div style="background:white;border:1.5px solid #e2e8f0;color:#1e293b;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.12)">${loc.visited ? "✅" : "📍"} ${loc.location_name}${sub}</div>`;
+}
+
+// ─── Props ────────────────────────────────────────────────────────────────────
+
 interface Props {
   locations: TravelLocation[];
-  onMapClick: (lat: number, lng: number) => void;
+  /** Fired immediately on click with coords, then again once reverse-geocode resolves with geo */
+  onMapClick: (lat: number, lng: number, geo?: ReverseGeoResult) => void;
   onPinClick: (location: TravelLocation) => void;
   focusLocation: TravelLocation | null;
+  /** Notifies parent while GPS locate is in progress */
+  onLocating?: (loading: boolean) => void;
 }
 
-function makePin(visited: boolean) {
-  const color = visited ? "#22c55e" : "#ec4899";
-  const emoji = visited ? "✓" : "♥";
-  return `
-    <div style="
-      width:36px;height:42px;
-      display:flex;flex-direction:column;align-items:center;
-      filter:drop-shadow(0 3px 8px ${color}88);
-    ">
-      <div style="
-        width:32px;height:32px;border-radius:50% 50% 50% 0;
-        transform:rotate(-45deg);
-        background:${color};
-        display:flex;align-items:center;justify-content:center;
-        border:2.5px solid white;
-        box-shadow:0 2px 8px rgba(0,0,0,0.18);
-      ">
-        <span style="transform:rotate(45deg);font-size:13px;color:white;font-weight:700;">${emoji}</span>
-      </div>
-    </div>
-  `;
-}
+// ─── TravelMapCanvas ──────────────────────────────────────────────────────────
 
-function makeSelectedPin(visited: boolean) {
-  const color = visited ? "#16a34a" : "#db2777";
-  const emoji = visited ? "✓" : "♥";
-  return `
-    <div style="
-      width:44px;height:52px;
-      display:flex;flex-direction:column;align-items:center;
-      filter:drop-shadow(0 4px 16px ${color}cc);
-    ">
-      <div style="
-        width:40px;height:40px;border-radius:50% 50% 50% 0;
-        transform:rotate(-45deg);
-        background:${color};
-        display:flex;align-items:center;justify-content:center;
-        border:3px solid white;
-        box-shadow:0 4px 16px rgba(0,0,0,0.25);
-      ">
-        <span style="transform:rotate(45deg);font-size:16px;color:white;font-weight:700;">${emoji}</span>
-      </div>
-    </div>
-  `;
-}
-
-export function TravelMapCanvas({ locations, onMapClick, onPinClick, focusLocation }: Props) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
+export const TravelMapCanvas = memo(function TravelMapCanvas({
+  locations,
+  onMapClick,
+  onPinClick,
+  focusLocation,
+  onLocating,
+}: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const polylineRef = useRef<L.Polyline | null>(null);
+  const userMarkerRef = useRef<L.Marker | null>(null);
+
+  // Stable callback refs — prevents Leaflet re-binding on every render
   const onMapClickRef = useRef(onMapClick);
   const onPinClickRef = useRef(onPinClick);
-
+  const onLocatingRef = useRef(onLocating);
   useEffect(() => { onMapClickRef.current = onMapClick; }, [onMapClick]);
   useEffect(() => { onPinClickRef.current = onPinClick; }, [onPinClick]);
+  useEffect(() => { onLocatingRef.current = onLocating; }, [onLocating]);
 
-  // Init map once
+  // ── GPS locate ─────────────────────────────────────────────────────────────
+  const handleLocate = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !("geolocation" in navigator)) return;
+
+    onLocatingRef.current?.(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        onLocatingRef.current?.(false);
+        map.flyTo([lat, lng], 14, { duration: 1.1 });
+
+        if (userMarkerRef.current) {
+          userMarkerRef.current.setLatLng([lat, lng]);
+        } else {
+          userMarkerRef.current = L.marker([lat, lng], { icon: makeUserDot(), zIndexOffset: 1000 })
+            .addTo(map)
+            .bindTooltip(
+              '<div style="padding:4px 8px;font-size:11px;font-weight:600;border-radius:6px">📍 You are here</div>',
+              { permanent: false, direction: "top", offset: [0, -6], opacity: 1 }
+            );
+        }
+      },
+      (err) => {
+        onLocatingRef.current?.(false);
+        console.warn("Geolocation error:", err.message);
+      },
+      { enableHighAccuracy: true, timeout: 10_000 }
+    );
+  }, []);
+
+  // ── Init map once ─────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    if (!containerRef.current || mapRef.current) return;
 
-    const map = L.map(mapRef.current, {
+    const map = L.map(containerRef.current, {
       center: [20, 10],
       zoom: 2,
       minZoom: 2,
-      maxZoom: 18,
+      maxZoom: 19,
       zoomControl: false,
       attributionControl: true,
       worldCopyJump: true,
-      doubleClickZoom: true,
     });
 
-    // Clean OSM/CartoDB Voyager tiles — no satellite
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-      subdomains: "abcd",
-      maxZoom: 19,
-    }).addTo(map);
+    // ── Tile layer: CartoDB Voyager ──────────────────────────────────────────
+    // WHY this is the best choice for usMoment:
+    // ✅ Warm beige land, soft blues for water — romantic, not clinical
+    // ✅ Clean labels for every country/city — ideal for a travel memory app
+    // ✅ Free tier, no API key, global CDN via {s} subdomains
+    // ✅ Retina support via {r} — looks sharp on all mobile screens
+    // ✅ Hot-pink/green pins contrast perfectly against the muted palette
+    // ❌ OSM Standard — too noisy, overwhelming for casual couple use
+    // ❌ Stamen Watercolor — gorgeous but discontinued free tier (2023)
+    // ❌ Mapbox — best quality, but requires paid API key
+    // ❌ Satellite/Hybrid — wrong mood, pins are hard to see on imagery
+    L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+      {
+        attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+        subdomains: "abcd",
+        maxZoom: 19,
+      }
+    ).addTo(map);
 
-    map.fitBounds([[-75, -180], [85, 180]], { padding: [0, 0] });
     L.control.zoom({ position: "bottomright" }).addTo(map);
+    makeLocateControl(handleLocate).addTo(map);
 
-    map.on("click", (e: L.LeafletMouseEvent) => {
-      onMapClickRef.current(e.latlng.lat, e.latlng.lng);
+    // Click → open modal immediately, then enrich with reverse-geocode
+    map.on("click", async (e: L.LeafletMouseEvent) => {
+      const { lat, lng } = e.latlng;
+      // 1. Open modal right away with just coordinates
+      onMapClickRef.current(lat, lng, undefined);
+      // 2. Reverse-geocode in background and push result to form
+      const geo = await reverseGeocode(lat, lng);
+      if (geo) onMapClickRef.current(lat, lng, geo);
     });
 
-    mapInstanceRef.current = map;
-
+    mapRef.current = map;
     return () => {
       map.remove();
-      mapInstanceRef.current = null;
+      mapRef.current = null;
+      userMarkerRef.current = null;
+      markersRef.current.clear();
+      polylineRef.current = null;
     };
-  }, []);
+  }, [handleLocate]);
 
-  // Sync markers when locations change
+  // ── Sync markers + polyline ───────────────────────────────────────────────
   useEffect(() => {
-    const map = mapInstanceRef.current;
+    const map = mapRef.current;
     if (!map) return;
 
-    // Remove stale markers
-    markersRef.current.forEach((marker, id) => {
-      if (!locations.find(l => l.id === id)) {
-        marker.remove();
-        markersRef.current.delete(id);
-      }
+    const locMap = new Map(locations.map(l => [l.id, l]));
+
+    markersRef.current.forEach((m, id) => {
+      if (!locMap.has(id)) { m.remove(); markersRef.current.delete(id); }
     });
 
-    // Add/update markers
     locations.forEach(loc => {
+      const isFocused = focusLocation?.id === loc.id;
+      const icon = makeDivIcon(loc.visited ?? false, isFocused ? "selected" : "normal");
       const existing = markersRef.current.get(loc.id);
-      if (existing) {
-        // Update icon in case visited changed
-        existing.setIcon(L.divIcon({
-          html: makePin(loc.visited ?? false),
-          className: "",
-          iconSize: [36, 42],
-          iconAnchor: [18, 42],
-        }));
-        return;
-      }
-
-      const icon = L.divIcon({
-        html: makePin(loc.visited ?? false),
-        className: "",
-        iconSize: [36, 42],
-        iconAnchor: [18, 42],
-        popupAnchor: [0, -44],
-      });
+      if (existing) { existing.setIcon(icon); return; }
 
       const marker = L.marker([loc.latitude, loc.longitude], { icon })
         .addTo(map)
-        .on("click", () => onPinClickRef.current(loc));
+        .on("click", (e) => { L.DomEvent.stopPropagation(e); onPinClickRef.current(loc); });
 
-      marker.bindTooltip(
-        `<div style="background:white;border:1.5px solid #e2e8f0;color:#1e293b;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.12)">
-          ${loc.visited ? "✅" : "📍"} ${loc.location_name}${loc.city ? `<br><span style="font-weight:400;font-size:10px;color:#64748b">${loc.city}${loc.country ? `, ${loc.country}` : ""}</span>` : ""}
-        </div>`,
-        { permanent: false, direction: "top", offset: [0, -8], opacity: 1 }
-      );
-
+      marker.bindTooltip(buildTooltipHtml(loc), { permanent: false, direction: "top", offset: [0, -8], opacity: 1 });
       markersRef.current.set(loc.id, marker);
     });
 
-    // Journey polyline (only visited locations, sorted by date)
-    if (polylineRef.current) {
-      polylineRef.current.remove();
-      polylineRef.current = null;
-    }
+    polylineRef.current?.remove();
+    polylineRef.current = null;
 
     const visited = locations
       .filter(l => l.visited && l.date_visited)
       .sort((a, b) => (a.date_visited ?? "").localeCompare(b.date_visited ?? ""));
 
     if (visited.length >= 2) {
-      const points = visited.map(l => [l.latitude, l.longitude] as [number, number]);
-      polylineRef.current = L.polyline(points, {
-        color: "#22c55e",
-        weight: 2.5,
-        opacity: 0.6,
-        dashArray: "7 9",
-        lineCap: "round",
-      }).addTo(map);
+      polylineRef.current = L.polyline(
+        visited.map(l => [l.latitude, l.longitude] as [number, number]),
+        { color: "#22c55e", weight: 2.5, opacity: 0.55, dashArray: "7 9", lineCap: "round" }
+      ).addTo(map);
     }
-  }, [locations]);
+  }, [locations, focusLocation]);
 
-  // Focus / fly-to when a pin is selected
+  // ── Focus fly-to ──────────────────────────────────────────────────────────
   useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map || !focusLocation) return;
-    map.flyTo([focusLocation.latitude, focusLocation.longitude], 13, { duration: 1.0 });
+    const map = mapRef.current;
+    if (!map) return;
 
-    // Swap to selected (larger) icon
-    const marker = markersRef.current.get(focusLocation.id);
-    if (marker) {
-      marker.setIcon(L.divIcon({
-        html: makeSelectedPin(focusLocation.visited ?? false),
-        className: "",
-        iconSize: [44, 52],
-        iconAnchor: [22, 52],
-      }));
+    if (!focusLocation) {
+      markersRef.current.forEach((marker, id) => {
+        const loc = locations.find(l => l.id === id);
+        if (loc) marker.setIcon(makeDivIcon(loc.visited ?? false, "normal"));
+      });
+      return;
     }
+
+    map.flyTo([focusLocation.latitude, focusLocation.longitude], 13, { duration: 0.9 });
+    markersRef.current.get(focusLocation.id)?.setIcon(makeDivIcon(focusLocation.visited ?? false, "selected"));
 
     return () => {
-      // Restore normal icon when focus cleared
-      if (marker) {
-        marker.setIcon(L.divIcon({
-          html: makePin(focusLocation.visited ?? false),
-          className: "",
-          iconSize: [36, 42],
-          iconAnchor: [18, 42],
-        }));
-      }
+      markersRef.current.get(focusLocation.id)?.setIcon(makeDivIcon(focusLocation.visited ?? false, "normal"));
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusLocation]);
 
   return (
     <div
-      ref={mapRef}
+      ref={containerRef}
       className="w-full h-full"
-      style={{ minHeight: "300px", cursor: "crosshair" }}
+      style={{ cursor: "crosshair", minHeight: 300 }}
+      aria-label="Travel map — click anywhere to pin a memory"
+      role="application"
     />
   );
-}
+});
+
+export default TravelMapCanvas;
