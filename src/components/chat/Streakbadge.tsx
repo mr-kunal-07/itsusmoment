@@ -33,16 +33,20 @@ const MILESTONES: { days: number; message: string; emoji: string }[] = [
 ];
 
 const MILESTONE_DAYS = MILESTONES.map(m => m.days);
+const MONTHLY_RESTORE_LIMIT = 3;
 
-// ─── Monthly restore — localStorage ──────────────────────────────────────────
-// 3 free restores per calendar month, persisted locally.
-// Restore button appears in the detail panel when atRisk === true.
+// ─── Monthly restore ──────────────────────────────────────────────────────────
+// Client-side restore counter, persisted in localStorage.
+// NOTE: This provides UX-level protection only. If restores carry real product
+// value, pair this with a Supabase edge function call in consumeRestore() to
+// enforce the limit server-side and prevent localStorage manipulation.
 
 const RESTORE_KEY = "streak_restore_data";
 
 interface RestoreData { month: string; used: number }
 
 function useMonthlyRestores() {
+    // useMemo is stable — the month string only changes once a month
     const currentMonth = useMemo(() => new Date().toISOString().slice(0, 7), []);
 
     const [data, setData] = useState<RestoreData>(() => {
@@ -53,7 +57,7 @@ function useMonthlyRestores() {
                 const parsed: RestoreData = JSON.parse(saved);
                 if (parsed.month === currentMonth) return parsed;
             }
-        } catch { /* ignore */ }
+        } catch { /* storage unavailable — degrade gracefully */ }
         return { month: currentMonth, used: 0 };
     });
 
@@ -68,14 +72,17 @@ function useMonthlyRestores() {
 
     const consumeRestore = useCallback(() => {
         setData(prev => {
+            if (prev.used >= MONTHLY_RESTORE_LIMIT) return prev; // guard
             const next: RestoreData = { ...prev, used: prev.used + 1 };
             try { localStorage.setItem(RESTORE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
             return next;
         });
+        // TODO: call Supabase edge function here to enforce server-side:
+        // supabase.functions.invoke("restore-streak", { body: { coupleId } })
     }, []);
 
     return {
-        restoresLeft: Math.max(0, 3 - data.used),
+        restoresLeft: Math.max(0, MONTHLY_RESTORE_LIMIT - data.used),
         consumeRestore,
     };
 }
@@ -156,11 +163,7 @@ const MilestoneToast = memo(function MilestoneToast({
 
 // ─── NextMilestoneHint ────────────────────────────────────────────────────────
 
-const NextMilestoneHint = memo(function NextMilestoneHint({
-    current,
-}: {
-    current: number;
-}) {
+const NextMilestoneHint = memo(function NextMilestoneHint({ current }: { current: number }) {
     const next = getNextMilestone(current);
     if (!next) return null;
 
@@ -198,13 +201,8 @@ const NextMilestoneHint = memo(function NextMilestoneHint({
 });
 
 // ─── StreakCalendarRow ────────────────────────────────────────────────────────
-// Last 7 days shown as dot indicators — orange if a message was sent that day.
 
-const StreakCalendarRow = memo(function StreakCalendarRow({
-    activeDays,
-}: {
-    activeDays: string[];
-}) {
+const StreakCalendarRow = memo(function StreakCalendarRow({ activeDays }: { activeDays: string[] }) {
     const days = useMemo(() => {
         const activeSet = new Set(activeDays);
         return Array.from({ length: 7 }, (_, i) => {
@@ -218,8 +216,10 @@ const StreakCalendarRow = memo(function StreakCalendarRow({
 
     return (
         <div className="mt-3 pt-3 border-t border-border/60">
-            <p className="text-[10px] font-semibold uppercase tracking-wide mb-2"
-                style={{ color: "hsl(var(--wa-meta))" }}>
+            <p
+                className="text-[10px] font-semibold uppercase tracking-wide mb-2"
+                style={{ color: "hsl(var(--wa-meta))" }}
+            >
                 Last 7 days
             </p>
             <div className="flex items-end justify-between gap-1">
@@ -274,9 +274,11 @@ const StreakDetail = memo(function StreakDetail({
             role="dialog"
             aria-label="Streak details"
             className={cn(
-                "absolute top-full left-0 mt-2 z-50 w-56",
-                "rounded-2xl border border-border shadow-xl p-4",
-                "animate-in fade-in slide-in-from-top-1 duration-150",
+                "absolute top-full left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 mt-2 z-50",
+                "w-[90vw] max-w-[260px] sm:w-64",
+                "rounded-2xl border border-border shadow-xl",
+                "p-3 sm:p-4",
+                "animate-in fade-in slide-in-from-top-1 duration-150"
             )}
             style={{ background: "hsl(var(--wa-header))" }}
         >
@@ -284,21 +286,24 @@ const StreakDetail = memo(function StreakDetail({
             <div className="flex flex-col items-center gap-1 pb-3 border-b border-border/60">
                 <div className="flex items-center gap-2">
                     <Flame
-                        size={30}
+                        size={28}
                         aria-hidden
                         className={cn(isLit ? "text-orange-500 flame-lit" : "text-muted-foreground")}
                     />
                     <span
-                        className="text-3xl font-black tabular-nums"
+                        className="text-2xl sm:text-3xl font-black tabular-nums"
                         style={{ color: isLit ? "#f97316" : "hsl(var(--wa-meta))" }}
                     >
                         {current}
                     </span>
                 </div>
-                <span className="text-xs font-medium" style={{ color: "hsl(var(--wa-meta))" }}>
+                <span className="text-[11px] sm:text-xs font-medium" style={{ color: "hsl(var(--wa-meta))" }}>
                     day streak
                 </span>
-                <span className="text-[11px] font-semibold mt-0.5" style={{ color: statusColor }}>
+                <span
+                    className="text-[10px] sm:text-[11px] font-semibold mt-0.5 text-center"
+                    style={{ color: statusColor }}
+                >
                     {statusText}
                 </span>
             </div>
@@ -306,55 +311,72 @@ const StreakDetail = memo(function StreakDetail({
             {/* Stats grid */}
             <div className="grid grid-cols-2 gap-2 pt-3">
                 <div className="flex flex-col items-center gap-0.5 p-2 rounded-xl bg-muted/40">
-                    <span className="text-base font-black tabular-nums" style={{ color: "hsl(var(--wa-text))" }}>
+                    <span
+                        className="text-sm sm:text-base font-black tabular-nums"
+                        style={{ color: "hsl(var(--wa-text))" }}
+                    >
                         {current}
                     </span>
-                    <span className="text-[10px]" style={{ color: "hsl(var(--wa-meta))" }}>current</span>
+                    <span className="text-[9px] sm:text-[10px]" style={{ color: "hsl(var(--wa-meta))" }}>
+                        current
+                    </span>
                 </div>
                 <div className="flex flex-col items-center gap-0.5 p-2 rounded-xl bg-muted/40">
-                    <span className="text-base font-black tabular-nums" style={{ color: "hsl(var(--wa-text))" }}>
+                    <span
+                        className="text-sm sm:text-base font-black tabular-nums"
+                        style={{ color: "hsl(var(--wa-text))" }}
+                    >
                         {longest}
                     </span>
-                    <span className="text-[10px]" style={{ color: "hsl(var(--wa-meta))" }}>best ever</span>
+                    <span className="text-[9px] sm:text-[10px]" style={{ color: "hsl(var(--wa-meta))" }}>
+                        best ever
+                    </span>
                 </div>
             </div>
 
-            {/* Restore button — only when streak is at risk */}
+            {/* Restore button */}
             {atRisk && restoresLeft > 0 && (
                 <button
                     type="button"
                     onClick={onRestore}
-                    className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95"
+                    className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold transition-all active:scale-95"
                     style={{
                         background: "hsl(var(--wa-online) / 0.12)",
                         color: "hsl(var(--wa-online))",
                     }}
                 >
-                    <RotateCcw size={13} aria-hidden />
-                    Restore streak · {restoresLeft} left this month
+                    <RotateCcw size={14} aria-hidden />
+                    Restore streak · {restoresLeft} left
                 </button>
             )}
+
             {atRisk && restoresLeft === 0 && (
                 <p className="text-center text-[10px] mt-3" style={{ color: "hsl(var(--wa-meta))" }}>
                     No restores left this month
                 </p>
             )}
 
-            {/* 7-day calendar dots */}
-            <StreakCalendarRow activeDays={activeDays} />
+            {/* 7-day calendar */}
+            <div className="mt-3 overflow-x-auto">
+                <StreakCalendarRow activeDays={activeDays} />
+            </div>
 
-            {/* Next milestone progress */}
-            {current > 0 && <NextMilestoneHint current={current} />}
+            {/* Next milestone */}
+            {current > 0 && (
+                <div className="mt-3">
+                    <NextMilestoneHint current={current} />
+                </div>
+            )}
 
-            {/* Close */}
+            {/* Close button */}
             <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="absolute top-2.5 right-2.5 p-1 rounded-full hover:bg-muted/40 transition-colors"
+                className="absolute top-2 right-2 p-1.5 rounded-full hover:bg-muted/40 transition-colors"
                 style={{ color: "hsl(var(--wa-meta))" }}
             >
-                <X size={12} />
+                <X size={14} />
             </button>
         </div>
     );
@@ -369,14 +391,8 @@ interface StreakBadgeProps {
 
 export const StreakBadge = memo(function StreakBadge({ metaColor }: StreakBadgeProps) {
     const {
-        current,
-        longest,
-        bothSentToday,
-        waitingForPartner,
-        atRisk,
-        milestone,
-        activeDays,
-        isLoading,
+        current, longest, bothSentToday, waitingForPartner,
+        atRisk, milestone, activeDays, isLoading,
     } = useMessageStreak();
 
     const { restoresLeft, consumeRestore } = useMonthlyRestores();
@@ -394,25 +410,25 @@ export const StreakBadge = memo(function StreakBadge({ metaColor }: StreakBadgeP
         }
     }, [milestone]);
 
-    // Close detail popover on outside click
+    // FIX: use pointerdown + composedPath() to match the pattern used in
+    // EmojiPicker — prevents false close on iOS touch-scroll.
     useEffect(() => {
         if (!showDetail) return;
-        const handler = (e: MouseEvent) => {
-            if (detailRef.current && !detailRef.current.contains(e.target as Node)) {
+        const handler = (e: PointerEvent) => {
+            const path = e.composedPath();
+            if (detailRef.current && !path.includes(detailRef.current)) {
                 setShowDetail(false);
             }
         };
-        const tid = setTimeout(() => document.addEventListener("mousedown", handler), 50);
-        return () => { clearTimeout(tid); document.removeEventListener("mousedown", handler); };
+        const tid = setTimeout(() => document.addEventListener("pointerdown", handler), 50);
+        return () => { clearTimeout(tid); document.removeEventListener("pointerdown", handler); };
     }, [showDetail]);
 
-    // FIX: useCallback must be declared BEFORE any early return — Rules of Hooks.
-    // Previously this was below the `if (isLoading || ...)` guard which caused
-    // "Rendered more hooks than during the previous render" on re-renders.
+    // handleRestore must be declared before any early return (Rules of Hooks)
     const handleRestore = useCallback(() => {
         consumeRestore();
-        // TODO: call your Supabase edge function here to persist the restore server-side
-        // e.g. supabase.functions.invoke("restore-streak", { body: { coupleId } })
+        // TODO: wire to Supabase edge function for server-side enforcement:
+        // supabase.functions.invoke("restore-streak", { body: { coupleId } })
     }, [consumeRestore]);
 
     // Don't render while loading or when streak is 0 with no at-risk state
@@ -429,8 +445,13 @@ export const StreakBadge = memo(function StreakBadge({ metaColor }: StreakBadgeP
                 : `${current}-day streak`;
 
     return (
-        <div className="relative flex items-center" ref={detailRef}>
-
+        <div
+            className="relative flex items-center"
+            ref={detailRef}
+            // FIX: stopPropagation on pointerdown so internal touches don't
+            // bubble to the document handler and immediately close the popover
+            onPointerDown={e => e.stopPropagation()}
+        >
             {/* ── Badge button ── */}
             <button
                 type="button"

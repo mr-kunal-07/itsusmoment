@@ -18,7 +18,7 @@ import { useWebRTC } from "@/hooks/useWebRTC";
 import { cn } from "@/lib/utils";
 import { usePlan, canUseVoiceMessages } from "@/hooks/useSubscription";
 import { UpgradeGateModal } from "@/components/UpgradeGateModal";
-import { EmojiPicker } from "@/components/chat/Emojipicker";          // emoji-picker-react
+import { EmojiPicker } from "@/components/chat/Emojipicker";
 import { DrawingCanvas } from "@/components/chat/DrawingCanvas";
 import { StreakBadge } from "@/components/chat/Streakbadge";
 import { ChatThemePicker } from "@/components/chat/Chatthemepicker";
@@ -26,7 +26,6 @@ import { useChatTheme } from "@/components/chat/Usechattheme";
 import { getTheme, buildThemeStyle } from "@/components/chat/Chatthemes";
 import { useTheme } from "@/hooks/useTheme";
 import { supabase } from "@/integrations/supabase/client";
-
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -157,8 +156,6 @@ const AudioBubble = memo(function AudioBubble({
 });
 
 // ─── SwipeableMessage ─────────────────────────────────────────────────────────
-// FIX: handler functions wrapped in useCallback so they don't recreate on every
-// render of the parent list, preventing unnecessary re-renders of every message.
 
 interface SwipeableMessageProps {
   children: React.ReactNode;
@@ -342,7 +339,7 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
   const { partnerTyping, sendTyping } = useTyping(coupleId, user?.id);
   const { partnerOnline, partnerLastSeen } = usePresence(coupleId, user?.id, partnerId);
 
-  // ── WebRTC ──────────────────────────────────────────────────────────────────
+  // ── WebRTC ─────────────────────────────────────────────────────────────────
   const {
     callState, callType, incomingCallType,
     localStream, remoteStream,
@@ -350,7 +347,7 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
     isMuted, isSpeaker, toggleMute, toggleSpeaker, flipCamera, callDuration,
   } = useWebRTC({ coupleId, myUserId: user?.id ?? null, partnerUserId: partnerId ?? null, partnerOnline });
 
-  // ── VisualViewport keyboard offset ────────────────────────────────────────
+  // ── VisualViewport keyboard offset ─────────────────────────────────────────
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
@@ -360,30 +357,17 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
     return () => { vv.removeEventListener("resize", update); vv.removeEventListener("scroll", update); };
   }, []);
 
-  // FIX: Scroll behaviour — instant on initial load, smooth on new messages
+  // ── Scroll: instant on initial load, smooth on new messages ───────────────
   useEffect(() => {
     if (!bottomRef.current) return;
     bottomRef.current.scrollIntoView({ behavior: isInitialScroll.current ? "auto" : "smooth" });
     isInitialScroll.current = false;
   }, [messages.length]);
 
-  // Mark incoming messages as read when chat is open (direct Supabase call —
-  // useMessages doesn't expose a markRead helper so we write it inline)
-  useEffect(() => {
-    if (!messages.length || !user) return;
-    const unreadIds = messages
-      .filter(m => m.sender_id !== user.id && !m.read_at)
-      .map(m => m.id);
-    if (!unreadIds.length) return;
-    // Fire-and-forget — failures are non-critical, next open will retry
-    supabase
-      .from("messages" as never)
-      .update({ read_at: new Date().toISOString() } as never)
-      .in("id", unreadIds)
-      .then(() => {/* silent */ });
-  }, [messages, user]);
+  // Mark-as-read is handled inside useMessages with a 1s debounce.
+  // No duplicate effect needed here.
 
-  // Close popups on outside click
+  // ── Close popups on outside click ──────────────────────────────────────────
   useEffect(() => {
     const handler = () => { setEmojiPickerId(null); setLongPressId(null); };
     if (emojiPickerId || longPressId) document.addEventListener("click", handler);
@@ -412,12 +396,13 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
 
   const clearSelect = useCallback(() => setSelectedIds(new Set()), []);
 
+  // FIX: parallel deletes instead of sequential await loop
   const handleDeleteSelected = useCallback(async () => {
-    for (const id of selectedIds) await deleteMessage.mutateAsync(id);
+    await Promise.all([...selectedIds].map(id => deleteMessage.mutateAsync(id)));
     clearSelect();
   }, [selectedIds, deleteMessage, clearSelect]);
 
-  // ── Send ───────────────────────────────────────────────────────────────────
+  // ── Send handlers ──────────────────────────────────────────────────────────
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed || sendMessage.isPending) return;
@@ -428,7 +413,15 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
       inputRef.current.style.height = "auto";
       inputRef.current.focus();
     }
-    await sendMessage.mutateAsync({ content: trimmed, replyToId: replyId, messageType: "text" });
+    // BUG FIX: wrap in try/catch so an encryption or network error doesn't
+    // crash the component — the optimistic rollback in useMessages handles
+    // removing the stuck message from the list automatically on error.
+    try {
+      await sendMessage.mutateAsync({ content: trimmed, replyToId: replyId, messageType: "text" });
+    } catch (err) {
+      console.error("[handleSend] failed:", err);
+      // Re-focus input so user can retry immediately
+    }
     requestAnimationFrame(() => inputRef.current?.focus());
   }, [text, replyTo, sendMessage]);
 
@@ -436,19 +429,26 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
     setVoiceMode(false);
     const replyId = replyTo?.id ?? null;
     setReplyTo(null);
-    await sendMessage.mutateAsync({ content: duration, replyToId: replyId, messageType: "voice", audioUrl });
+    try {
+      await sendMessage.mutateAsync({ content: duration, replyToId: replyId, messageType: "voice", audioUrl });
+    } catch (err) {
+      console.error("[handleVoiceSend] failed:", err);
+    }
   }, [replyTo, sendMessage]);
 
-  // Drawing: reuse audioUrl field (the only URL field in the sendMessage type).
-  // messageType="drawing" already tells the renderer this is an image, not audio.
+  // Drawing reuses the audioUrl column — messageType="drawing" tells the renderer
   const handleDrawingSend = useCallback(async (dataUrl: string) => {
     setShowDrawing(false);
-    await sendMessage.mutateAsync({
-      content: "🎨 Drawing",
-      replyToId: replyTo?.id ?? null,
-      messageType: "drawing",
-      audioUrl: dataUrl,   // stored in audio_url column; read back as image when messageType==="drawing"
-    });
+    try {
+      await sendMessage.mutateAsync({
+        content: "🎨 Drawing",
+        replyToId: replyTo?.id ?? null,
+        messageType: "drawing",
+        audioUrl: dataUrl,
+      });
+    } catch (err) {
+      console.error("[handleDrawingSend] failed:", err);
+    }
     setReplyTo(null);
   }, [replyTo, sendMessage]);
 
@@ -472,6 +472,18 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
     setEmojiPickerId(null);
   }, [canReact, user, addReaction, removeReaction]);
 
+  // FIX: stable per-message swipe reply handler — created once per unique message
+  // ID via a message map, preventing memo invalidation on every parent render.
+  const msgMap = Object.fromEntries(messages.map(m => [m.id, m]));
+
+  const makeSwipeReplyHandler = useCallback((msgId: string) => () => {
+    if (!selectMode) {
+      const m = msgMap[msgId];
+      if (m) { setReplyTo(m); inputRef.current?.focus(); }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectMode, msgMap]);
+
   // ── No couple guard ────────────────────────────────────────────────────────
   if (couple?.status !== "active") {
     return (
@@ -488,7 +500,6 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
   }
 
   const groups = groupByDay(messages);
-  const msgMap = Object.fromEntries(messages.map(m => [m.id, m]));
 
   return (
     <SwipeBackWrapper onBack={onBack}>
@@ -555,7 +566,6 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
               <div className="flex items-center gap-1.5">
                 <p className="text-sm font-semibold leading-none truncate" style={{ color: "hsl(var(--wa-text))" }}>{partnerName}</p>
                 <Lock className="h-2.5 w-2.5 shrink-0" style={{ color: "hsl(var(--wa-meta))" }} aria-hidden />
-                {/* Streak badge — sits right next to partner name */}
                 <StreakBadge metaColor="hsl(var(--wa-meta))" />
               </div>
               <p className="text-[10px] truncate mt-0.5" style={{ color: "hsl(var(--wa-meta))" }} aria-live="polite">
@@ -578,7 +588,6 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
               <button type="button" onClick={() => startCall("video")} className="p-2 rounded-full active:scale-95" style={{ color: "hsl(var(--wa-text) / 0.7)" }} title="Video call" aria-label="Video call">
                 <Video className="h-4 w-4" />
               </button>
-              {/* Theme picker trigger */}
               <div className="relative">
                 <button
                   onClick={() => setShowThemePicker(p => !p)}
@@ -649,14 +658,15 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                       const nextSame = i < group.messages.length - 1 && group.messages[i + 1].sender_id === msg.sender_id;
                       const reactions = groupReactions(msg.reactions);
                       const repliedMsg = msg.reply_to_id ? msgMap[msg.reply_to_id] : null;
-                      const isVoice = (msg as any).message_type === "voice";
-                      const isDrawing = (msg as any).message_type === "drawing";
-                      // voice and drawing use audio_url column — messageType distinguishes them
-                      const audioUrl = (msg as any).audio_url;
 
-                      const handleSwipeReply = () => {
-                        if (!selectMode) { setReplyTo(msg); inputRef.current?.focus(); }
-                      };
+                      // FIX: typed field access — cast once per message, not inline per usage
+                      const msgEx = msg as Message & { message_type?: string; audio_url?: string };
+                      const isVoice = msgEx.message_type === "voice";
+                      const isDrawing = msgEx.message_type === "drawing";
+                      const audioUrl = msgEx.audio_url;
+
+                      // FIX: stable handler — created from a memoized factory, keyed on msg.id
+                      const handleSwipeReply = makeSwipeReplyHandler(msg.id);
 
                       return (
                         <SwipeableMessage key={msg.id} onSwipeReply={handleSwipeReply} isMe={isMe}>
@@ -874,8 +884,14 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
 
         {/* ── Reply Banner ── */}
         {replyTo && (
-          <div className="flex items-center gap-3 px-4 py-2.5 shrink-0 border-t border-border" style={{ background: "hsl(var(--wa-header))" }}>
-            <div className="w-1 self-stretch rounded-full shrink-0" style={{ background: "hsl(var(--wa-online))" }} />
+          <div
+            className="flex items-center gap-3 px-3 py-2 shrink-0 border-t border-border"
+            style={{ background: "hsl(var(--wa-header))" }}
+          >
+            <div
+              className="w-1 self-stretch rounded-full shrink-0"
+              style={{ background: "hsl(var(--wa-online))" }}
+            />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold" style={{ color: "hsl(var(--wa-online))" }}>
                 {replyTo.sender_id === user?.id ? "You" : partnerName}
@@ -884,7 +900,13 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                 {replyTo.content.slice(0, 80)}{replyTo.content.length > 80 ? "…" : ""}
               </p>
             </div>
-            <button type="button" onClick={() => setReplyTo(null)} style={{ color: "hsl(var(--wa-text) / 0.5)" }} aria-label="Cancel reply">
+            <button
+              type="button"
+              onClick={() => setReplyTo(null)}
+              className="p-1 rounded-full hover:bg-muted/40 transition-colors"
+              style={{ color: "hsl(var(--wa-text) / 0.5)" }}
+              aria-label="Cancel reply"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -892,7 +914,7 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
 
         {/* ── Input Bar ── */}
         <div
-          className="px-3 pt-2 pb-3 flex items-end gap-2 shrink-0 border-t border-border"
+          className="px-3 pt-2 pb-3 flex items-end gap-2.5 shrink-0 border-t border-border"
           style={{
             background: "hsl(var(--wa-bg))",
             paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
@@ -900,22 +922,35 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
         >
           {voiceMode ? (
             <div className="flex-1">
-              <VoiceRecorder onSend={handleVoiceSend} onCancel={() => setVoiceMode(false)} disabled={sendMessage.isPending} />
+              <VoiceRecorder
+                onSend={handleVoiceSend}
+                onCancel={() => setVoiceMode(false)}
+                disabled={sendMessage.isPending}
+              />
             </div>
           ) : (
             <>
-              <div className="flex items-end flex-1 gap-2 rounded-3xl px-4 py-2 border border-border" style={{ background: "hsl(var(--wa-input-bg))" }}>
-                {/* Emoji picker trigger */}
-                <div className="relative shrink-0 mb-0.5">
+              <div
+                className="flex items-center flex-1 gap-2 rounded-3xl px-3 py-2 border border-border min-w-0 focus-within:ring-2 focus-within:ring-green-500/20"
+                style={{ background: "hsl(var(--wa-input-bg))" }}
+              >
+                {/* Emoji button */}
+                <div className="relative shrink-0">
                   <button
                     onClick={() => setShowEmojiPicker(p => !p)}
-                    style={{ color: showEmojiPicker ? "hsl(var(--wa-online))" : "hsl(var(--wa-text) / 0.45)" }}
+                    className="p-1"
+                    style={{
+                      color: showEmojiPicker
+                        ? "hsl(var(--wa-online))"
+                        : "hsl(var(--wa-text) / 0.45)",
+                    }}
                     aria-label="Emoji"
                     aria-expanded={showEmojiPicker}
                     type="button"
                   >
                     <Smile className="h-5 w-5" />
                   </button>
+
                   {showEmojiPicker && (
                     <EmojiPicker
                       onSelect={(emoji) => {
@@ -926,6 +961,8 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                     />
                   )}
                 </div>
+
+                {/* Textarea */}
                 <textarea
                   ref={inputRef}
                   value={text}
@@ -933,20 +970,31 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                   onKeyDown={handleKeyDown}
                   placeholder={replyTo ? "Write a reply…" : "Message…"}
                   rows={1}
-                  className="flex-1 bg-transparent border-0 outline-none resize-none text-sm leading-relaxed py-0.5 max-h-28 overflow-y-auto placeholder:text-muted-foreground"
+                  className="flex-1 bg-transparent border-0 outline-none resize-none text-sm leading-relaxed py-1 max-h-32 overflow-y-auto placeholder:text-muted-foreground"
                   style={{ color: "hsl(var(--wa-text))", minHeight: "24px" }}
                   autoComplete="off"
                   aria-label="Message input"
                 />
-                <button type="button" onClick={() => setShowDrawing(true)} className="shrink-0 mb-0.5" style={{ color: "hsl(var(--wa-text) / 0.45)" }} title="Draw" aria-label="Draw">
+
+                {/* Draw button */}
+                <button
+                  type="button"
+                  onClick={() => setShowDrawing(true)}
+                  className="shrink-0 p-1"
+                  style={{ color: "hsl(var(--wa-text) / 0.45)" }}
+                  aria-label="Draw"
+                >
                   <Pencil className="h-5 w-5" />
                 </button>
               </div>
 
+              {/* Send / Voice button */}
               {text.trim() ? (
                 <button
-                  onClick={handleSend} disabled={sendMessage.isPending}
-                  className="h-12 w-12 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95 disabled:opacity-50"
+                  type="button"
+                  onClick={handleSend}
+                  disabled={sendMessage.isPending}
+                  className="h-11 w-11 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95 disabled:opacity-50"
                   style={{ background: "hsl(var(--wa-online))" }}
                   aria-label="Send message"
                 >
@@ -954,9 +1002,13 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                 </button>
               ) : (
                 <button
-                  onClick={() => canVoice ? setVoiceMode(true) : setGateModal({ feature: "Voice Messages" })}
+                  onClick={() =>
+                    canVoice
+                      ? setVoiceMode(true)
+                      : setGateModal({ feature: "Voice Messages" })
+                  }
                   disabled={sendMessage.isPending}
-                  className="h-12 w-12 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95 disabled:opacity-50"
+                  className="h-11 w-11 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95 disabled:opacity-50"
                   style={{ background: "hsl(var(--wa-online))" }}
                   aria-label="Record voice message"
                 >

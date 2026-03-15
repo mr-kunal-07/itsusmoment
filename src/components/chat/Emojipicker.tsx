@@ -15,15 +15,21 @@ export const EmojiPicker = memo(function EmojiPicker({ onSelect, onClose }: Prop
     const containerRef = useRef<HTMLDivElement>(null);
     const { theme } = useTheme();
 
-    // Close on outside click
+    // FIX: use `pointerdown` instead of `mousedown` and check composedPath()
+    // so that touch-scroll events inside the picker on iOS do not close it.
+    // composedPath() traverses shadow DOM correctly (emoji-picker-react renders
+    // into a shadow root in some versions), whereas .contains() only works on
+    // light DOM children and misses shadow DOM nodes, causing false closes.
     useEffect(() => {
-        const handler = (e: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        const handler = (e: PointerEvent) => {
+            const path = e.composedPath();
+            if (containerRef.current && !path.includes(containerRef.current)) {
                 onClose();
             }
         };
-        const tid = setTimeout(() => document.addEventListener("mousedown", handler), 80);
-        return () => { clearTimeout(tid); document.removeEventListener("mousedown", handler); };
+        // Small delay so the button that opened us doesn't immediately close
+        const tid = setTimeout(() => document.addEventListener("pointerdown", handler), 80);
+        return () => { clearTimeout(tid); document.removeEventListener("pointerdown", handler); };
     }, [onClose]);
 
     // Close on Escape
@@ -40,7 +46,9 @@ export const EmojiPicker = memo(function EmojiPicker({ onSelect, onClose }: Prop
                 "absolute bottom-full left-0 mb-2 z-50",
                 "animate-in fade-in slide-in-from-bottom-2 duration-150",
             )}
-            onClick={(e) => e.stopPropagation()}
+            // FIX: stopPropagation on pointerdown so internal interactions
+            // never bubble up to the document handler above
+            onPointerDown={e => e.stopPropagation()}
             role="dialog"
             aria-label="Emoji picker"
             aria-modal="true"
@@ -48,7 +56,7 @@ export const EmojiPicker = memo(function EmojiPicker({ onSelect, onClose }: Prop
             <Suspense
                 fallback={
                     <div
-                        className="flex items-center justify-center rounded-[20px] border border-border shadow-2xl"
+                        className="flex items-center justify-center rounded-[20px] border border-border shadow-xl"
                         style={{
                             width: "clamp(300px, 90vw, 360px)",
                             height: 380,
@@ -78,21 +86,14 @@ const EmojiPickerInner = memo(function EmojiPickerInner({
     return (
         <EmojiPickerLib
             onEmojiClick={(emojiData) => onSelect(emojiData.emoji)}
-
-            // ✅ Fix 1: use the Theme enum, not a raw string
             theme={isDark ? Theme.DARK : Theme.LIGHT}
-
             width="clamp(300px, 90vw, 360px)"
             height={400}
-
             autoFocusSearch
             searchPlaceholder="Search emoji…"
             previewConfig={{ showPreview: false }}
-
-            // ✅ Fix 2: use the SkinTones enum, not a raw string
             defaultSkinTone={SkinTones.NEUTRAL}
             skinTonesDisabled={false}
-
             style={{
                 "--epr-bg-color": "hsl(var(--wa-header))",
                 "--epr-category-label-bg-color": "hsl(var(--wa-header))",
