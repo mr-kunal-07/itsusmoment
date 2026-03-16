@@ -344,7 +344,7 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
     callState, callType, incomingCallType,
     localStream, remoteStream,
     startCall, acceptCall, rejectCall, hangUp,
-    isMuted, isSpeaker, toggleMute, toggleSpeaker, flipCamera, callDuration,
+    isMuted, isSpeaker, toggleMute, toggleSpeaker, flipCamera, isFrontCamera, callDuration,
   } = useWebRTC({ coupleId, myUserId: user?.id ?? null, partnerUserId: partnerId ?? null, partnerOnline });
 
   // ── VisualViewport keyboard offset ─────────────────────────────────────────
@@ -375,8 +375,12 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
   }, [emojiPickerId, longPressId]);
 
   // ── Long-press select ──────────────────────────────────────────────────────
-  const startLongPress = useCallback((id: string) => {
+  const startLongPress = useCallback((e: React.TouchEvent, id: string) => {
+    // Clear any existing selection immediately so stale highlights don't appear
+    window.getSelection()?.removeAllRanges();
     longPressTimer.current = setTimeout(() => {
+      // Dismiss any native selection that snuck in during the 450 ms hold
+      window.getSelection()?.removeAllRanges();
       navigator.vibrate?.(30);
       setLongPressId(id);
     }, 450);
@@ -621,7 +625,8 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
           onAccept={acceptCall} onReject={rejectCall} onHangUp={hangUp}
           isMuted={isMuted} isSpeaker={isSpeaker}
           onToggleMute={toggleMute} onToggleSpeaker={toggleSpeaker}
-          callDuration={callDuration} partnerOnline={partnerOnline} onFlipCamera={flipCamera}
+          callDuration={callDuration} partnerOnline={partnerOnline}
+          onFlipCamera={flipCamera} isFrontCamera={isFrontCamera}
         />
 
         {/* ── Messages ── */}
@@ -678,10 +683,19 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                             )}
                             onMouseEnter={() => setHoveredId(msg.id)}
                             onMouseLeave={() => setHoveredId(null)}
-                            onTouchStart={() => startLongPress(msg.id)}
+                            onTouchStart={(e) => startLongPress(e, msg.id)}
                             onTouchEnd={cancelLongPress}
                             onTouchMove={cancelLongPress}
+                            // Suppress the native iOS/Android context menu (Copy / Select All)
+                            // that appears after ~500 ms — our custom long-press UI replaces it.
+                            onContextMenu={(e) => e.preventDefault()}
                             onClick={() => { if (selectMode) toggleSelect(msg.id); }}
+                            // Prevent text selection on mobile during the long-press hold.
+                            // `select-none` on this row covers the bubble + timestamp.
+                            // Desktop users can still select text because browsers only apply
+                            // user-select:none to pointer-device interactions differently,
+                            // and we re-enable it on the bubble text via inline style below.
+                            style={{ WebkitUserSelect: "none", userSelect: "none" }}
                           >
                             {/* Partner avatar */}
                             {!isMe && (
@@ -751,7 +765,13 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                                   </div>
                                 ) : (
                                   <>
-                                    <span className="break-words">{msg.content}</span>
+                                    <span
+                                      className="break-words"
+                                      // Re-enable selection on desktop (mouse users).
+                                      // On mobile this is overridden by the parent's
+                                      // user-select:none, which is what we want.
+                                      style={{ WebkitUserSelect: "text", userSelect: "text" }}
+                                    >{msg.content}</span>
                                     <span className="inline-block w-16 h-3 ml-1" aria-hidden />
                                     <span
                                       className="absolute bottom-1.5 right-2.5 flex items-center gap-0.5 text-[10px] select-none leading-none whitespace-nowrap"

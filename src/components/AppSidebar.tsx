@@ -1,6 +1,25 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { FolderIcon, FolderPlus, ChevronRight, Pencil, Trash2, Home, Star, Hash, Heart, CalendarHeart, Trophy, Link2, MessageCircleHeart, Crown, ShieldCheck, Settings, Activity, Sparkles, Globe } from "lucide-react";
+import {
+  FolderIcon,
+  FolderPlus,
+  ChevronRight,
+  Pencil,
+  Trash2,
+  Home,
+  Star,
+  Hash,
+  Heart,
+  CalendarHeart,
+  Trophy,
+  MessageCircleHeart,
+  Crown,
+  ShieldCheck,
+  Settings,
+  Activity,
+  Sparkles,
+  Globe,
+} from "lucide-react";
 import { usePlan, getStorageLimit, formatStorageLimit } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { DaysTogether } from "@/components/DaysTogether";
@@ -15,26 +34,64 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  SidebarHeader, SidebarFooter, useSidebar,
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarHeader,
+  SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn, formatSize } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
-export type ViewType = "all" | "starred" | "recently-deleted" | "timeline" | "on-this-day" | "anniversaries" | "chat" | "activity" | "billing" | "settings" | string;
+export type ViewType =
+  | "all"
+  | "starred"
+  | "recently-deleted"
+  | "timeline"
+  | "on-this-day"
+  | "anniversaries"
+  | "chat"
+  | "activity"
+  | "billing"
+  | "settings"
+  | "love-story"
+  | "travel-map";
+
+export type FolderViewType = ViewType | string;
 
 interface Props {
-  selectedView: ViewType;
-  onSelectView: (view: ViewType) => void;
+  selectedView: FolderViewType;
+  onSelectView: (view: FolderViewType) => void;
 }
+
+interface NavItem {
+  id: ViewType;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  count?: number;
+  badge?: number;
+  hiddenOnMobile?: boolean;
+}
+
+const MAX_BADGE_COUNT = 99;
+const STORAGE_WARNING_THRESHOLD = 0.9;
 
 export function AppSidebar({ selectedView, onSelectView }: Props) {
   const navigate = useNavigate();
@@ -48,25 +105,11 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
   const { data: couple } = useMyCouple();
   const { data: profiles = [] } = useAllProfiles();
   const { data: myProfile } = useProfile();
+  const { data: messages = [] } = useMessages();
+
   const createFolder = useCreateFolder();
   const renameFolder = useRenameFolder();
   const deleteFolder = useDeleteFolder();
-
-  // Unread messages count
-  const { data: messages = [] } = useMessages();
-  const unreadCount = messages.filter(m => m.sender_id !== user?.id && !m.read_at).length;
-
-  const selectView = (view: ViewType) => {
-    setOpenMobile(false);
-    onSelectView(view);
-  };
-
-  const partnerId = couple?.status === "active"
-    ? (couple.user1_id === user?.id ? couple.user2_id : couple.user1_id)
-    : null;
-  const partnerProfile = partnerId ? profiles.find(p => p.user_id === partnerId) : null;
-  const myInitials = (myProfile?.display_name ?? user?.email ?? "Me").slice(0, 2).toUpperCase();
-  const partnerInitials = (partnerProfile?.display_name ?? "?").slice(0, 2).toUpperCase();
 
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [creatingInParent, setCreatingInParent] = useState<string | null>(null);
@@ -75,53 +118,172 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
   const [editName, setEditName] = useState("");
   const [deletingFolder, setDeletingFolder] = useState<Folder | null>(null);
 
-  const rootFolders = folders.filter(f => !f.parent_id);
+  const plan = usePlan();
 
-  const folderCounts: Record<string, number> = {};
-  allMedia.forEach(m => {
-    const key = m.folder_id ?? "__unfiled__";
-    folderCounts[key] = (folderCounts[key] ?? 0) + 1;
-  });
+  // Computed values
+  const isConnected = couple?.status === "active";
+  const partnerId = isConnected ? (couple.user1_id === user?.id ? couple.user2_id : couple.user1_id) : null;
+  const partnerProfile = useMemo(
+    () => (partnerId ? profiles.find((p) => p.user_id === partnerId) : null),
+    [partnerId, profiles]
+  );
 
-  const handleCreate = async (parentId?: string | null) => {
-    if (!newFolderName.trim()) return;
-    await createFolder.mutateAsync({ name: newFolderName.trim(), parentId: parentId ?? null });
+  const unreadCount = useMemo(
+    () => messages.filter((m) => m.sender_id !== user?.id && !m.read_at).length,
+    [messages, user?.id]
+  );
+
+  const starredCount = useMemo(() => allMedia.filter((m) => m.is_starred).length, [allMedia]);
+
+  const myInitials = useMemo(() => {
+    const name = myProfile?.display_name ?? user?.email ?? "Me";
+    return name.slice(0, 2).toUpperCase();
+  }, [myProfile?.display_name, user?.email]);
+
+  const partnerInitials = useMemo(() => {
+    const name = partnerProfile?.display_name ?? "?";
+    return name.slice(0, 2).toUpperCase();
+  }, [partnerProfile?.display_name]);
+
+  const rootFolders = useMemo(() => folders.filter((f) => !f.parent_id), [folders]);
+
+  const folderCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allMedia.forEach((m) => {
+      const key = m.folder_id ?? "__unfiled__";
+      counts[key] = (counts[key] ?? 0) + 1;
+    });
+    return counts;
+  }, [allMedia]);
+
+  const storageLimit = useMemo(() => getStorageLimit(plan), [plan]);
+  const storageLabel = useMemo(() => formatStorageLimit(plan), [plan]);
+  const storagePercentage = useMemo(() => {
+    if (storageLimit <= 0) return 0;
+    return Math.min((storageBytes / storageLimit) * 100, 100);
+  }, [storageBytes, storageLimit]);
+
+  const isStorageWarning = storagePercentage > STORAGE_WARNING_THRESHOLD * 100;
+
+  // Handlers
+  const selectView = useCallback(
+    (view: FolderViewType) => {
+      setOpenMobile(false);
+      onSelectView(view);
+    },
+    [setOpenMobile, onSelectView]
+  );
+
+  const handleCreate = useCallback(
+    async (parentId?: string | null) => {
+      const trimmedName = newFolderName.trim();
+      if (!trimmedName) return;
+
+      try {
+        await createFolder.mutateAsync({ name: trimmedName, parentId: parentId ?? null });
+        setNewFolderName("");
+        setCreatingFolder(false);
+        setCreatingInParent(null);
+      } catch (error) {
+        console.error("Failed to create folder:", error);
+      }
+    },
+    [newFolderName, createFolder]
+  );
+
+  const handleRename = useCallback(
+    async (id: string) => {
+      const trimmedName = editName.trim();
+      if (!trimmedName) return;
+
+      try {
+        await renameFolder.mutateAsync({ id, name: trimmedName });
+        setEditingId(null);
+      } catch (error) {
+        console.error("Failed to rename folder:", error);
+      }
+    },
+    [editName, renameFolder]
+  );
+
+  const handleDelete = useCallback(async () => {
+    if (!deletingFolder) return;
+
+    try {
+      await deleteFolder.mutateAsync(deletingFolder.id);
+      if (selectedView === deletingFolder.id) {
+        onSelectView("all");
+      }
+      setDeletingFolder(null);
+    } catch (error) {
+      console.error("Failed to delete folder:", error);
+    }
+  }, [deletingFolder, deleteFolder, selectedView, onSelectView]);
+
+  const openCreateDialog = useCallback((parentId: string | null = null) => {
+    setCreatingInParent(parentId);
+    setCreatingFolder(true);
     setNewFolderName("");
+  }, []);
+
+  const closeCreateDialog = useCallback(() => {
     setCreatingFolder(false);
     setCreatingInParent(null);
-  };
+    setNewFolderName("");
+  }, []);
 
-  const handleRename = async (id: string) => {
-    if (!editName.trim()) return;
-    await renameFolder.mutateAsync({ id, name: editName.trim() });
-    setEditingId(null);
-  };
+  const formatBadgeCount = useCallback((count: number) => {
+    return count > MAX_BADGE_COUNT ? `${MAX_BADGE_COUNT}+` : count;
+  }, []);
 
-  const handleDelete = async () => {
-    if (!deletingFolder) return;
-    await deleteFolder.mutateAsync(deletingFolder.id);
-    if (selectedView === deletingFolder.id) onSelectView("all");
-    setDeletingFolder(null);
-  };
+  // Navigation items
+  const navItems: NavItem[] = useMemo(
+    () => [
+      { id: "all", label: "All Files", icon: Home, count: allMedia.length, hiddenOnMobile: true },
+      { id: "starred", label: "Starred", icon: Star, count: starredCount },
+    ],
+    [allMedia.length, starredCount]
+  );
 
-  const navItems = [
-    { id: "all" as const, label: "All Files", icon: Home, count: allMedia.length },
-    { id: "starred" as const, label: "Starred", icon: Star, count: allMedia.filter(m => m.is_starred).length },
-  ];
+  const specialItems: NavItem[] = useMemo(
+    () => [
+      { id: "chat", label: "Chat with Partner", icon: MessageCircleHeart, badge: unreadCount, hiddenOnMobile: true },
+      { id: "timeline", label: "Memories Timeline", icon: CalendarHeart, hiddenOnMobile: true },
+      { id: "anniversaries", label: "Anniversaries", icon: Trophy },
+      { id: "love-story", label: "Love Story Card", icon: Sparkles },
+      { id: "travel-map", label: "Travel Map", icon: Globe },
+      { id: "activity", label: "Activity Feed", icon: Activity },
+      { id: "recently-deleted", label: "Recently Deleted", icon: Trash2, badge: 0 },
+    ],
+    [unreadCount]
+  );
 
-  const specialItems = [
-    { id: "chat" as const, label: "Chat with Partner", icon: MessageCircleHeart, badge: unreadCount },
-    { id: "timeline" as const, label: "Memories Timeline", icon: CalendarHeart },
-    { id: "anniversaries" as const, label: "Anniversaries", icon: Trophy },
-    { id: "love-story" as const, label: "Love Story Card", icon: Sparkles },
-    { id: "travel-map" as const, label: "Travel Map", icon: Globe },
-    { id: "activity" as const, label: "Activity Feed", icon: Activity },
-    { id: "recently-deleted" as const, label: "Recently Deleted", icon: Trash2, badge: 0 },
-  ];
-
-  const plan = usePlan();
-  const storageLimit = getStorageLimit(plan);
-  const storageLabel = formatStorageLimit(plan);
+  const renderNavItem = useCallback(
+    (item: NavItem) => (
+      <SidebarMenuItem key={item.id} className={cn(item.hiddenOnMobile && "hidden sm:flex")}>
+        <SidebarMenuButton
+          onClick={() => selectView(item.id)}
+          className={cn("justify-between", selectedView === item.id && "bg-accent text-accent-foreground")}
+        >
+          <span className="flex items-center">
+            <item.icon className="h-4 w-4 mr-2" />
+            <span>{item.label}</span>
+          </span>
+          {typeof item.count === "number" && item.count > 0 && (
+            <Badge variant="secondary" className="text-xs h-5 px-1.5 font-normal">
+              {formatBadgeCount(item.count)}
+            </Badge>
+          )}
+          {typeof item.badge === "number" && item.badge > 0 && (
+            <Badge className="text-xs h-5 px-1.5 font-semibold bg-primary text-primary-foreground border-0">
+              {formatBadgeCount(item.badge)}
+            </Badge>
+          )}
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    ),
+    [selectedView, selectView, formatBadgeCount]
+  );
 
   return (
     <Sidebar className="border-r">
@@ -136,16 +298,20 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
           </div>
         </div>
 
-        {couple?.status === "active" && (
+        {isConnected ? (
           <div className="mt-3 flex items-center gap-2 rounded-lg bg-primary/8 border border-primary/15 px-2.5 py-2">
             <div className="flex items-center -space-x-1.5">
               <Avatar className="h-6 w-6 ring-2 ring-sidebar border-0">
                 <AvatarImage src={myProfile?.avatar_url ?? undefined} />
-                <AvatarFallback className="text-[9px] bg-primary text-primary-foreground">{myInitials}</AvatarFallback>
+                <AvatarFallback className="text-[9px] bg-primary text-primary-foreground">
+                  {myInitials}
+                </AvatarFallback>
               </Avatar>
               <Avatar className="h-6 w-6 ring-2 ring-sidebar border-0">
                 <AvatarImage src={partnerProfile?.avatar_url ?? undefined} />
-                <AvatarFallback className="text-[9px] bg-muted text-muted-foreground">{partnerInitials}</AvatarFallback>
+                <AvatarFallback className="text-[9px] bg-muted text-muted-foreground">
+                  {partnerInitials}
+                </AvatarFallback>
               </Avatar>
             </div>
             <div className="flex-1 min-w-0">
@@ -155,16 +321,16 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
               <p className="text-[9px] text-primary">● Connected</p>
             </div>
           </div>
-        )}
-
-        {couple?.status !== "active" && (
+        ) : (
           <div className="mt-3 flex items-center gap-2 rounded-lg bg-muted/50 border border-border px-2.5 py-2">
             <Avatar className="h-6 w-6">
               <AvatarImage src={myProfile?.avatar_url ?? undefined} />
               <AvatarFallback className="text-[9px] bg-primary text-primary-foreground">{myInitials}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-medium text-foreground truncate">{myProfile?.display_name ?? user?.email?.split("@")[0] ?? "You"}</p>
+              <p className="text-[10px] font-medium text-foreground truncate">
+                {myProfile?.display_name ?? user?.email?.split("@")[0] ?? "You"}
+              </p>
               <p className="text-[9px] text-muted-foreground">No partner linked</p>
             </div>
           </div>
@@ -172,67 +338,43 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* ── Primary nav: All Files, Starred ── */}
+        {/* Primary Navigation */}
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map(item => (
-                <SidebarMenuItem key={item.id} className={cn(item.id === "all" && "sm:flex hidden")}>
-                  <SidebarMenuButton
-                    onClick={() => selectView(item.id)}
-                    className={cn("justify-between", selectedView === item.id && "bg-accent text-accent-foreground")}
-                  >
-                    <span className="flex items-center">
-                      <item.icon className="h-4 w-4 mr-2" />
-                      <span>{item.label}</span>
-                    </span>
-                    {item.count !== null && item.count > 0 && (
-                      <Badge variant="secondary" className="text-xs h-5 px-1.5 font-normal">{item.count}</Badge>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            <SidebarMenu>{navItems.map(renderNavItem)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* ── For Us ──────────────────────────────────────────────── */}
+        {/* For Us Section */}
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center gap-1.5">
             <Heart className="h-3 w-3 text-primary fill-primary" /> For Us
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {specialItems.filter(i => i.id !== "recently-deleted").map(item => (
-                <SidebarMenuItem key={item.id} className={cn((item.id === "chat" || item.id === "timeline") && "sm:flex hidden")}>
-                  <SidebarMenuButton
-                    onClick={() => selectView(item.id)}
-                    className={cn("justify-between", selectedView === item.id && "bg-accent text-accent-foreground")}
-                  >
-                    <span className="flex items-center">
-                      <item.icon className="h-4 w-4 mr-2" />
-                      <span>{item.label}</span>
-                    </span>
-                    {!!item.badge && item.badge > 0 && (
-                      <Badge className="text-xs h-5 px-1.5 font-semibold bg-primary text-primary-foreground border-0">
-                        {item.badge > 99 ? "99+" : item.badge}
-                      </Badge>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {specialItems
+                .filter((i) => i.id !== "recently-deleted")
+                .map(renderNavItem)}
 
               {onThisDayMedia.length > 0 && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     onClick={() => selectView("on-this-day")}
-                    className={cn("justify-between", selectedView === "on-this-day" && "bg-accent text-accent-foreground")}
+                    className={cn(
+                      "justify-between",
+                      selectedView === "on-this-day" && "bg-accent text-accent-foreground"
+                    )}
                   >
                     <span className="flex items-center">
                       <span className="text-base mr-2">🗓️</span>
                       <span>On This Day</span>
                     </span>
-                    <Badge variant="secondary" className="text-xs h-5 px-1.5 font-normal animate-pulse bg-primary/15 text-primary border-0">{onThisDayMedia.length}</Badge>
+                    <Badge
+                      variant="secondary"
+                      className="text-xs h-5 px-1.5 font-normal animate-pulse bg-primary/15 text-primary border-0"
+                    >
+                      {formatBadgeCount(onThisDayMedia.length)}
+                    </Badge>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
@@ -240,18 +382,23 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* ── Folders ──────────────────────────────────────────────── */}
+        {/* Folders Section */}
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center justify-between">
             <span>Folders</span>
-            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => { setCreatingFolder(true); setCreatingInParent(null); }}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5"
+              onClick={() => openCreateDialog(null)}
+              aria-label="Create new folder"
+            >
               <FolderPlus className="h-3.5 w-3.5" />
             </Button>
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            {/* Folder creation is handled by the Dialog below */}
             <SidebarMenu>
-              {rootFolders.map(folder => (
+              {rootFolders.map((folder) => (
                 <FolderItem
                   key={folder.id}
                   folder={folder}
@@ -265,12 +412,8 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
                   setEditName={setEditName}
                   onRename={handleRename}
                   onDelete={setDeletingFolder}
-                  creatingInParent={creatingInParent}
-                  newFolderName={newFolderName}
-                  setNewFolderName={setNewFolderName}
-                  onCreateSubfolder={(parentId) => { setCreatingInParent(parentId); setCreatingFolder(true); setNewFolderName(""); }}
-                  onSubmitCreate={handleCreate}
-                  onCancelCreate={() => { setCreatingInParent(null); setCreatingFolder(false); setNewFolderName(""); }}
+                  onCreateSubfolder={openCreateDialog}
+                  formatBadgeCount={formatBadgeCount}
                 />
               ))}
             </SidebarMenu>
@@ -278,7 +421,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* ── Footer: Storage → Days Together → Settings/Billing/Admin/Recently Deleted ── */}
+      {/* Footer */}
       <SidebarFooter className="p-3 border-t space-y-2">
         <DaysTogether />
 
@@ -286,7 +429,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <Hash className="h-3 w-3" />
-              {couple?.status === "active" ? "Shared storage" : "Storage used"}
+              {isConnected ? "Shared storage" : "Storage used"}
             </span>
             <span className="font-medium text-foreground">{formatSize(storageBytes)}</span>
           </div>
@@ -294,13 +437,14 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
             <div
               className={cn(
                 "h-full rounded-full transition-all duration-500",
-                storageBytes / storageLimit > 0.9 ? "bg-destructive" : "bg-primary"
+                isStorageWarning ? "bg-destructive" : "bg-primary"
               )}
-              style={{ width: `${Math.min((storageBytes / storageLimit) * 100, 100)}%` }}
+              style={{ width: `${storagePercentage}%` }}
             />
           </div>
           <p className="text-[10px] text-muted-foreground/60">
-            of {storageLabel}{couple?.status === "active" ? " shared between you two" : ""}
+            of {storageLabel}
+            {isConnected ? " shared between you two" : ""}
           </p>
         </div>
 
@@ -320,7 +464,9 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
             onClick={() => selectView("billing")}
             className={cn(
               "flex-1 justify-start gap-1.5 text-xs",
-              plan === "soulmate" ? "text-primary hover:text-primary" : "text-muted-foreground hover:text-foreground",
+              plan === "soulmate"
+                ? "text-primary hover:text-primary"
+                : "text-muted-foreground hover:text-foreground",
               selectedView === "billing" && "bg-accent text-accent-foreground"
             )}
           >
@@ -343,7 +489,10 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
 
           {isAdmin && (
             <SidebarMenuButton
-              onClick={() => { setOpenMobile(false); navigate("/admin"); }}
+              onClick={() => {
+                setOpenMobile(false);
+                navigate("/admin");
+              }}
               className="flex-1 justify-start gap-1.5 text-xs text-muted-foreground hover:text-foreground"
             >
               <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
@@ -353,12 +502,14 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
         </div>
       </SidebarFooter>
 
-      <AlertDialog open={!!deletingFolder} onOpenChange={open => !open && setDeletingFolder(null)}>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingFolder} onOpenChange={(open) => !open && setDeletingFolder(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete folder?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete "{deletingFolder?.name}" and remove files from this folder (files won't be deleted).
+              This will permanently delete "{deletingFolder?.name}" and remove files from this folder (files won't be
+              deleted).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -368,8 +519,8 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Folder creation dialog — works well on mobile with floating keyboard */}
-      <Dialog open={creatingFolder} onOpenChange={open => { if (!open) { setCreatingFolder(false); setCreatingInParent(null); setNewFolderName(""); } }}>
+      {/* Create Folder Dialog */}
+      <Dialog open={creatingFolder} onOpenChange={(open) => !open && closeCreateDialog()}>
         <DialogContent className="sm:max-w-xs">
           <DialogHeader>
             <DialogTitle className="text-sm flex items-center gap-2">
@@ -378,21 +529,25 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
             </DialogTitle>
           </DialogHeader>
           <form
-            onSubmit={e => { e.preventDefault(); handleCreate(creatingInParent); }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleCreate(creatingInParent);
+            }}
             className="space-y-3"
           >
             <Input
               value={newFolderName}
-              onChange={e => setNewFolderName(e.target.value)}
+              onChange={(e) => setNewFolderName(e.target.value)}
               placeholder={creatingInParent ? "Subfolder name" : "Folder name"}
               className="h-10 text-sm"
               autoFocus
+              maxLength={50}
             />
             <div className="flex gap-2 justify-end">
-              <Button type="button" variant="outline" size="sm" onClick={() => { setCreatingFolder(false); setCreatingInParent(null); setNewFolderName(""); }}>
+              <Button type="button" variant="outline" size="sm" onClick={closeCreateDialog}>
                 Cancel
               </Button>
-              <Button type="submit" size="sm" disabled={!newFolderName.trim()}>
+              <Button type="submit" size="sm" disabled={!newFolderName.trim() || createFolder.isPending}>
                 Create
               </Button>
             </div>
@@ -403,30 +558,70 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
   );
 }
 
-// ── FolderItem component (unchanged, copy from original) ──────────────
-
-function FolderItem({
-  folder, allFolders, folderCounts, selectedView, onSelectView,
-  editingId, editName, setEditingId, setEditName, onRename, onDelete,
-  creatingInParent, newFolderName, setNewFolderName, onCreateSubfolder, onSubmitCreate, onCancelCreate,
-}: {
-  folder: Folder; allFolders: Folder[];
+// FolderItem Component
+interface FolderItemProps {
+  folder: Folder;
+  allFolders: Folder[];
   folderCounts: Record<string, number>;
   selectedView: string;
   onSelectView: (id: string) => void;
-  editingId: string | null; editName: string;
-  setEditingId: (id: string | null) => void; setEditName: (name: string) => void;
-  onRename: (id: string) => void; onDelete: (f: Folder) => void;
-  creatingInParent: string | null; newFolderName: string;
-  setNewFolderName: (s: string) => void;
+  editingId: string | null;
+  editName: string;
+  setEditingId: (id: string | null) => void;
+  setEditName: (name: string) => void;
+  onRename: (id: string) => void;
+  onDelete: (f: Folder) => void;
   onCreateSubfolder: (parentId: string) => void;
-  onSubmitCreate: (parentId?: string | null) => void;
-  onCancelCreate: () => void;
-}) {
-  const children = allFolders.filter(f => f.parent_id === folder.id);
+  formatBadgeCount: (count: number) => string | number;
+}
+
+function FolderItem({
+  folder,
+  allFolders,
+  folderCounts,
+  selectedView,
+  onSelectView,
+  editingId,
+  editName,
+  setEditingId,
+  setEditName,
+  onRename,
+  onDelete,
+  onCreateSubfolder,
+  formatBadgeCount,
+}: FolderItemProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  const children = useMemo(() => allFolders.filter((f) => f.parent_id === folder.id), [allFolders, folder.id]);
+
   const count = folderCounts[folder.id] ?? 0;
   const isSelected = selectedView === folder.id;
-  const [expanded, setExpanded] = useState(false);
+  const hasChildren = children.length > 0;
+
+  const handleEdit = useCallback(() => {
+    setEditingId(folder.id);
+    setEditName(folder.name);
+  }, [folder.id, folder.name, setEditingId, setEditName]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        onRename(folder.id);
+      } else if (e.key === "Escape") {
+        setEditingId(null);
+      }
+    },
+    [folder.id, onRename, setEditingId]
+  );
+
+  const handleBlur = useCallback(() => {
+    if (!editName.trim()) {
+      setEditingId(null);
+    } else {
+      onRename(folder.id);
+    }
+  }, [editName, folder.id, onRename, setEditingId]);
 
   return (
     <SidebarMenuItem>
@@ -434,21 +629,25 @@ function FolderItem({
         <div className="px-2 pb-1">
           <Input
             value={editName}
-            onChange={e => setEditName(e.target.value)}
+            onChange={(e) => setEditName(e.target.value)}
             className="h-7 text-sm"
             autoFocus
-            onKeyDown={e => { if (e.key === "Enter") onRename(folder.id); if (e.key === "Escape") setEditingId(null); }}
-            onBlur={() => { if (!editName.trim()) setEditingId(null); else onRename(folder.id); }}
+            maxLength={50}
+            onKeyDown={handleKeyDown}
+            onBlur={handleBlur}
           />
         </div>
       ) : (
         <div className={cn("flex items-center gap-1 rounded-md group", isSelected && "bg-accent")}>
-          {children.length > 0 && (
+          {hasChildren && (
             <button
-              onClick={() => setExpanded(v => !v)}
-              className="p-1 rounded hover:bg-muted/50"
+              onClick={() => setExpanded((v) => !v)}
+              className="p-1 rounded hover:bg-muted/50 transition-colors"
+              aria-label={expanded ? "Collapse folder" : "Expand folder"}
             >
-              <ChevronRight className={cn("h-3 w-3 text-muted-foreground transition-transform", expanded && "rotate-90")} />
+              <ChevronRight
+                className={cn("h-3 w-3 text-muted-foreground transition-transform", expanded && "rotate-90")}
+              />
             </button>
           )}
           <SidebarMenuButton
@@ -456,35 +655,45 @@ function FolderItem({
             className={cn("flex-1 justify-between min-w-0", isSelected && "bg-accent text-accent-foreground")}
           >
             <span className="flex items-center min-w-0">
-              <span className="mr-1.5 text-sm">{folder.emoji ?? ""}</span>
+              {folder.emoji && <span className="mr-1.5 text-sm">{folder.emoji}</span>}
               <FolderIcon className="h-3.5 w-3.5 mr-1.5 shrink-0 text-muted-foreground" />
               <span className="truncate text-sm">{folder.name}</span>
             </span>
-            {count > 0 && <Badge variant="secondary" className="text-xs h-4 px-1 font-normal shrink-0">{count}</Badge>}
+            {count > 0 && (
+              <Badge variant="secondary" className="text-xs h-4 px-1 font-normal shrink-0">
+                {formatBadgeCount(count)}
+              </Badge>
+            )}
           </SidebarMenuButton>
           <div className="hidden group-hover:flex items-center gap-0.5 pr-1">
             <button
-              onClick={() => { setEditingId(folder.id); setEditName(folder.name); }}
-              className="p-1 rounded hover:bg-muted/50"
+              onClick={handleEdit}
+              className="p-1 rounded hover:bg-muted/50 transition-colors"
+              aria-label="Rename folder"
             >
               <Pencil className="h-2.5 w-2.5 text-muted-foreground" />
             </button>
-            <button onClick={() => onDelete(folder)} className="p-1 rounded hover:bg-destructive/10">
+            <button
+              onClick={() => onDelete(folder)}
+              className="p-1 rounded hover:bg-destructive/10 transition-colors"
+              aria-label="Delete folder"
+            >
               <Trash2 className="h-2.5 w-2.5 text-destructive/70" />
             </button>
-            <button onClick={() => onCreateSubfolder(folder.id)} className="p-1 rounded hover:bg-muted/50">
+            <button
+              onClick={() => onCreateSubfolder(folder.id)}
+              className="p-1 rounded hover:bg-muted/50 transition-colors"
+              aria-label="Create subfolder"
+            >
               <FolderPlus className="h-2.5 w-2.5 text-muted-foreground" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Subfolder creation is handled by the parent Dialog */}
-
-      {/* Children */}
-      {expanded && children.length > 0 && (
-        <div className="pl-4">
-          {children.map(child => (
+      {expanded && hasChildren && (
+        <div className="pl-4 mt-1">
+          {children.map((child) => (
             <FolderItem
               key={child.id}
               folder={child}
@@ -498,12 +707,8 @@ function FolderItem({
               setEditName={setEditName}
               onRename={onRename}
               onDelete={onDelete}
-              creatingInParent={creatingInParent}
-              newFolderName={newFolderName}
-              setNewFolderName={setNewFolderName}
               onCreateSubfolder={onCreateSubfolder}
-              onSubmitCreate={onSubmitCreate}
-              onCancelCreate={onCancelCreate}
+              formatBadgeCount={formatBadgeCount}
             />
           ))}
         </div>

@@ -25,6 +25,8 @@ interface Props {
   callDuration: number;
   partnerOnline?: boolean;
   onFlipCamera?: () => void;
+  /** Whether the local camera is currently front-facing — used to mirror the PiP */
+  isFrontCamera?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -71,29 +73,141 @@ export const CallModal = memo(function CallModal({
   onAccept, onReject, onHangUp,
   isMuted, isSpeaker, onToggleMute, onToggleSpeaker,
   callDuration, partnerOnline, onFlipCamera,
+  isFrontCamera = true,
 }: Props) {
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
 
-  // ── Stream attachment ──────────────────────────────────────────────────────
+  // AudioContext refs for iOS speaker routing
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+
+  // ── Remote video attachment ────────────────────────────────────────────────
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
     }
   }, [remoteStream]);
 
-  useEffect(() => {
-    if (remoteAudioRef.current && remoteStream) {
-      remoteAudioRef.current.srcObject = remoteStream;
-    }
-  }, [remoteStream]);
-
+  // ── Local video attachment (re-fires on every flip) ────────────────────────
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
     }
   }, [localStream]);
+
+  // ── Remote audio + speaker routing ────────────────────────────────────────
+  //
+  // Two strategies, tried in order:
+  //
+  // Strategy A — setSinkId (Chrome desktop + Android Chrome):
+  //   Pass the string ID of the speaker/earpiece output device.
+  //   "communications" device = OS-selected call device (earpiece on mobile).
+  //   Specific device ID from enumerateDevices() = loudspeaker.
+  //
+  // Strategy B — AudioContext (iOS Safari + fallback):
+  //   <audio> element playing a MediaStream → iOS routes to earpiece/receiver.
+  //   AudioContext.createMediaStreamSource → iOS routes to loudspeaker.
+  //   We toggle between the two based on isSpeaker.
+  //
+  // On every remoteStream change we also re-apply the current routing so a
+  // late-arriving stream (partner joins after us) is routed correctly.
+  useEffect(() => {
+    const audioEl = remoteAudioRef.current;
+    if (!audioEl || !remoteStream) return;
+
+    const applyRouting = async () => {
+      // ── Teardown any existing AudioContext routing ────────────────────────
+      sourceNodeRef.current?.disconnect();
+      sourceNodeRef.current = null;
+      if (audioCtxRef.current) {
+        await audioCtxRef.current.close().catch(() => { });
+        audioCtxRef.current = null;
+      }
+
+      if (isSpeaker) {
+        // ── SPEAKER (loudspeaker) mode ──────────────────────────────────────
+
+        // Strategy A: setSinkId — try to find a "speaker" output device
+        if ("setSinkId" in audioEl) {
+          try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const speakerDevice = devices.find(
+              d => d.kind === "audiooutput" &&
+                /speaker|loud/i.test(d.label)
+            );
+            // If no labelled speaker found, empty string = default output
+            // which on most desktop/Android = loudspeaker
+            await (audioEl as any).setSinkId(speakerDevice?.deviceId ?? "");
+            audioEl.srcObject = remoteStream;
+            audioEl.muted = false;
+            return; // setSinkId worked — done
+          } catch {
+            // setSinkId failed (iOS, Firefox) — fall through to AudioContext
+          }
+        }
+
+        // Strategy B: AudioContext → loudspeaker on iOS
+        try {
+          // Mute the audio element first so we don't get double audio
+          audioEl.muted = true;
+          audioEl.srcObject = remoteStream;
+
+          const ctx = new AudioContext();
+          audioCtxRef.current = ctx;
+          if (ctx.state === "suspended") await ctx.resume();
+
+          const source = ctx.createMediaStreamSource(remoteStream);
+          sourceNodeRef.current = source;
+          source.connect(ctx.destination);
+        } catch (e) {
+          // AudioContext also failed — last resort: unmute audio element
+          console.warn("Speaker routing via AudioContext failed:", e);
+          audioEl.muted = false;
+          audioEl.srcObject = remoteStream;
+        }
+
+      } else {
+        // ── EARPIECE mode (default call audio) ─────────────────────────────
+
+        // Strategy A: setSinkId to "communications" device = OS call route
+        // (earpiece on mobile, default headset/speaker on desktop)
+        if ("setSinkId" in audioEl) {
+          try {
+            await (audioEl as any).setSinkId("communications");
+            audioEl.srcObject = remoteStream;
+            audioEl.muted = false;
+            return;
+          } catch {
+            // "communications" not supported — try empty string (default device)
+            try {
+              await (audioEl as any).setSinkId("");
+              audioEl.srcObject = remoteStream;
+              audioEl.muted = false;
+              return;
+            } catch {
+              // Fall through to Strategy B
+            }
+          }
+        }
+
+        // Strategy B: plain <audio> element → iOS routes to earpiece by default
+        audioEl.muted = false;
+        audioEl.srcObject = remoteStream;
+      }
+    };
+
+    applyRouting();
+
+    return () => {
+      // Cleanup AudioContext on unmount / stream change
+      sourceNodeRef.current?.disconnect();
+      sourceNodeRef.current = null;
+      audioCtxRef.current?.close().catch(() => { });
+      audioCtxRef.current = null;
+    };
+  }, [remoteStream, isSpeaker]);
 
   // ── Call sounds ────────────────────────────────────────────────────────────
   // FIX: single unified effect — no duplicate stopCallSound() calls from multiple effects.
@@ -211,6 +325,11 @@ export const CallModal = memo(function CallModal({
             muted
             aria-hidden
             className="absolute top-4 right-4 w-28 h-40 rounded-2xl object-cover border-2 border-border shadow-2xl"
+            style={{
+              // Mirror when front camera (natural selfie view).
+              // No mirror for rear camera (shows scene as-is).
+              transform: isFrontCamera ? "scaleX(-1)" : "none",
+            }}
           />
         )}
 

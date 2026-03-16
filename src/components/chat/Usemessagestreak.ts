@@ -1,19 +1,36 @@
-import { useRef, useEffect, useMemo } from "react";
+import { useRef, useEffect, useMemo, useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useMyCouple } from "@/hooks/useCouple";
 import { useAuth } from "@/hooks/useAuth";
-import { format, subDays, startOfDay } from "date-fns";
+import { format, subDays, startOfDay, parseISO } from "date-fns";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface StreakData {
+    /** Current streak count */
     current: number;
+    /** All-time longest streak */
     longest: number;
-    bothSentToday: boolean;
+    /** I have sent in the current window */
+    iSent: boolean;
+    /** Partner has sent in the current window */
+    partnerSent: boolean;
+    /** Both sent — window is complete (streak will increment on next DB sync) */
+    bothSent: boolean;
+    /** I sent but partner hasn't yet */
     waitingForPartner: boolean;
+    /** Neither sent yet in current window */
+    neitherSent: boolean;
+    /** Window exists, expires in < 4 hours, and not both sent yet */
     atRisk: boolean;
+    /** ms until current window expires (null if no open window) */
+    timeLeftMs: number | null;
+    /** Absolute Date when window expires (null if no open window) */
+    windowExpiresAt: Date | null;
+    /** Currently active milestone number, or null */
     milestone: number | null;
+    /** Last 7 calendar-day date strings ("yyyy-MM-dd") where streak was active */
     activeDays: string[];
 }
 
@@ -24,43 +41,62 @@ export interface UseMessageStreakReturn extends StreakData {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MILESTONES = [3, 7, 14, 30, 50, 100, 365] as const;
+const WINDOW_MS = 24 * 60 * 60 * 1000;   // 24 hours in ms
+const AT_RISK_MS = 4 * 60 * 60 * 1000;   // 4 hours in ms — show hourglass warning
 
 // ─── DB row shape ─────────────────────────────────────────────────────────────
 
 interface StreakRow {
     streak_count: number;
     streak_longest: number;
-    streak_last_day: string | null;   // "YYYY-MM-DD"
-    streak_updated_at: string | null;
-}
-
-interface TodayMessageRow {
-    sender_id: string;
+    streak_window_start: string | null;  // ISO timestamptz from Supabase
+    streak_window_complete: boolean;
+    streak_user1_sent: boolean;
+    streak_user2_sent: boolean;
+    user1_id: string;
+    user2_id: string;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Rolling 24-hour chat streak — Snapchat style.
+ *
+ * A streak increments when BOTH partners send at least one chat message
+ * within a 24-hour window. The window opens the moment the first person
+ * sends after the previous window closed. If the window expires before
+ * both have sent, the streak resets to 0.
+ *
+ * The DB trigger (streak_migration.sql) handles all mutations.
+ * This hook is read-only — it subscribes to realtime changes and
+ * derives display state from the DB values.
+ */
 export function useMessageStreak(): UseMessageStreakReturn {
     const { user } = useAuth();
     const { data: couple } = useMyCouple();
     const queryClient = useQueryClient();
     const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-    const coupleId = couple?.status === "active" ? couple.id : null;
-    const partnerId = couple?.status === "active"
-        ? (couple.user1_id === user?.id ? couple.user2_id : couple.user1_id)
-        : null;
+    // Live clock — ticks every 30 seconds to keep timeLeftMs fresh
+    const [now, setNow] = useState(() => Date.now());
+    useEffect(() => {
+        const id = setInterval(() => setNow(Date.now()), 30_000);
+        return () => clearInterval(id);
+    }, []);
 
-    // ── Read streak fields directly from couples row ───────────────────────────
-    // This is a single column read — no scanning messages at all.
-    const { data: streakRow, isLoading: loadingStreak } = useQuery<StreakRow | null>({
-        queryKey: ["streak", coupleId],
+    const coupleId = couple?.status === "active" ? couple.id : null;
+
+    // ── Fetch streak row ────────────────────────────────────────────────────────
+    const { data: row, isLoading } = useQuery<StreakRow | null>({
+        queryKey: ["streak-v2", coupleId],
         enabled: !!coupleId,
-        staleTime: Infinity, // realtime keeps this fresh
+        staleTime: Infinity,  // realtime keeps this fresh
         queryFn: async () => {
             const { data, error } = await supabase
                 .from("couples" as never)
-                .select("streak_count, streak_longest, streak_last_day, streak_updated_at")
+                .select(
+                    "streak_count, streak_longest, streak_window_start, streak_window_complete, streak_user1_sent, streak_user2_sent, user1_id, user2_id"
+                )
                 .eq("id", coupleId!)
                 .single() as unknown as { data: StreakRow | null; error: unknown };
 
@@ -69,39 +105,16 @@ export function useMessageStreak(): UseMessageStreakReturn {
         },
     });
 
-    // ── Today's messages — who has sent today ─────────────────────────────────
-    // Still needed to compute bothSentToday / waitingForPartner.
-    // This is a tiny query: only today's messages, only sender_id column.
-    const { data: todayMessages = [], isLoading: loadingToday } = useQuery<TodayMessageRow[]>({
-        queryKey: ["streak-today", coupleId],
-        enabled: !!coupleId,
-        staleTime: 0, // always fresh
-        queryFn: async () => {
-            const localTodayStart = startOfDay(new Date());
-            const { data, error } = await supabase
-                .from("messages" as never)
-                .select("sender_id")
-                .eq("couple_id", coupleId!)
-                .is("deleted_at", null)
-                .gte("created_at", localTodayStart.toISOString()) as unknown as {
-                    data: TodayMessageRow[] | null;
-                    error: unknown;
-                };
-            if (error || !data) return [];
-            return data;
-        },
-    });
-
-    // ── Realtime — couples row updates when the trigger fires ──────────────────
-    // The DB trigger updates streak_count the moment a message is inserted.
-    // We push that update directly into the query cache — no refetch needed.
+    // ── Realtime subscription ───────────────────────────────────────────────────
+    // Whenever the DB trigger fires (on any message insert), it updates the
+    // couples row. We push that straight into the query cache — no refetch.
     useEffect(() => {
         if (!coupleId) return;
 
         if (channelRef.current) supabase.removeChannel(channelRef.current);
 
         channelRef.current = supabase
-            .channel(`streak-field:${coupleId}`)
+            .channel(`streak-v2:${coupleId}`)
             .on(
                 "postgres_changes",
                 {
@@ -112,20 +125,24 @@ export function useMessageStreak(): UseMessageStreakReturn {
                 },
                 (payload) => {
                     const updated = payload.new as Record<string, unknown>;
-                    // Only update streak fields — don't stomp other couples fields
                     queryClient.setQueryData<StreakRow | null>(
-                        ["streak", coupleId],
-                        prev => prev ? {
-                            ...prev,
-                            streak_count: updated.streak_count as number ?? prev.streak_count,
-                            streak_longest: updated.streak_longest as number ?? prev.streak_longest,
-                            streak_last_day: updated.streak_last_day as string ?? prev.streak_last_day,
-                            streak_updated_at: updated.streak_updated_at as string ?? prev.streak_updated_at,
-                        } : prev
+                        ["streak-v2", coupleId],
+                        (prev) => {
+                            if (!prev) return prev;
+                            return {
+                                ...prev,
+                                streak_count: (updated.streak_count as number) ?? prev.streak_count,
+                                streak_longest: (updated.streak_longest as number) ?? prev.streak_longest,
+                                streak_window_start: (updated.streak_window_start as string) ?? prev.streak_window_start,
+                                streak_window_complete: (updated.streak_window_complete as boolean) ?? prev.streak_window_complete,
+                                streak_user1_sent: (updated.streak_user1_sent as boolean) ?? prev.streak_user1_sent,
+                                streak_user2_sent: (updated.streak_user2_sent as boolean) ?? prev.streak_user2_sent,
+                            };
+                        }
                     );
-                    // Also invalidate today's messages so bothSentToday updates
-                    queryClient.invalidateQueries({ queryKey: ["streak-today", coupleId] });
-                },
+                    // Nudge the clock so timeLeftMs recalculates immediately
+                    setNow(Date.now());
+                }
             )
             .subscribe();
 
@@ -137,50 +154,78 @@ export function useMessageStreak(): UseMessageStreakReturn {
         };
     }, [coupleId, queryClient]);
 
-    // ── Derive display values from DB fields ───────────────────────────────────
+    // ── Derive display values ───────────────────────────────────────────────────
     const result = useMemo<StreakData>(() => {
-        const today = format(startOfDay(new Date()), "yyyy-MM-dd");
-        const yesterday = format(subDays(startOfDay(new Date()), 1), "yyyy-MM-dd");
-
-        const current = streakRow?.streak_count ?? 0;
-        const longest = streakRow?.streak_longest ?? 0;
-        const lastDay = streakRow?.streak_last_day ?? null;
-
-        // atRisk: streak is alive (last_day = yesterday) but nobody sent today yet
-        const atRisk = current > 0 && lastDay === yesterday;
-
-        // bothSentToday / waitingForPartner
-        const sendersTodaySet = new Set(todayMessages.map(m => m.sender_id));
-        const bothSentToday = !!user?.id && !!partnerId
-            && sendersTodaySet.has(user.id)
-            && sendersTodaySet.has(partnerId);
-        const waitingForPartner = !!user?.id && !!partnerId
-            && sendersTodaySet.has(user.id)
-            && !sendersTodaySet.has(partnerId);
-
-        // milestone
-        const milestone = (MILESTONES as readonly number[]).includes(current)
-            ? current
-            : null;
-
-        // activeDays — last 7 days for the calendar dots
-        // We derive this from streak_last_day and streak_count: walk back
-        // streak_count days from last_day (capped at 7 for the badge UI)
-        const activeDays: string[] = [];
-        if (lastDay && current > 0) {
-            let cursor = new Date(lastDay);
-            const cap = Math.min(current, 7);
-            for (let i = 0; i < cap; i++) {
-                activeDays.unshift(format(cursor, "yyyy-MM-dd"));
-                cursor = subDays(cursor, 1);
-            }
+        if (!row || !user?.id) {
+            return {
+                current: 0, longest: 0,
+                iSent: false, partnerSent: false,
+                bothSent: false, waitingForPartner: false, neitherSent: true,
+                atRisk: false, timeLeftMs: null, windowExpiresAt: null,
+                milestone: null, activeDays: [],
+            };
         }
 
-        return { current, longest, atRisk, bothSentToday, waitingForPartner, milestone, activeDays };
-    }, [streakRow, todayMessages, user?.id, partnerId]);
+        const iAmUser1 = user.id === row.user1_id;
+        const iSent = iAmUser1 ? row.streak_user1_sent : row.streak_user2_sent;
+        const partnerSent = iAmUser1 ? row.streak_user2_sent : row.streak_user1_sent;
+        // bothSent is authoritative from the DB — the trigger sets window_complete=true
+        // the moment the 2nd person's message lands, so we don't rely on both flags
+        // being true client-side (avoids a race where the realtime update arrives
+        // before both individual sent-flags are reflected in the cache).
+        const bothSent = row.streak_window_complete;
 
-    return {
-        ...result,
-        isLoading: loadingStreak || loadingToday,
-    };
+        // ── Window timing ────────────────────────────────────────────────────────
+        let timeLeftMs: number | null = null;
+        let windowExpiresAt: Date | null = null;
+        let windowExpired = false;
+
+        if (row.streak_window_start) {
+            const windowStart = new Date(row.streak_window_start).getTime();
+            const expires = windowStart + WINDOW_MS;
+            windowExpiresAt = new Date(expires);
+            timeLeftMs = Math.max(0, expires - now);
+            windowExpired = now > expires;
+        }
+
+        // ── Effective current streak ─────────────────────────────────────────────
+        // If the window has expired client-side before the DB has caught up
+        // (e.g. no new message to trigger the reset), show 0 to avoid stale count.
+        const current = windowExpired && !iSent && !partnerSent ? 0 : row.streak_count;
+        const longest = row.streak_longest;
+
+        const waitingForPartner = iSent && !partnerSent && !bothSent;
+        const neitherSent = !iSent && !partnerSent && !bothSent;
+
+        // atRisk: window is open, expiring in < 4h, and the pair is NOT yet complete
+        const atRisk = !windowExpired
+            && timeLeftMs !== null
+            && timeLeftMs <= AT_RISK_MS
+            && !bothSent
+            && current > 0;
+
+        // ── Milestone ────────────────────────────────────────────────────────────
+        const milestone = (MILESTONES as readonly number[]).includes(current) ? current : null;
+
+        // ── Active days (last 7 calendar days) ───────────────────────────────────
+        // Derived from streak_count and when the last completed window was.
+        // We walk back streak_count days from today (capped at 7).
+        // If streak is alive (window not expired), today counts.
+        const activeDays: string[] = [];
+        const baseDate = windowExpired ? subDays(startOfDay(new Date()), 1) : startOfDay(new Date());
+        const cap = Math.min(current, 7);
+        for (let i = 0; i < cap; i++) {
+            activeDays.unshift(format(subDays(baseDate, i), "yyyy-MM-dd"));
+        }
+
+        return {
+            current, longest,
+            iSent, partnerSent,
+            bothSent, waitingForPartner, neitherSent,
+            atRisk, timeLeftMs, windowExpiresAt,
+            milestone, activeDays,
+        };
+    }, [row, user?.id, now]);
+
+    return { ...result, isLoading };
 }

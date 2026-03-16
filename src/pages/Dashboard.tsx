@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSwipeNav } from "@/hooks/useSwipeNav";
-import { Search, Upload, Moon, Sun, LayoutGrid, List, ArrowUpDown, Crown } from "lucide-react";
+import { Search, Upload, Moon, Sun, LayoutGrid, List, ArrowUpDown } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePlan } from "@/hooks/useSubscription";
@@ -12,7 +12,7 @@ import { useProfile, useAllProfiles } from "@/hooks/useProfile";
 import { useOnThisDay } from "@/hooks/useMemories";
 import { useMyCouple } from "@/hooks/useCouple";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar, ViewType } from "@/components/AppSidebar";
+import { AppSidebar, ViewType, FolderViewType } from "@/components/AppSidebar";
 import { MediaGrid, ViewMode } from "@/components/MediaGrid";
 import { UploadDialog } from "@/components/UploadDialog";
 import { MediaPreview } from "@/components/MediaPreview";
@@ -30,13 +30,15 @@ import { RecentlyDeletedView } from "@/components/RecentlyDeletedView";
 import { LoveStoryView } from "@/components/LoveStoryView";
 import { TravelMapView } from "@/components/travel-map/TravelMapView";
 import { UpgradeGateModal } from "@/components/UpgradeGateModal";
-
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -47,18 +49,72 @@ type FileTypeFilter = "all" | "image" | "video";
 type SortKey = "created_at" | "title" | "file_size";
 type SortDir = "asc" | "desc";
 
-const STORAGE_KEY_SORT = "usmoment_sort";
-const STORAGE_KEY_VIEW = "usmoment_view";
-
-function loadPref<T>(key: string, fallback: T): T {
-  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+interface GateModalState {
+  feature: string;
+  plan: "dating" | "soulmate";
 }
 
-const SPECIAL_VIEWS = [
-  "all", "starred", "recently-deleted",
-  "timeline", "on-this-day", "anniversaries",
-  "chat", "activity", "billing", "settings", "love-story", "travel-map",
-];
+// Constants
+const STORAGE_KEYS = {
+  SORT_KEY: "usmoment_sort_key",
+  SORT_DIR: "usmoment_sort_dir",
+  VIEW_MODE: "usmoment_view",
+} as const;
+
+const SPECIAL_VIEWS: readonly ViewType[] = [
+  "all",
+  "starred",
+  "recently-deleted",
+  "timeline",
+  "on-this-day",
+  "anniversaries",
+  "chat",
+  "activity",
+  "billing",
+  "settings",
+  "love-story",
+  "travel-map",
+] as const;
+
+const NON_GRID_VIEWS: readonly ViewType[] = [
+  "timeline",
+  "anniversaries",
+  "chat",
+  "activity",
+  "billing",
+  "settings",
+  "recently-deleted",
+  "love-story",
+  "travel-map",
+] as const;
+
+const SWIPE_ORDER: readonly ViewType[] = ["all", "timeline", "billing"] as const;
+
+const FILE_TYPE_FILTERS: readonly FileTypeFilter[] = ["all", "image", "video"] as const;
+
+const PAID_VIEWS: Record<string, GateModalState> = {
+  "travel-map": { feature: "Travel Map", plan: "dating" },
+};
+
+// Utility functions
+function loadPreference<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const value = localStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function savePreference<T>(key: string, value: T): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.error(`Failed to save preference ${key}:`, error);
+  }
+}
 
 function tabToView(tab?: string): ViewType {
   if (!tab) return "all";
@@ -69,72 +125,162 @@ function viewToTab(view: ViewType): string {
   return view;
 }
 
+function isSpecialView(view: string): view is ViewType {
+  return SPECIAL_VIEWS.includes(view as ViewType);
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { tab, folderId: folderParam } = useParams<{ tab?: string; folderId?: string }>();
-
-  const selectedView: ViewType = folderParam ? folderParam : tabToView(tab);
-
-  const setSelectedView = useCallback((view: ViewType) => {
-    const isFolder = !SPECIAL_VIEWS.includes(view) && view !== "all";
-    if (isFolder) {
-      navigate(`/dashboard/folder/${view}`, { replace: false });
-    } else {
-      const t = viewToTab(view);
-      navigate(t === "all" ? "/dashboard" : `/dashboard/${t}`, { replace: false });
-    }
-  }, [navigate]);
-
-  const [search, setSearch] = useState("");
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [previewIndex, setPreviewIndex] = useState<number>(-1);
-  const [viewMode, setViewMode] = useState<ViewMode>(() => loadPref<ViewMode>(STORAGE_KEY_VIEW, "grid"));
-  const [dragOverMain, setDragOverMain] = useState(false);
-  const [fileTypeFilter, setFileTypeFilter] = useState<FileTypeFilter>("all");
-  const [sortKey, setSortKey] = useState<SortKey>(() => loadPref<SortKey>(STORAGE_KEY_SORT + "_key", "created_at"));
-  const [sortDir, setSortDir] = useState<SortDir>(() => loadPref<SortDir>(STORAGE_KEY_SORT + "_dir", "desc"));
-  const [gateModal, setGateModal] = useState<{ feature: string; plan: "dating" | "soulmate" } | null>(null);
-
-  // Views that require a paid plan (Love Story is free for all)
-  const PAID_VIEWS: Record<string, { feature: string; plan: "dating" | "soulmate" }> = {
-    "travel-map": { feature: "Travel Map", plan: "dating" },
-  };
-
-  const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
+  const { theme, toggleTheme } = useTheme();
+
+  // Hooks
+  const plan = usePlan();
   const moveMedia = useMoveMedia();
   const { data: profile } = useProfile();
   const { data: onThisDayMedia = [] } = useOnThisDay();
   const { data: couple } = useMyCouple();
   const { data: profiles = [] } = useAllProfiles();
-  const plan = usePlan();
-  const profileInitials = (profile?.display_name ?? user?.email ?? "U").slice(0, 2).toUpperCase();
+  const { data: folders = [] } = useFolders();
+
+  // State
+  const [search, setSearch] = useState("");
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState<number>(-1);
+  const [dragOverMain, setDragOverMain] = useState(false);
+  const [fileTypeFilter, setFileTypeFilter] = useState<FileTypeFilter>("all");
+  const [gateModal, setGateModal] = useState<GateModalState | null>(null);
+
+  const [viewMode, setViewMode] = useState<ViewMode>(() =>
+    loadPreference<ViewMode>(STORAGE_KEYS.VIEW_MODE, "grid")
+  );
+  const [sortKey, setSortKey] = useState<SortKey>(() =>
+    loadPreference<SortKey>(STORAGE_KEYS.SORT_KEY, "created_at")
+  );
+  const [sortDir, setSortDir] = useState<SortDir>(() =>
+    loadPreference<SortDir>(STORAGE_KEYS.SORT_DIR, "desc")
+  );
+
   const seenMediaRef = useRef<Set<string>>(new Set());
 
-  // Override navigateToView now that `plan` is available
-  const gatedNavigate = useCallback((view: ViewType) => {
-    if (plan === "single" && PAID_VIEWS[view]) {
-      setGateModal(PAID_VIEWS[view]);
-      return;
-    }
-    setSelectedView(view);
-  }, [plan, setSelectedView]);
+  // Computed values
+  const selectedView: FolderViewType = useMemo(
+    () => (folderParam ? folderParam : tabToView(tab)),
+    [folderParam, tab]
+  );
 
-  // Swipe navigation order (bottom-nav views only, no chat/settings)
-  const SWIPE_ORDER: ViewType[] = ["all", "timeline", "billing"];
-  const swipeIndex = SWIPE_ORDER.indexOf(selectedView);
+  const isSpecial = useMemo(() => isSpecialView(selectedView), [selectedView]);
+  const isChat = selectedView === "chat";
+  const isGridView = useMemo(() => !NON_GRID_VIEWS.includes(selectedView as ViewType), [selectedView]);
+
+  const folderId = useMemo(() => {
+    if (selectedView === "all") return undefined;
+    if (isSpecial) return undefined;
+    return selectedView;
+  }, [selectedView, isSpecial]);
+
+  const profileInitials = useMemo(() => {
+    const name = profile?.display_name ?? user?.email ?? "U";
+    return name.slice(0, 2).toUpperCase();
+  }, [profile?.display_name, user?.email]);
+
+  // Data fetching
+  const { data: regularMedia = [], isLoading } = useMedia(
+    isSpecial && selectedView !== "starred" ? undefined : folderId,
+    search || undefined
+  );
+  const { data: starredMedia = [] } = useStarredMedia();
+
+  // Media processing
+  const rawMedia = useMemo(() => {
+    if (selectedView === "starred") return starredMedia;
+    if (selectedView === "on-this-day") return onThisDayMedia;
+    return regularMedia;
+  }, [selectedView, starredMedia, onThisDayMedia, regularMedia]);
+
+  const typeFiltered = useMemo(() => {
+    if (fileTypeFilter === "all") return rawMedia;
+    return rawMedia.filter((m) => m.file_type === fileTypeFilter);
+  }, [rawMedia, fileTypeFilter]);
+
+  const media = useMemo(() => {
+    return [...typeFiltered].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "created_at") {
+        cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      } else if (sortKey === "title") {
+        cmp = a.title.localeCompare(b.title);
+      } else if (sortKey === "file_size") {
+        cmp = a.file_size - b.file_size;
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [typeFiltered, sortKey, sortDir]);
+
+  const currentFolder = useMemo(() => {
+    if (isSpecial) return null;
+    return folders.find((f) => f.id === selectedView) ?? null;
+  }, [isSpecial, folders, selectedView]);
+
+  const pageTitle = useMemo(() => {
+    const titleMap: Record<ViewType, string> = {
+      all: "All Files",
+      starred: "Starred",
+      "recently-deleted": "Recently Deleted",
+      timeline: "Memories Timeline",
+      "on-this-day": `On This Day · ${format(new Date(), "MMMM d")}`,
+      anniversaries: "Anniversaries & Milestones",
+      chat: "Chat with Partner 💬",
+      activity: "Activity Feed",
+      billing: "Billing & Plan",
+      settings: "Settings",
+      "love-story": "Love Story",
+      "travel-map": "Travel Map",
+    };
+
+    return titleMap[selectedView as ViewType] ?? currentFolder?.name ?? "Folder";
+  }, [selectedView, currentFolder?.name]);
+
+  // Navigation handlers
+  const setSelectedView = useCallback(
+    (view: FolderViewType) => {
+      const isFolder = !SPECIAL_VIEWS.includes(view as ViewType);
+      if (isFolder) {
+        navigate(`/dashboard/folder/${view}`, { replace: false });
+      } else {
+        const t = viewToTab(view as ViewType);
+        navigate(t === "all" ? "/dashboard" : `/dashboard/${t}`, { replace: false });
+      }
+    },
+    [navigate]
+  );
+
+  const gatedNavigate = useCallback(
+    (view: FolderViewType) => {
+      if (plan === "single" && PAID_VIEWS[view]) {
+        setGateModal(PAID_VIEWS[view]);
+        return;
+      }
+      setSelectedView(view);
+    },
+    [plan, setSelectedView]
+  );
+
+  // Swipe navigation
+  const swipeIndex = useMemo(() => SWIPE_ORDER.indexOf(selectedView as ViewType), [selectedView]);
 
   const handleSwipeLeft = useCallback(() => {
-    if (swipeIndex >= 0 && swipeIndex < SWIPE_ORDER.length - 1)
+    if (swipeIndex >= 0 && swipeIndex < SWIPE_ORDER.length - 1) {
       gatedNavigate(SWIPE_ORDER[swipeIndex + 1]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }
   }, [swipeIndex, gatedNavigate]);
 
   const handleSwipeRight = useCallback(() => {
-    if (swipeIndex > 0)
+    if (swipeIndex > 0) {
       gatedNavigate(SWIPE_ORDER[swipeIndex - 1]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }
   }, [swipeIndex, gatedNavigate]);
 
   const swipeHandlers = useSwipeNav({
@@ -144,122 +290,286 @@ export default function Dashboard() {
     onSwipeRight: handleSwipeRight,
   });
 
-  useEffect(() => { localStorage.setItem(STORAGE_KEY_VIEW, JSON.stringify(viewMode)); }, [viewMode]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEY_SORT + "_key", JSON.stringify(sortKey)); }, [sortKey]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEY_SORT + "_dir", JSON.stringify(sortDir)); }, [sortDir]);
+  // Sort handlers
+  const toggleSort = useCallback((key: SortKey) => {
+    setSortKey((prevKey) => {
+      if (prevKey === key) {
+        setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+        return key;
+      } else {
+        setSortDir("desc");
+        return key;
+      }
+    });
+  }, []);
 
-  // Realtime: toast when partner uploads
+  // Drag and drop handlers
+  const handleMainDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    if (e.dataTransfer.types.includes("Files")) {
+      setDragOverMain(true);
+    }
+  }, []);
+
+  const handleMainDragLeave = useCallback(() => {
+    setDragOverMain(false);
+  }, []);
+
+  const handleMainDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOverMain(false);
+      if (e.dataTransfer.files.length > 0) {
+        setUploadOpen(true);
+      }
+    },
+    []
+  );
+
+  // Preview handlers
+  const handlePreview = useCallback(
+    (item: { id: string }) => {
+      const idx = media.findIndex((m) => m.id === item.id);
+      if (idx >= 0) {
+        setPreviewIndex(idx);
+      }
+    },
+    [media]
+  );
+
+  const handlePreviewClose = useCallback((open: boolean) => {
+    if (!open) {
+      setPreviewIndex(-1);
+    }
+  }, []);
+
+  const handleTimelinePreview = useCallback(
+    (mediaId: string) => {
+      const idx = media.findIndex((m) => m.id === mediaId);
+      setSelectedView("all");
+      setTimeout(() => {
+        setPreviewIndex(idx >= 0 ? idx : 0);
+      }, 100);
+    },
+    [media, setSelectedView]
+  );
+
+  // Upload handler
+  const handleUpload = useCallback(() => {
+    if (selectedView === "all" || !isSpecial) {
+      setUploadOpen(true);
+    }
+  }, [selectedView, isSpecial]);
+
+  // Effects
+  useEffect(() => {
+    savePreference(STORAGE_KEYS.VIEW_MODE, viewMode);
+  }, [viewMode]);
+
+  useEffect(() => {
+    savePreference(STORAGE_KEYS.SORT_KEY, sortKey);
+  }, [sortKey]);
+
+  useEffect(() => {
+    savePreference(STORAGE_KEYS.SORT_DIR, sortDir);
+  }, [sortDir]);
+
+  // Realtime partner uploads
   useEffect(() => {
     if (!user || couple?.status !== "active") return;
+
     const partnerId = couple.user1_id === user.id ? couple.user2_id : couple.user1_id;
     if (!partnerId) return;
-    const partnerName = profiles.find(p => p.user_id === partnerId)?.display_name ?? "Your partner";
+
+    const partnerProfile = profiles.find((p) => p.user_id === partnerId);
+    const partnerName = partnerProfile?.display_name ?? "Your partner";
 
     const channel = supabase
       .channel("partner-media-activity")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "media" }, (payload) => {
-        const row = payload.new as { uploaded_by: string; id: string; title?: string };
-        if (row.uploaded_by !== partnerId) return;
-        if (seenMediaRef.current.has(row.id)) return;
-        seenMediaRef.current.add(row.id);
-        toast({ title: `${partnerName} added a new photo 💕`, description: row.title || undefined });
-      })
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "media" },
+        (payload) => {
+          const row = payload.new as { uploaded_by: string; id: string; title?: string };
+          if (row.uploaded_by !== partnerId) return;
+          if (seenMediaRef.current.has(row.id)) return;
+
+          seenMediaRef.current.add(row.id);
+          toast({
+            title: `${partnerName} added a new photo 💕`,
+            description: row.title || undefined,
+          });
+        }
+      )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, couple, profiles, toast]);
 
-  const isSpecialView = SPECIAL_VIEWS.includes(selectedView);
-
-  const folderId = selectedView === "all" ? undefined
-    : isSpecialView ? undefined
-      : selectedView;
-
-  const { data: regularMedia = [], isLoading } = useMedia(
-    isSpecialView && selectedView !== "starred" ? undefined : folderId,
-    search || undefined
-  );
-  const { data: starredMedia = [] } = useStarredMedia();
-  const { data: folders = [] } = useFolders();
-
-  const rawMedia = selectedView === "starred" ? starredMedia
-    : selectedView === "on-this-day" ? onThisDayMedia
-      : regularMedia;
-
-  const typeFiltered = fileTypeFilter === "all" ? rawMedia
-    : rawMedia.filter(m => m.file_type === fileTypeFilter);
-
-  const media = [...typeFiltered].sort((a, b) => {
-    let cmp = 0;
-    if (sortKey === "created_at") cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-    else if (sortKey === "title") cmp = a.title.localeCompare(b.title);
-    else if (sortKey === "file_size") cmp = a.file_size - b.file_size;
-    return sortDir === "asc" ? cmp : -cmp;
-  });
-
-  const currentFolder = !isSpecialView ? folders.find(f => f.id === selectedView) : null;
-  const pageTitle = selectedView === "all" ? "All Files"
-    : selectedView === "starred" ? "Starred"
-      : selectedView === "recently-deleted" ? "Recently Deleted"
-        : selectedView === "timeline" ? "Memories Timeline"
-          : selectedView === "on-this-day" ? `On This Day · ${format(new Date(), "MMMM d")}`
-            : selectedView === "anniversaries" ? "Anniversaries & Milestones"
-              : selectedView === "chat" ? "Chat with Partner 💬"
-                : selectedView === "activity" ? "Activity Feed"
-                  : selectedView === "billing" ? "Billing & Plan"
-                    : selectedView === "settings" ? "Settings"
-                      : selectedView === "love-story" ? "Love Story"
-                        : selectedView === "travel-map" ? "Travel Map"
-                          : currentFolder?.name || "Folder";
-
-  const avatarUrl = profile?.avatar_url ?? null;
-
+  // Move media handler
   useEffect(() => {
     const handler = (e: Event) => {
       const { mediaId, folderId: targetFolderId } = (e as CustomEvent).detail;
-      moveMedia.mutateAsync({ id: mediaId, folderId: targetFolderId }).then(() => {
-        toast({ title: "Moved to folder" });
-      }).catch(() => {
-        toast({ title: "Failed to move", variant: "destructive" });
-      });
+
+      moveMedia
+        .mutateAsync({ id: mediaId, folderId: targetFolderId })
+        .then(() => {
+          toast({ title: "Moved to folder" });
+        })
+        .catch((error) => {
+          console.error("Failed to move media:", error);
+          toast({ title: "Failed to move", variant: "destructive" });
+        });
     };
+
     window.addEventListener("move-media", handler);
     return () => window.removeEventListener("move-media", handler);
   }, [moveMedia, toast]);
 
-  const handleMainDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOverMain(false);
-    if (e.dataTransfer.files.length > 0) setUploadOpen(true);
-  }, []);
+  // Render helpers
+  const renderFileTypeFilter = useCallback(() => {
+    if (!isGridView) return null;
 
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortKey(key); setSortDir("desc"); }
-  };
+    return (
+      <div className="hidden md:flex items-center gap-0.5 p-0.5 rounded-lg bg-muted shrink-0">
+        {FILE_TYPE_FILTERS.map((filter) => (
+          <button
+            key={filter}
+            onClick={() => setFileTypeFilter(filter)}
+            className={cn(
+              "px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors",
+              fileTypeFilter === filter
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {filter === "all" ? "All" : filter === "image" ? "Images" : "Videos"}
+          </button>
+        ))}
+      </div>
+    );
+  }, [isGridView, fileTypeFilter]);
 
-  const NON_GRID_VIEWS = ["timeline", "anniversaries", "chat", "activity", "billing", "settings", "recently-deleted", "love-story", "travel-map"];
-  const isGridView = !NON_GRID_VIEWS.includes(selectedView);
-  const isChat = selectedView === "chat";
+  const renderSortMenu = useCallback(() => {
+    if (!isGridView) return null;
+
+    const sortItems: Array<{ key: SortKey; label: string }> = [
+      { key: "created_at", label: "Date" },
+      { key: "title", label: "Name" },
+      { key: "file_size", label: "Size" },
+    ];
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hidden sm:flex">
+            <ArrowUpDown className="h-3.5 w-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          {sortItems.map(({ key, label }) => (
+            <DropdownMenuItem
+              key={key}
+              onClick={() => toggleSort(key)}
+              className={cn(sortKey === key && "font-semibold")}
+            >
+              {label} {sortKey === key ? (sortDir === "asc" ? "↑" : "↓") : ""}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }, [isGridView, sortKey, sortDir, toggleSort]);
+
+  const renderPageHeader = useCallback(() => {
+    if (selectedView === "settings" || selectedView === "travel-map") return null;
+
+    return (
+      <div className={cn(selectedView === "billing" ? "mb-0" : "mb-3 sm:mb-5")}>
+        {!isSpecial && (
+          <FolderBreadcrumb
+            folderId={selectedView}
+            folders={folders}
+            onNavigate={setSelectedView}
+          />
+        )}
+        {selectedView !== "billing" && (
+          <h1 className="hidden sm:block text-xl sm:text-2xl font-bold font-heading tracking-tight text-foreground">
+            {pageTitle}
+          </h1>
+        )}
+        {selectedView === "on-this-day" && onThisDayMedia.length > 0 && (
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+            🗓️ {onThisDayMedia.length} {onThisDayMedia.length === 1 ? "memory" : "memories"} from
+            previous years on this date
+          </p>
+        )}
+        {isGridView && !isLoading && selectedView !== "on-this-day" && (
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
+            {media.length} file{media.length !== 1 ? "s" : ""}
+          </p>
+        )}
+      </div>
+    );
+  }, [
+    selectedView,
+    isSpecial,
+    folders,
+    setSelectedView,
+    pageTitle,
+    onThisDayMedia.length,
+    isGridView,
+    isLoading,
+    media.length,
+  ]);
+
+  const renderMainContent = useCallback(() => {
+    switch (selectedView) {
+      case "timeline":
+        return <MemoriesTimeline onPreview={handleTimelinePreview} />;
+      case "anniversaries":
+        return <AnniversariesView />;
+      case "love-story":
+        return <LoveStoryView />;
+      case "travel-map":
+        return <TravelMapView />;
+      case "activity":
+        return <ActivityFeed />;
+      case "billing":
+        return <BillingView />;
+      case "settings":
+        return <SettingsView onNavigateBilling={() => setSelectedView("billing")} />;
+      case "recently-deleted":
+        return <RecentlyDeletedView />;
+      default:
+        return (
+          <MediaGrid
+            media={media}
+            loading={isLoading}
+            onPreview={handlePreview}
+            viewMode={viewMode}
+          />
+        );
+    }
+  }, [selectedView, handleTimelinePreview, media, isLoading, handlePreview, viewMode, setSelectedView]);
 
   return (
     <SidebarProvider defaultOpen={typeof window !== "undefined" && window.innerWidth >= 1024}>
       <div className="flex h-dvh w-full overflow-hidden bg-background">
-        <AppSidebar
-          selectedView={selectedView}
-          onSelectView={gatedNavigate}
-        />
+        <AppSidebar selectedView={selectedView} onSelectView={gatedNavigate} />
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          {/* Header — hidden in chat fullscreen on mobile */}
+          {/* Header */}
           {!isChat && (
-            <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-xl border-b border-border/60 shrink-0"
+            <header
+              className="sticky top-0 z-10 bg-background/95 backdrop-blur-xl border-b border-border/60 shrink-0"
               style={{ height: "52px" }}
             >
               <div className="flex items-center h-full px-2 sm:px-4 gap-1.5">
                 <SidebarTrigger className="shrink-0 h-9 w-9" />
 
-                {/* Mobile: page title; Desktop: search */}
                 {isGridView ? (
                   <div className="relative flex-1 min-w-0 max-w-[200px] sm:max-w-md">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -267,86 +577,75 @@ export default function Dashboard() {
                       placeholder="Search…"
                       className="pl-8 h-8 text-[13px] bg-muted/60 border-transparent focus:border-border rounded-xl"
                       value={search}
-                      onChange={e => setSearch(e.target.value)}
+                      onChange={(e) => setSearch(e.target.value)}
                     />
                   </div>
                 ) : (
-                  <h1 className="text-[15px] font-semibold text-foreground truncate flex-1 sm:hidden">{pageTitle}</h1>
+                  <h1 className="text-[15px] font-semibold text-foreground truncate flex-1 sm:hidden">
+                    {pageTitle}
+                  </h1>
                 )}
 
-                {/* File type filter — desktop only */}
-                {isGridView && (
-                  <div className="hidden md:flex items-center gap-0.5 p-0.5 rounded-lg bg-muted shrink-0">
-                    {(["all", "image", "video"] as FileTypeFilter[]).map(f => (
-                      <button
-                        key={f}
-                        onClick={() => setFileTypeFilter(f)}
-                        className={cn(
-                          "px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors",
-                          fileTypeFilter === f
-                            ? "bg-background text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        {f === "all" ? "All" : f === "image" ? "Images" : "Videos"}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {renderFileTypeFilter()}
 
                 <div className="flex items-center gap-0.5 ml-auto shrink-0">
-                  {isGridView && (
-                    <>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hidden sm:flex">
-                            <ArrowUpDown className="h-3.5 w-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40">
-                          <DropdownMenuItem onClick={() => toggleSort("created_at")} className={cn(sortKey === "created_at" && "font-semibold")}>
-                            Date {sortKey === "created_at" ? (sortDir === "asc" ? "↑" : "↓") : ""}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toggleSort("title")} className={cn(sortKey === "title" && "font-semibold")}>
-                            Name {sortKey === "title" ? (sortDir === "asc" ? "↑" : "↓") : ""}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toggleSort("file_size")} className={cn(sortKey === "file_size" && "font-semibold")}>
-                            Size {sortKey === "file_size" ? (sortDir === "asc" ? "↑" : "↓") : ""}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                  {renderSortMenu()}
 
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hidden sm:flex"
-                        onClick={() => setViewMode(v => v === "grid" ? "list" : "grid")}
-                      >
-                        {viewMode === "grid" ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
-                      </Button>
-                    </>
+                  {isGridView && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 hidden sm:flex"
+                      onClick={() => setViewMode((v) => (v === "grid" ? "list" : "grid"))}
+                      aria-label={`Switch to ${viewMode === "grid" ? "list" : "grid"} view`}
+                    >
+                      {viewMode === "grid" ? (
+                        <List className="h-4 w-4" />
+                      ) : (
+                        <LayoutGrid className="h-4 w-4" />
+                      )}
+                    </Button>
                   )}
 
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleTheme}>
-                    {theme === "dark" ? <Sun className="h-[15px] w-[15px]" /> : <Moon className="h-[15px] w-[15px]" />}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={toggleTheme}
+                    aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+                  >
+                    {theme === "dark" ? (
+                      <Sun className="h-[15px] w-[15px]" />
+                    ) : (
+                      <Moon className="h-[15px] w-[15px]" />
+                    )}
                   </Button>
 
                   <NotificationsPanel />
 
-                  {/* Upload — desktop only */}
-                  {(selectedView === "all" || !isSpecialView) && (
-                    <Button onClick={() => setUploadOpen(true)} size="sm" className="gap-1.5 h-8 px-3 hidden sm:flex text-xs rounded-xl">
+                  {(selectedView === "all" || !isSpecial) && (
+                    <Button
+                      onClick={() => setUploadOpen(true)}
+                      size="sm"
+                      className="gap-1.5 h-8 px-3 hidden sm:flex text-xs rounded-xl"
+                    >
                       <Upload className="h-3.5 w-3.5" />
                       Upload
                     </Button>
                   )}
 
-                  {/* Profile avatar */}
                   <button
                     onClick={() => navigate("/profile")}
                     className="flex items-center gap-1.5 h-8 pl-1 pr-2 rounded-xl hover:bg-accent transition-colors shrink-0"
                     aria-label="Go to profile"
                   >
                     <Avatar className="h-7 w-7 ring-2 ring-border">
-                      {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt="Profile" />}
-                      <AvatarFallback className="text-[10px] font-semibold">{profileInitials}</AvatarFallback>
+                      {profile?.avatar_url && (
+                        <AvatarImage src={profile.avatar_url} alt="Profile" />
+                      )}
+                      <AvatarFallback className="text-[10px] font-semibold">
+                        {profileInitials}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="hidden lg:flex flex-col items-start leading-none">
                       <span className="text-[11px] font-medium text-foreground truncate max-w-[80px]">
@@ -362,85 +661,46 @@ export default function Dashboard() {
 
           {/* Banners */}
           {!isChat && <PartnerBanner />}
-          {!isChat && <UpgradeBanner onUpgrade={() => setSelectedView("billing")} selectedView={selectedView} />}
+          {!isChat && (
+            <UpgradeBanner
+              onUpgrade={() => setSelectedView("billing")}
+              selectedView={selectedView}
+            />
+          )}
 
           {/* Content */}
           {isChat ? (
             <div className="flex-1 min-h-0 overflow-hidden">
-              <ChatView onBack={() => setSelectedView("all")} onUpgrade={() => setSelectedView("billing")} />
+              <ChatView
+                onBack={() => setSelectedView("all")}
+                onUpgrade={() => setSelectedView("billing")}
+              />
             </div>
           ) : (
             <main
               className={cn(
                 "flex-1 overflow-auto pb-[72px] sm:pb-6",
-                selectedView !== "settings" && selectedView !== "travel-map" && "px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6",
+                selectedView !== "settings" &&
+                selectedView !== "travel-map" &&
+                "px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6",
                 dragOverMain && "ring-2 ring-primary ring-inset"
               )}
-              onDragOver={e => { e.preventDefault(); if (e.dataTransfer.types.includes("Files")) setDragOverMain(true); }}
-              onDragLeave={() => setDragOverMain(false)}
+              onDragOver={handleMainDragOver}
+              onDragLeave={handleMainDragLeave}
               onDrop={handleMainDrop}
               {...swipeHandlers}
             >
-              {/* Page header — hidden on mobile for non-grid views (title shown in header bar) */}
-              {selectedView !== "settings" && selectedView !== "travel-map" && (
-                <div className={cn(selectedView === "billing" ? "mb-0" : "mb-3 sm:mb-5")}>
-                  {!isSpecialView && (
-                    <FolderBreadcrumb folderId={selectedView} folders={folders} onNavigate={setSelectedView} />
-                  )}
-                  {selectedView !== "billing" && (
-                    <h1 className="hidden sm:block text-xl sm:text-2xl font-bold font-heading tracking-tight text-foreground">
-                      {pageTitle}
-                    </h1>
-                  )}
-                  {selectedView === "on-this-day" && onThisDayMedia.length > 0 && (
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                      🗓️ {onThisDayMedia.length} {onThisDayMedia.length === 1 ? "memory" : "memories"} from previous years on this date
-                    </p>
-                  )}
-                  {isGridView && !isLoading && selectedView !== "on-this-day" && (
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{media.length} file{media.length !== 1 ? "s" : ""}</p>
-                  )}
-                </div>
-              )}
-
-              {/* View content */}
-              {selectedView === "timeline" ? (
-                <MemoriesTimeline onPreview={(mediaId) => {
-                  const idx = media.findIndex(m => m.id === mediaId);
-                  setSelectedView("all");
-                  setTimeout(() => setPreviewIndex(idx >= 0 ? idx : 0), 100);
-                }} />
-              ) : selectedView === "anniversaries" ? (
-                <AnniversariesView />
-              ) : selectedView === "love-story" ? (
-                <LoveStoryView />
-              ) : selectedView === "travel-map" ? (
-                <TravelMapView />
-              ) : selectedView === "activity" ? (
-                <ActivityFeed />
-              ) : selectedView === "billing" ? (
-                <BillingView />
-              ) : selectedView === "settings" ? (
-                <SettingsView onNavigateBilling={() => setSelectedView("billing")} />
-              ) : selectedView === "recently-deleted" ? (
-                <RecentlyDeletedView />
-              ) : (
-                <MediaGrid
-                  media={media}
-                  loading={isLoading}
-                  onPreview={(item) => setPreviewIndex(media.findIndex(m => m.id === item.id))}
-                  viewMode={viewMode}
-                />
-              )}
+              {renderPageHeader()}
+              {renderMainContent()}
             </main>
           )}
         </div>
 
-        {/* Dialogs */}
+        {/* Dialogs & Modals */}
         <UploadDialog
           open={uploadOpen}
           onOpenChange={setUploadOpen}
-          folderId={!isSpecialView ? selectedView : null}
+          folderId={!isSpecial ? selectedView : null}
         />
 
         {previewIndex >= 0 && (
@@ -448,7 +708,7 @@ export default function Dashboard() {
             media={media}
             currentIndex={previewIndex}
             open={previewIndex >= 0}
-            onOpenChange={(open) => { if (!open) setPreviewIndex(-1); }}
+            onOpenChange={handlePreviewClose}
             onNavigate={setPreviewIndex}
           />
         )}
@@ -457,17 +717,19 @@ export default function Dashboard() {
           <MobileBottomNav
             selectedView={selectedView}
             onSelectView={gatedNavigate}
-            onUpload={() => (selectedView === "all" || !isSpecialView) && setUploadOpen(true)}
+            onUpload={handleUpload}
           />
         )}
 
         <PWAInstallPrompt />
 
-        {/* ── Upgrade Gate Modal ── */}
         <UpgradeGateModal
           open={!!gateModal}
           onClose={() => setGateModal(null)}
-          onUpgrade={() => { setGateModal(null); setSelectedView("billing"); }}
+          onUpgrade={() => {
+            setGateModal(null);
+            setSelectedView("billing");
+          }}
           featureName={gateModal?.feature ?? ""}
           requiredPlan={gateModal?.plan ?? "dating"}
         />

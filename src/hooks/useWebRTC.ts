@@ -34,18 +34,27 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: 
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeaker, setIsSpeaker] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
+  // FIX 4: export isFrontCamera so CallModal can mirror the PiP correctly
+  const [isFrontCamera, setIsFrontCamera] = useState(true);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const pendingCandidates = useRef<RTCIceCandidateInit[]>([]);
   const pendingOffer = useRef<RTCSessionDescriptionInit | null>(null);
-  const hangUpRef = useRef<() => void>(() => {});
+  const hangUpRef = useRef<() => void>(() => { });
   const durationTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // FIX 1: track facing mode in a ref — never rely on getSettings().facingMode
+  // which returns undefined on most Android browsers and Firefox.
+  const facingModeRef = useRef<"user" | "environment">("user");
+
+  // FIX 3: guard against concurrent flip calls (double-tap)
+  const isFlippingRef = useRef(false);
 
   const channelName = coupleId ? `call:${coupleId}` : null;
 
-  // ── helpers ──────────────────────────────────────────────
+  // ── helpers ───────────────────────────────────────────────────────────────
 
   const sendSignal = useCallback((payload: SignalPayload) => {
     channelRef.current?.send({ type: "broadcast", event: "signal", payload });
@@ -58,11 +67,14 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: 
     localStreamRef.current = null;
     pendingCandidates.current = [];
     pendingOffer.current = null;
+    facingModeRef.current = "user";
+    isFlippingRef.current = false;
     setLocalStream(null);
     setRemoteStream(null);
     setIsMuted(false);
     setIsSpeaker(false);
     setCallDuration(0);
+    setIsFrontCamera(true);
     if (durationTimer.current) {
       clearInterval(durationTimer.current);
       durationTimer.current = null;
@@ -86,19 +98,15 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: 
     };
 
     pc.ontrack = (e) => {
-      if (e.streams && e.streams[0]) {
+      if (e.streams?.[0]) {
         setRemoteStream(e.streams[0]);
       } else {
-        // Fallback: create a new stream from the track
-        const stream = new MediaStream([e.track]);
-        setRemoteStream(stream);
+        setRemoteStream(new MediaStream([e.track]));
       }
     };
 
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "connected") {
-        startDurationTimer();
-      }
+      if (pc.connectionState === "connected") startDurationTimer();
       if (pc.connectionState === "disconnected" || pc.connectionState === "failed") {
         hangUpRef.current();
       }
@@ -113,12 +121,16 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: 
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       video: type === "video" ? { facingMode: "user" } : false,
     });
+    // Always start with front camera
+    facingModeRef.current = "user";
+    setIsFrontCamera(true);
     localStreamRef.current = stream;
     setLocalStream(stream);
     return stream;
   }, []);
 
-  // ── send push notification for call ─────────────────────
+  // ── push notification ─────────────────────────────────────────────────────
+
   const sendCallPush = useCallback(async (type: CallType) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -135,23 +147,17 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: 
     }
   }, []);
 
-  // ── public actions ──────────────────────────────────────
+  // ── public actions ────────────────────────────────────────────────────────
 
   const startCall = useCallback(async (type: CallType) => {
     if (!coupleId || !myUserId || !partnerUserId) return;
     setCallType(type);
     setCallState("calling");
 
-    // Acquire media FIRST (must be in click handler for Safari)
     const stream = await acquireMedia(type);
-
-    // Signal partner
     sendSignal({ type: "call-request", from: myUserId, callType: type });
-
-    // Send push notification so partner gets notified even if app is in background
     sendCallPush(type);
 
-    // Build peer connection and offer
     const pc = createPC();
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
     const offer = await pc.createOffer();
@@ -162,28 +168,22 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: 
   const acceptCall = useCallback(async () => {
     if (!myUserId) return;
 
-    // Acquire media (must be in click handler for Safari)
     const stream = await acquireMedia(incomingCallType);
-
     setCallState("connected");
     setCallType(incomingCallType);
     sendSignal({ type: "call-accept", from: myUserId });
 
-    // Create peer connection
     const pc = createPC();
     stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
-    // Apply buffered offer
     if (pendingOffer.current) {
       await pc.setRemoteDescription(pendingOffer.current);
       pendingOffer.current = null;
-
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       sendSignal({ type: "answer", from: myUserId, sdp: answer });
     }
 
-    // Flush buffered ICE candidates
     for (const c of pendingCandidates.current) {
       try { await pc.addIceCandidate(c); } catch (e) { console.warn("ICE add failed:", e); }
     }
@@ -203,12 +203,14 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: 
     setCallState("idle");
   }, [myUserId, sendSignal, cleanup]);
 
-  // Keep hangUpRef in sync
   useEffect(() => { hangUpRef.current = hangUp; }, [hangUp]);
 
-  // ── mute / speaker toggles ─────────────────────────────
+  // ── mute / speaker ────────────────────────────────────────────────────────
 
   const toggleMute = useCallback(() => {
+    // FIX 2: always read from localStreamRef — it's the authoritative stream ref.
+    // After a flip, state stream and ref stream share the same track objects
+    // so this correctly enables/disables audio on whatever is live.
     const stream = localStreamRef.current;
     if (!stream) return;
     const audioTrack = stream.getAudioTracks()[0];
@@ -219,40 +221,97 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: 
   }, []);
 
   const toggleSpeaker = useCallback(() => {
+    // Audio routing (earpiece ↔ loudspeaker) is handled in CallModal via
+    // the isSpeaker prop — it has direct access to the <audio> ref and
+    // applies setSinkId / AudioContext routing there.
+    // This function only toggles the state that drives that effect.
     setIsSpeaker(prev => !prev);
-    const remoteAudio = document.querySelector("video[data-remote-audio]") as HTMLMediaElement | null;
-    if (remoteAudio && "setSinkId" in remoteAudio) {
-      (remoteAudio as any).setSinkId?.("").catch(() => {});
-    }
   }, []);
+
+  // ── flip camera ───────────────────────────────────────────────────────────
 
   const flipCamera = useCallback(async () => {
+    // FIX 3: guard against concurrent flips (double-tap)
+    if (isFlippingRef.current) return;
+    isFlippingRef.current = true;
+
     const stream = localStreamRef.current;
-    if (!stream) return;
-    const videoTrack = stream.getVideoTracks()[0];
-    if (!videoTrack) return;
-    const settings = videoTrack.getSettings();
-    const newFacing = settings.facingMode === "environment" ? "user" : "environment";
+    if (!stream) { isFlippingRef.current = false; return; }
+
+    const oldVideoTrack = stream.getVideoTracks()[0];
+    if (!oldVideoTrack) { isFlippingRef.current = false; return; }
+
+    // FIX 1: use our own ref — never trust getSettings().facingMode
+    const newFacing: "user" | "environment" =
+      facingModeRef.current === "user" ? "environment" : "user";
+
+    let newVideoTrack: MediaStreamTrack | null = null;
+
     try {
+      // Acquire just the new video track
       const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: newFacing },
+        video: { facingMode: { exact: newFacing } },
         audio: false,
       });
-      const newTrack = newStream.getVideoTracks()[0];
-      // Replace track in peer connection
+      newVideoTrack = newStream.getVideoTracks()[0];
+
+      // 1. Replace on the RTCPeerConnection sender FIRST — this is what the
+      //    remote side sees. Must happen before we touch the local stream.
       const sender = pcRef.current?.getSenders().find(s => s.track?.kind === "video");
-      if (sender) await sender.replaceTrack(newTrack);
-      // Replace track in local stream
-      stream.removeTrack(videoTrack);
-      videoTrack.stop();
-      stream.addTrack(newTrack);
-      setLocalStream(new MediaStream(stream.getTracks()));
+      if (sender) {
+        await sender.replaceTrack(newVideoTrack);
+      }
+
+      // 2. Stop the old video track AFTER the sender swap — stopping it before
+      //    replaceTrack can cause the remote side to see a black frame or freeze.
+      stream.removeTrack(oldVideoTrack);
+      oldVideoTrack.stop();
+
+      // 3. Add the new track to the existing stream
+      stream.addTrack(newVideoTrack);
+
+      // FIX 2: update localStreamRef to a new MediaStream so CallModal's
+      // useEffect re-fires and re-attaches the updated stream to the video element.
+      // We wrap in new MediaStream so the reference changes — same tracks as localStreamRef.
+      const updatedStream = new MediaStream(stream.getTracks());
+      localStreamRef.current = updatedStream;
+      setLocalStream(updatedStream);
+
+      // FIX 1: persist the new facing mode in our ref + state
+      facingModeRef.current = newFacing;
+      setIsFrontCamera(newFacing === "user");
+
     } catch (e) {
       console.warn("Camera flip failed:", e);
+      // If { exact: newFacing } fails (some devices don't support it),
+      // fall back without the exact constraint
+      try {
+        const fallback = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: newFacing },
+          audio: false,
+        });
+        newVideoTrack = fallback.getVideoTracks()[0];
+        const sender = pcRef.current?.getSenders().find(s => s.track?.kind === "video");
+        if (sender) await sender.replaceTrack(newVideoTrack);
+        stream.removeTrack(oldVideoTrack);
+        oldVideoTrack.stop();
+        stream.addTrack(newVideoTrack);
+        const updatedStream = new MediaStream(stream.getTracks());
+        localStreamRef.current = updatedStream;
+        setLocalStream(updatedStream);
+        facingModeRef.current = newFacing;
+        setIsFrontCamera(newFacing === "user");
+      } catch (fallbackErr) {
+        console.warn("Camera flip fallback also failed:", fallbackErr);
+        // FIX 5: clean up the new track if we couldn't use it
+        newVideoTrack?.stop();
+      }
+    } finally {
+      isFlippingRef.current = false;
     }
   }, []);
 
-  // ── signaling channel ───────────────────────────────────
+  // ── signaling channel ─────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!channelName || !myUserId) return;
@@ -288,8 +347,6 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: 
                 const answer = await pcRef.current.createAnswer();
                 await pcRef.current.setLocalDescription(answer);
                 sendSignal({ type: "answer", from: myUserId, sdp: answer });
-
-                // Flush any buffered ICE candidates now that remote description is set
                 for (const c of pendingCandidates.current) {
                   try { await pcRef.current.addIceCandidate(c); } catch (e) { console.warn("ICE flush:", e); }
                 }
@@ -298,7 +355,6 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: 
                 console.error("Error handling offer:", e);
               }
             } else {
-              // Receiver: buffer the offer until acceptCall creates the PC
               pendingOffer.current = payload.sdp;
             }
           }
@@ -308,7 +364,6 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: 
           if (payload.sdp && pcRef.current) {
             try {
               await pcRef.current.setRemoteDescription(payload.sdp);
-              // Flush any buffered ICE candidates
               for (const c of pendingCandidates.current) {
                 try { await pcRef.current.addIceCandidate(c); } catch (e) { console.warn("ICE flush:", e); }
               }
@@ -345,7 +400,7 @@ export function useWebRTC({ coupleId, myUserId, partnerUserId, partnerOnline }: 
     localStream, remoteStream,
     startCall, acceptCall, rejectCall, hangUp,
     isMuted, isSpeaker, toggleMute, toggleSpeaker,
-    flipCamera,
+    flipCamera, isFrontCamera,
     callDuration, partnerOnline,
   };
 }

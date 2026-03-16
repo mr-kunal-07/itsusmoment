@@ -396,7 +396,7 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="absolute top-1.5 right-1.5 h-7 w-7 opacity-0 group-hover:opacity-100 transition-all duration-150 bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
+                          className="absolute top-1.5 right-1.5 h-7 w-7 p transition-all duration-150 bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
                           onClick={e => { e.stopPropagation(); handleToggleStar(item); }}
                         >
                           <Star className={cn("h-3.5 w-3.5", item.is_starred ? "fill-yellow-400 text-yellow-400" : "text-white")} />
@@ -422,7 +422,7 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
                       {!isSelecting && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity -mr-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0  -mr-1">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
