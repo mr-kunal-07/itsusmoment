@@ -1,6 +1,5 @@
 # 💕 OurVault
 
-
 > A private, couples-only digital vault — store memories, chat securely, and celebrate your relationship milestones together.
 
 🌐 **Live App:** [https://kunalkalynai.lovable.app](https://kunalkalynai.lovable.app)
