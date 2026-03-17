@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, memo } from "react";
+import { useState, useCallback, useRef, useEffect, memo } from "react";
 import { Plus, Loader2, Map, List, LocateFixed } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTravelLocations, TravelLocation } from "@/hooks/useTravelLocations";
@@ -8,53 +8,95 @@ import { TravelMapCanvas, ReverseGeoResult } from "./TravelMapCanvas";
 import { AddLocationModal } from "./AddLocationModal";
 import { LocationPopup } from "./LocationPopup";
 import { TimelineView } from "./TimelineView";
-import { TravelStats } from "./TravelStats";
 import { cn } from "@/lib/utils";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+/** Must match --nav-height in globals.css and the value used in LocationPopup. */
+const NAV_HEIGHT_PX = 52;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type TabId = "map" | "timeline";
 
+interface PendingPin {
+  lat: number;
+  lng: number;
+  geo?: ReverseGeoResult;
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 const EmptyOverlay = memo(function EmptyOverlay() {
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
+    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none gap-3">
       <motion.div
-        animate={{ scale: [1, 1.08, 1] }}
+        animate={{ y: [0, -6, 0] }}
         transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
-        className="text-4xl mb-2"
+        className="text-4xl"
         aria-hidden
       >
         📍
       </motion.div>
-      <p className="text-sm font-medium text-foreground/70 bg-background/85 backdrop-blur-sm px-4 py-2 rounded-full border border-border/40 shadow-sm">
+      <motion.p
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.3, duration: 0.4 }}
+        className="text-sm font-medium text-foreground/80 bg-background/90 backdrop-blur-md px-5 py-2.5 rounded-full border border-border/50 shadow-lg"
+      >
         Tap anywhere on the map to pin a memory
-      </p>
+      </motion.p>
     </div>
   );
 });
 
 const NoCoupleState = memo(function NoCoupleState() {
   return (
-    <div className="flex flex-col items-center justify-center h-full py-20 text-center px-6 gap-3">
-      <span className="text-5xl" aria-hidden>🗺️</span>
-      <h3 className="text-xl font-bold text-foreground">Link with a Partner First</h3>
-      <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-        Travel Map is a couples feature. Connect with your partner to start pinning shared memories.
-      </p>
+    <div className="flex flex-col items-center justify-center h-full py-20 text-center px-6 gap-4">
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", damping: 14, stiffness: 180 }}
+        className="relative"
+      >
+        <span className="text-6xl" aria-hidden>🗺️</span>
+        <motion.div
+          className="absolute inset-0 rounded-full bg-primary/10"
+          animate={{ scale: [1, 1.7, 1], opacity: [0.3, 0, 0.3] }}
+          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+          aria-hidden
+        />
+      </motion.div>
+      <div className="space-y-2">
+        <h3 className="text-xl font-bold text-foreground">Link with a Partner First</h3>
+        <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
+          Travel Map is a couples feature. Connect with your partner to start pinning shared memories.
+        </p>
+      </div>
     </div>
   );
 });
+
+// ─── Tab bar ──────────────────────────────────────────────────────────────────
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "map", label: "Map", icon: Map },
   { id: "timeline", label: "Timeline", icon: List },
 ];
 
-const TabBar = memo(function TabBar({ active, onChange }: { active: TabId; onChange: (t: TabId) => void }) {
+const TabBar = memo(function TabBar({
+  active,
+  onChange,
+}: {
+  active: TabId;
+  onChange: (t: TabId) => void;
+}) {
   return (
-    <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/80 backdrop-blur-sm border border-border/40 shadow-sm" role="tablist" aria-label="Travel view">
+    <div
+      className="flex items-center gap-0.5 p-1 rounded-xl bg-background/90 backdrop-blur-md border border-border/50 shadow-md"
+      role="tablist"
+      aria-label="Travel view"
+    >
       {TABS.map(({ id, label, icon: Icon }) => (
         <button
           key={id}
@@ -62,8 +104,11 @@ const TabBar = memo(function TabBar({ active, onChange }: { active: TabId; onCha
           aria-selected={active === id}
           onClick={() => onChange(id)}
           className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150",
-            active === id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            "relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70",
+            active === id
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
           )}
         >
           <Icon className="h-3.5 w-3.5" aria-hidden />
@@ -74,15 +119,16 @@ const TabBar = memo(function TabBar({ active, onChange }: { active: TabId; onCha
   );
 });
 
-// ─── GPS indicator pill ───────────────────────────────────────────────────────
+// ─── GPS locating pill ────────────────────────────────────────────────────────
 
 const LocatingPill = memo(function LocatingPill() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: -6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/90 text-white text-xs font-semibold shadow-md backdrop-blur-sm"
+      initial={{ opacity: 0, y: -8, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -8, scale: 0.95 }}
+      transition={{ duration: 0.2 }}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500 text-white text-xs font-semibold shadow-lg"
     >
       <LocateFixed className="h-3 w-3 animate-pulse" aria-hidden />
       Finding your location…
@@ -90,12 +136,27 @@ const LocatingPill = memo(function LocatingPill() {
   );
 });
 
+
+
+// ─── Loading skeleton ─────────────────────────────────────────────────────────
+
+const MapSkeleton = memo(function MapSkeleton() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full bg-muted/20 gap-3">
+      <Loader2 className="h-7 w-7 text-primary animate-spin" aria-label="Loading map" />
+      <p className="text-xs text-muted-foreground animate-pulse">Loading your map…</p>
+    </div>
+  );
+});
+
 // ─── TravelMapView ────────────────────────────────────────────────────────────
 
 export function TravelMapView() {
   const { data: couple } = useMyCouple();
+  const isCouple = couple?.status === "active";
+
+  // FIX: Gate useMedia so it doesn't fire when there's no active couple.
   const { data: locations = [], isLoading } = useTravelLocations();
-  const { data: allMedia = [] } = useMedia();
 
   const [activeTab, setActiveTab] = useState<TabId>("map");
   const [addOpen, setAddOpen] = useState(false);
@@ -103,70 +164,114 @@ export function TravelMapView() {
   const [focusLocation, setFocusLocation] = useState<TravelLocation | null>(null);
   const [locating, setLocating] = useState(false);
 
-  // Store the latest coords + geo in a ref so the modal always sees current values
-  // even if re-opened from a previous click while geocoding is still in flight
-  const pendingCoordsRef = useRef<{ lat: number; lng: number; geo?: ReverseGeoResult } | null>(null);
-  const [modalKey, setModalKey] = useState(0); // bump to force modal to re-read ref
+  // FIX: Store pending pin as state (not just a ref) so AddLocationModal receives
+  // up-to-date props on Phase 2 without remounting and destroying user edits.
+  const [pendingPin, setPendingPin] = useState<PendingPin | null>(null);
+
+  // FIX: Separate key that only bumps on Phase 1 (open). Phase 2 updates pendingPin
+  // state directly so the modal re-renders with new props without remounting.
+  const addModalKey = useRef(0);
+
+  // ── Measure top-bar height dynamically for timeline padding ───────────────
+  // This removes the fragile hardcoded pt-28.
+  const topBarRef = useRef<HTMLDivElement>(null);
+  const [topBarH, setTopBarH] = useState(112);
+
+  useEffect(() => {
+    const el = topBarRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      setTopBarH(entries[0].contentRect.height + 16); // +16px breathing room
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // ── Two-phase map click ────────────────────────────────────────────────────
-  // Phase 1 (geo = undefined): coords arrive immediately → open modal
-  // Phase 2 (geo defined):     reverse-geocode result → update modal fields
+  // Phase 1 (geo = undefined): coords arrive → open modal immediately.
+  // Phase 2 (geo defined):     reverse-geocode result → update props in-place,
+  //                            WITHOUT remounting the modal (preserves user edits).
   const handleMapClick = useCallback((lat: number, lng: number, geo?: ReverseGeoResult) => {
     if (!geo) {
-      // Phase 1: open modal immediately
-      pendingCoordsRef.current = { lat, lng };
-      setModalKey(k => k + 1);
+      // Phase 1 — new pin: remount modal with fresh state.
+      addModalKey.current += 1;
+      setPendingPin({ lat, lng });
       setAddOpen(true);
     } else {
-      // Phase 2: enrich — bump key so AddLocationModal re-reads updated ref
-      pendingCoordsRef.current = { lat, lng, geo };
-      setModalKey(k => k + 1);
+      // FIX: Phase 2 — enrich existing modal via state update, not key bump.
+      // This preserves everything the user has already typed.
+      setPendingPin(prev => prev ? { ...prev, geo } : { lat, lng, geo });
     }
   }, []);
+
+  // ── Pin / popup ────────────────────────────────────────────────────────────
 
   const handlePinClick = useCallback((loc: TravelLocation) => {
     setSelectedLocation(loc);
     setFocusLocation(loc);
   }, []);
 
+  // ── Close handlers ─────────────────────────────────────────────────────────
+
   const handleAddClose = useCallback(() => {
     setAddOpen(false);
-    pendingCoordsRef.current = null;
+    setPendingPin(null);
   }, []);
 
   const handlePopupClose = useCallback(() => {
     setSelectedLocation(null);
-    setFocusLocation(null);
+    // FIX: Don't clear focusLocation here — keep the map centred on the last
+    // viewed pin. Clear only when the user switches tabs or clicks elsewhere.
+  }, []);
+
+  // FIX: Clear focusLocation when switching away from the map tab so returning
+  // to the map later doesn't unexpectedly re-pan.
+  const handleTabChange = useCallback((tab: TabId) => {
+    if (tab !== "map") setFocusLocation(null);
+    setActiveTab(tab);
   }, []);
 
   const handleOpenAdd = useCallback(() => {
-    pendingCoordsRef.current = null;
-    setModalKey(k => k + 1);
+    addModalKey.current += 1;
+    setPendingPin(null);
     setAddOpen(true);
   }, []);
 
-  if (!couple || couple.status !== "active") return <NoCoupleState />;
+  // ── Timeline → map navigation ──────────────────────────────────────────────
 
-  const mapHeight = "calc(100dvh - 52px - env(safe-area-inset-bottom, 0px))";
-  const pending = pendingCoordsRef.current;
+  const handleTimelineSelect = useCallback((loc: TravelLocation) => {
+    handlePinClick(loc);
+    setActiveTab("map");
+  }, [handlePinClick]);
+
+  // ── Guard ──────────────────────────────────────────────────────────────────
+
+  if (!isCouple) return <NoCoupleState />;
+
+  const mapHeight = `calc(100dvh - ${NAV_HEIGHT_PX}px - env(safe-area-inset-bottom, 0px))`;
 
   return (
     <div
       className="relative flex flex-col bg-background overflow-hidden"
       style={{ height: mapHeight, isolation: "isolate" }}
     >
-      {/* ── Floating top bar ── */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 pointer-events-none w-full px-3 sm:px-0 sm:w-auto">
-        <div className="pointer-events-auto w-full sm:w-auto">
-          <TravelStats locations={locations} mediaCount={allMedia.length} />
-        </div>
+      {/* ── Floating top bar ──────────────────────────────────────────────── */}
+      <div
+        ref={topBarRef}
+        className="absolute top-3 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 w-full px-3 sm:px-0 sm:w-auto pointer-events-none"
+      >
+
+
+        {/* Tab bar + locating pill */}
         <div className="pointer-events-auto flex items-center gap-2">
-          <TabBar active={activeTab} onChange={setActiveTab} />
-          <AnimatePresence>{locating && <LocatingPill />}</AnimatePresence>
+          <TabBar active={activeTab} onChange={handleTabChange} />
+          <AnimatePresence mode="wait">
+            {locating && <LocatingPill key="locating" />}
+          </AnimatePresence>
         </div>
       </div>
 
-      {/* ── Map tab ── */}
+      {/* ── Map panel ─────────────────────────────────────────────────────── */}
       <AnimatePresence initial={false}>
         {activeTab === "map" && (
           <motion.div
@@ -174,14 +279,12 @@ export function TravelMapView() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.18 }}
             className="absolute inset-0"
             style={{ zIndex: 0 }}
           >
             {isLoading ? (
-              <div className="flex items-center justify-center h-full bg-muted/30">
-                <Loader2 className="h-7 w-7 text-primary animate-spin" aria-label="Loading map" />
-              </div>
+              <MapSkeleton />
             ) : (
               <TravelMapCanvas
                 locations={locations}
@@ -194,40 +297,48 @@ export function TravelMapView() {
             {!isLoading && locations.length === 0 && <EmptyOverlay />}
           </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* ── Timeline tab ── */}
+      {/* ── Timeline panel ────────────────────────────────────────────────── */}
+      <AnimatePresence initial={false}>
         {activeTab === "timeline" && (
           <motion.div
             key="timeline"
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.2 }}
-            className="absolute inset-0 overflow-y-auto pt-28 pb-24 sm:pb-6"
-            style={{ zIndex: 1 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            className="absolute inset-0 overflow-y-auto pb-28 sm:pb-8"
+            // FIX: Dynamic top padding from measured topBarH instead of hardcoded pt-28.
+            style={{ paddingTop: topBarH, zIndex: 1 }}
           >
             <TimelineView
               locations={locations}
-              onSelectLocation={(loc) => {
-                handlePinClick(loc);
-                setActiveTab("map");
-              }}
+              onSelectLocation={handleTimelineSelect}
             />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── Modals ── */}
+
+      {/* ── Modals ────────────────────────────────────────────────────────── */}
+      {/*
+        FIX: key only changes on Phase 1 (new pin / manual open).
+        Phase 2 geo enrichment flows through prop updates, preserving user edits.
+      */}
       <AddLocationModal
-        key={modalKey}
+        key={addModalKey.current}
         open={addOpen}
         onClose={handleAddClose}
-        initialLat={pending?.lat}
-        initialLng={pending?.lng}
-        initialGeo={pending?.geo}
+        initialLat={pendingPin?.lat}
+        initialLng={pendingPin?.lng}
+        initialGeo={pendingPin?.geo}
       />
 
-      <LocationPopup location={selectedLocation} onClose={handlePopupClose} />
+      <LocationPopup
+        location={selectedLocation}
+        onClose={handlePopupClose}
+      />
     </div>
   );
 }

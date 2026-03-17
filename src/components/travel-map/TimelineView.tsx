@@ -1,8 +1,8 @@
 import { memo, useMemo } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Calendar, ChevronRight } from "lucide-react";
+import { MapPin, Calendar, ChevronRight, CheckCircle2 } from "lucide-react";
 import { TravelLocation } from "@/hooks/useTravelLocations";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { cn } from "@/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -17,6 +17,9 @@ const TRIP_EMOJIS: Record<string, string> = {
   Honeymoon: "💑",
 };
 
+// Cap per-card animation delay so deep lists don't make users wait forever.
+const MAX_CARD_DELAY_S = 0.4;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getTripEmoji(tags: string[]): string {
@@ -26,8 +29,26 @@ function getTripEmoji(tags: string[]): string {
   return "❤️";
 }
 
-function groupByYear(locations: TravelLocation[]): Record<string, TravelLocation[]> {
-  // Sort newest first; undated entries go to bottom
+/** FIX: Safe date formatter — returns null instead of throwing on bad input. */
+function safeDateFormat(dateStr: string, fmt: string): string | null {
+  try {
+    const d = parseISO(dateStr);
+    return isValid(d) ? format(d, fmt) : null;
+  } catch {
+    return null;
+  }
+}
+
+interface GroupedYear {
+  year: string;
+  locations: TravelLocation[];
+}
+
+/**
+ * FIX: Combined memo — groups and sorts in one pass.
+ * FIX: "Unknown" always sorts to the end regardless of locale collation.
+ */
+function groupAndSortByYear(locations: TravelLocation[]): GroupedYear[] {
   const sorted = [...locations].sort((a, b) => {
     if (!a.date_visited && !b.date_visited) return 0;
     if (!a.date_visited) return 1;
@@ -35,11 +56,20 @@ function groupByYear(locations: TravelLocation[]): Record<string, TravelLocation
     return b.date_visited.localeCompare(a.date_visited);
   });
 
-  return sorted.reduce<Record<string, TravelLocation[]>>((acc, loc) => {
+  const map = sorted.reduce<Record<string, TravelLocation[]>>((acc, loc) => {
     const year = loc.date_visited?.slice(0, 4) ?? "Unknown";
     (acc[year] ??= []).push(loc);
     return acc;
   }, {});
+
+  // FIX: Explicit numeric sort; "Unknown" always goes last.
+  return Object.entries(map)
+    .sort(([a], [b]) => {
+      if (a === "Unknown") return 1;
+      if (b === "Unknown") return -1;
+      return Number(b) - Number(a);
+    })
+    .map(([year, locs]) => ({ year, locations: locs }));
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -49,148 +79,249 @@ interface Props {
   onSelectLocation: (loc: TravelLocation) => void;
 }
 
-// ─── TripCard ─────────────────────────────────────────────────────────────────
-
 interface TripCardProps {
   loc: TravelLocation;
-  yearIndex: number;
-  cardIndex: number;
+  animDelay: number;
   onSelect: (loc: TravelLocation) => void;
 }
 
-const TripCard = memo(function TripCard({ loc, yearIndex, cardIndex, onSelect }: TripCardProps) {
+// ─── TripCard ─────────────────────────────────────────────────────────────────
+
+const TripCard = memo(function TripCard({ loc, animDelay, onSelect }: TripCardProps) {
   const emoji = getTripEmoji(loc.tags ?? []);
+
+  // FIX: Safe date format — won't throw on malformed date strings.
+  const formattedDate = loc.date_visited
+    ? safeDateFormat(loc.date_visited, "MMM d, yyyy")
+    : null;
+
+  // FIX: Guard photo_urls — only use the first entry if it's a non-empty string.
+  const thumbUrl =
+    loc.photo_urls && loc.photo_urls.length > 0 && typeof loc.photo_urls[0] === "string"
+      ? loc.photo_urls[0]
+      : null;
+
+  const placeLine = [loc.city, loc.country].filter(Boolean).join(", ");
+
+  // FIX: Richer aria-label with date and visited state for screen readers.
+  const ariaLabel = [
+    `View ${loc.location_name}`,
+    placeLine && `in ${placeLine}`,
+    formattedDate && `visited ${formattedDate}`,
+    loc.visited && "marked as visited",
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <motion.button
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: yearIndex * 0.1 + cardIndex * 0.05, duration: 0.3 }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      // FIX: Cap delay so deep-list cards don't wait forever.
+      transition={{ delay: Math.min(animDelay, MAX_CARD_DELAY_S), duration: 0.25, ease: "easeOut" }}
       onClick={() => onSelect(loc)}
-      className="w-full text-left relative pl-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
-      aria-label={`View ${loc.location_name}`}
+      className="w-full text-left group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-2xl"
+      aria-label={ariaLabel}
     >
-      {/* Timeline dot */}
       <div
-        aria-hidden
-        className="absolute -left-[5px] top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full bg-primary border-2 border-primary/30"
-        style={{ boxShadow: "0 0 8px hsl(var(--primary)/0.5)" }}
-      />
+        className={cn(
+          "relative rounded-2xl border bg-card overflow-hidden transition-all duration-200",
+          "hover:shadow-md hover:-translate-y-0.5",
+          loc.visited
+            ? "border-green-500/25 hover:border-green-500/50"
+            : "border-border/50 hover:border-primary/30",
+        )}
+      >
+        {/* Visited accent bar */}
+        {loc.visited && (
+          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-green-400 to-green-600 rounded-l-2xl" aria-hidden />
+        )}
 
-      <div className="rounded-xl border border-border/40 bg-card hover:border-primary/30 hover:bg-accent/30 transition-all duration-150 p-3 group">
-        <div className="flex items-start justify-between gap-2">
-          {/* Left: emoji + info */}
-          <div className="flex items-start gap-2.5 min-w-0">
-            <span className="text-xl shrink-0 mt-0.5" aria-hidden>{emoji}</span>
-            <div className="min-w-0">
-              <h4 className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                {loc.location_name}
-              </h4>
-
-              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                {(loc.city || loc.country) && (
-                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                    <MapPin className="h-2.5 w-2.5" aria-hidden />
-                    {[loc.city, loc.country].filter(Boolean).join(", ")}
-                  </span>
-                )}
-                {loc.date_visited && (
-                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                    <Calendar className="h-2.5 w-2.5" aria-hidden />
-                    {format(parseISO(loc.date_visited), "MMM d, yyyy")}
-                  </span>
-                )}
-              </div>
-
-              {loc.description && (
-                <p className="text-[10px] text-muted-foreground/70 mt-1 italic line-clamp-2">
-                  "{loc.description}"
-                </p>
-              )}
-
-              {loc.tags && loc.tags.length > 0 && (
-                <div className="flex gap-1 mt-1.5 flex-wrap">
-                  {loc.tags.map(tag => (
-                    <span
-                      key={tag}
-                      className="px-1.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[9px] text-primary font-medium"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right: thumbnail or chevron */}
-          {loc.photo_urls && loc.photo_urls.length > 0 ? (
-            <div className="shrink-0 h-12 w-12 rounded-lg overflow-hidden border border-border">
+        <div className="flex items-stretch gap-0">
+          {/* Thumbnail — full-height left panel when present */}
+          {thumbUrl && (
+            <div className="shrink-0 w-20 sm:w-24 overflow-hidden rounded-l-2xl">
               <img
-                src={loc.photo_urls[0]}
+                src={thumbUrl}
                 alt=""
                 aria-hidden
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 loading="lazy"
               />
             </div>
-          ) : (
-            <ChevronRight
-              className="h-4 w-4 text-muted-foreground shrink-0 mt-1 group-hover:text-primary transition-colors"
-              aria-hidden
-            />
           )}
+
+          {/* Content */}
+          <div className={cn("flex-1 min-w-0 p-3 sm:p-4", loc.visited && "pl-4")}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-2 min-w-0">
+                {/* Emoji badge */}
+                <span
+                  className="shrink-0 flex items-center justify-center h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-primary/8 text-base sm:text-lg"
+                  aria-hidden
+                >
+                  {emoji}
+                </span>
+
+                <div className="min-w-0 pt-0.5">
+                  {/* Title row */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h4 className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors leading-tight">
+                      {loc.location_name}
+                    </h4>
+                    {loc.visited && (
+                      <CheckCircle2
+                        className="h-3.5 w-3.5 text-green-500 shrink-0"
+                        aria-label="Visited"
+                      />
+                    )}
+                  </div>
+
+                  {/* Place + date meta */}
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    {placeLine && (
+                      <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-muted-foreground">
+                        <MapPin className="h-2.5 w-2.5 shrink-0" aria-hidden />
+                        {placeLine}
+                      </span>
+                    )}
+                    {formattedDate && (
+                      <span className="flex items-center gap-1 text-[10px] sm:text-[11px] text-muted-foreground">
+                        <Calendar className="h-2.5 w-2.5 shrink-0" aria-hidden />
+                        {formattedDate}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Description snippet */}
+                  {loc.description && (
+                    <p className="text-[10px] sm:text-[11px] text-muted-foreground/70 mt-1.5 italic line-clamp-2 leading-relaxed">
+                      "{loc.description}"
+                    </p>
+                  )}
+
+                  {/* Tags */}
+                  {loc.tags && loc.tags.length > 0 && (
+                    <div className="flex gap-1 mt-1.5 flex-wrap">
+                      {loc.tags.map(tag => (
+                        <span
+                          key={tag}
+                          className="px-1.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[9px] sm:text-[10px] text-primary font-medium"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Chevron — only when no thumbnail */}
+              {!thumbUrl && (
+                <ChevronRight
+                  className="h-4 w-4 text-muted-foreground/40 shrink-0 mt-1 group-hover:text-primary group-hover:translate-x-0.5 transition-all"
+                  aria-hidden
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </motion.button>
   );
 });
 
+// ─── Empty state ──────────────────────────────────────────────────────────────
+
+const EmptyState = memo(function EmptyState() {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 sm:py-32 text-center px-6 gap-4">
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", damping: 14, stiffness: 200 }}
+        className="relative"
+      >
+        <div className="text-6xl sm:text-7xl" aria-hidden>🗺️</div>
+        {/* Subtle pulse ring */}
+        <motion.div
+          className="absolute inset-0 rounded-full bg-primary/10"
+          animate={{ scale: [1, 1.6, 1], opacity: [0.4, 0, 0.4] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          aria-hidden
+        />
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.3 }}
+        className="space-y-1.5"
+      >
+        <h3 className="text-lg sm:text-xl font-bold text-foreground">No trips pinned yet</h3>
+        <p className="text-sm text-muted-foreground max-w-[240px] leading-relaxed">
+          Add your first travel memory to start your journey
+        </p>
+      </motion.div>
+    </div>
+  );
+});
+
 // ─── TimelineView ─────────────────────────────────────────────────────────────
 
 export const TimelineView = memo(function TimelineView({ locations, onSelectLocation }: Props) {
-  const grouped = useMemo(() => groupByYear(locations), [locations]);
-  const years = useMemo(() => Object.keys(grouped).sort((a, b) => b.localeCompare(a)), [grouped]);
+  // FIX: Single memo — groups, sorts years, and keeps "Unknown" last.
+  const groups = useMemo(() => groupAndSortByYear(locations), [locations]);
 
-  if (locations.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-center px-6 gap-3">
-        <span className="text-5xl" aria-hidden>🗺️</span>
-        <h3 className="text-lg font-bold text-foreground">No trips pinned yet</h3>
-        <p className="text-sm text-muted-foreground">Add your first travel memory to start your journey</p>
-      </div>
-    );
-  }
+  if (locations.length === 0) return <EmptyState />;
+
+  // Running card counter for staggered animation across all year groups.
+  let globalCardIndex = 0;
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6 space-y-8">
-      {years.map((year, yi) => (
+    <div className="max-w-lg mx-auto px-3 sm:px-4 py-5 sm:py-8 space-y-8 sm:space-y-10">
+      {groups.map((group, yi) => (
         <motion.section
-          key={year}
-          initial={{ opacity: 0, x: -16 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: yi * 0.08, duration: 0.3 }}
-          aria-label={`Trips in ${year}`}
+          key={group.year}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: Math.min(yi * 0.06, 0.24), duration: 0.3, ease: "easeOut" }}
+          aria-label={`Trips in ${group.year}`}
         >
-          {/* Year label */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-sm font-bold text-primary">
-              {year}
+          {/* Year header */}
+          <div className="flex items-center gap-3 mb-3 sm:mb-4">
+            <div
+              className={cn(
+                "px-3 py-1 rounded-full border text-sm font-bold shrink-0",
+                group.year === "Unknown"
+                  ? "bg-muted/60 border-border/60 text-muted-foreground"
+                  : "bg-primary/10 border-primary/25 text-primary",
+              )}
+            >
+              {group.year === "Unknown" ? "Undated" : group.year}
             </div>
-            <div className="flex-1 h-px bg-gradient-to-r from-primary/20 to-transparent" aria-hidden />
+
+            {/* Count pill */}
+            <span className="text-[10px] sm:text-[11px] text-muted-foreground shrink-0">
+              {group.locations.length} {group.locations.length === 1 ? "trip" : "trips"}
+            </span>
+
+            <div className="flex-1 h-px bg-gradient-to-r from-border/60 to-transparent" aria-hidden />
           </div>
 
-          {/* Cards */}
-          <div className="space-y-3 pl-2 border-l border-border/50">
-            {grouped[year].map((loc, li) => (
-              <TripCard
-                key={loc.id}
-                loc={loc}
-                yearIndex={yi}
-                cardIndex={li}
-                onSelect={onSelectLocation}
-              />
-            ))}
+          {/* Cards — no left border/timeline line; cards are self-contained */}
+          <div className="space-y-2.5 sm:space-y-3">
+            {group.locations.map((loc) => {
+              const delay = (globalCardIndex++) * 0.04;
+              return (
+                <TripCard
+                  key={loc.id}
+                  loc={loc}
+                  animDelay={delay}
+                  onSelect={onSelectLocation}
+                />
+              );
+            })}
           </div>
         </motion.section>
       ))}

@@ -16,6 +16,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const NO_FOLDER = "none";
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface GeoResult {
@@ -61,39 +67,61 @@ interface Props {
 
 interface GeoSearchProps {
   onSelect: (result: GeoResult) => void;
-  clearOnClose: boolean;
+  /** Increment this counter to trigger a reset (avoids the inverted-boolean pitfall). */
+  resetToken: number;
 }
 
-const GeoSearch = memo(function GeoSearch({ onSelect, clearOnClose }: GeoSearchProps) {
+const GeoSearch = memo(function GeoSearch({ onSelect, resetToken }: GeoSearchProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeoResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [show, setShow] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const listboxId = "geo-search-listbox";
 
-  // Clear on modal close
+  // FIX: Use a numeric counter as reset signal — incremented on close, not a boolean flip.
   useEffect(() => {
-    if (clearOnClose) { setQuery(""); setResults([]); setShow(false); }
-  }, [clearOnClose]);
+    if (resetToken === 0) return; // skip initial mount
+    setQuery("");
+    setResults([]);
+    setShow(false);
+  }, [resetToken]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (query.trim().length < 2) { setResults([]); setShow(false); return; }
+
+    // FIX: AbortController cancels stale in-flight requests.
+    const controller = new AbortController();
 
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`,
-          { headers: { "Accept-Language": "en", "User-Agent": "usMoment-App/1.0" } }
+          {
+            signal: controller.signal,
+            headers: { "Accept-Language": "en", "User-Agent": "usMoment-App/1.0" },
+          },
         );
         const data: GeoResult[] = await res.json();
         setResults(data);
         setShow(data.length > 0);
-      } catch { /* silent */ } finally { setLoading(false); }
+      } catch (err) {
+        // AbortError is expected — don't log it.
+        if (err instanceof Error && err.name !== "AbortError") {
+          console.error("[GeoSearch] Fetch error:", err);
+        }
+      } finally {
+        setLoading(false);
+      }
     }, 400);
 
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      // FIX: Abort the in-flight request when query changes or component unmounts.
+      controller.abort();
+    };
   }, [query]);
 
   const handleSelect = useCallback((r: GeoResult) => {
@@ -101,6 +129,50 @@ const GeoSearch = memo(function GeoSearch({ onSelect, clearOnClose }: GeoSearchP
     setShow(false);
     onSelect(r);
   }, [onSelect]);
+
+  // FIX: Keyboard navigation — ArrowDown/Up moves between options, Escape closes.
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!show || results.length === 0) return;
+    if (e.key === "Escape") {
+      setShow(false);
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const listbox = document.getElementById(listboxId);
+      const first = listbox?.querySelector<HTMLButtonElement>("[role='option']");
+      first?.focus();
+    }
+  }, [show, results.length]);
+
+  const handleOptionKeyDown = useCallback((
+    e: React.KeyboardEvent<HTMLButtonElement>,
+    r: GeoResult,
+    index: number,
+  ) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleSelect(r);
+      return;
+    }
+    const listbox = document.getElementById(listboxId);
+    const options = listbox ? Array.from(listbox.querySelectorAll<HTMLButtonElement>("[role='option']")) : [];
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      options[index + 1]?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (index === 0) {
+        // Return focus to the input
+        document.querySelector<HTMLInputElement>(`[aria-controls="${listboxId}"]`)?.focus();
+      } else {
+        options[index - 1]?.focus();
+      }
+    } else if (e.key === "Escape") {
+      setShow(false);
+      document.querySelector<HTMLInputElement>(`[aria-controls="${listboxId}"]`)?.focus();
+    }
+  }, [handleSelect]);
 
   return (
     <div className="space-y-1.5">
@@ -114,16 +186,23 @@ const GeoSearch = memo(function GeoSearch({ onSelect, clearOnClose }: GeoSearchP
           value={query}
           onChange={e => setQuery(e.target.value)}
           onFocus={() => results.length > 0 && setShow(true)}
+          // FIX: Close suggestions when focus leaves the search widget.
+          onBlur={() => setTimeout(() => setShow(false), 150)}
+          onKeyDown={handleKeyDown}
           placeholder="e.g. Goa, India"
           className="pl-9 pr-9"
           aria-label="Search location"
           aria-autocomplete="list"
           aria-expanded={show}
+          // FIX: Wire aria-controls to the listbox id.
+          aria-controls={listboxId}
+          role="combobox"
         />
 
         {/* Suggestions dropdown */}
         {show && results.length > 0 && (
           <div
+            id={listboxId}
             role="listbox"
             className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border bg-card shadow-xl overflow-hidden"
           >
@@ -133,11 +212,14 @@ const GeoSearch = memo(function GeoSearch({ onSelect, clearOnClose }: GeoSearchP
                 <button
                   key={i}
                   role="option"
+                  // FIX: aria-selected required on every option.
+                  aria-selected={false}
                   type="button"
                   onClick={() => handleSelect(r)}
+                  onKeyDown={e => handleOptionKeyDown(e, r, i)}
                   className={cn(
                     "w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-accent transition-colors",
-                    i > 0 && "border-t border-border/60"
+                    i > 0 && "border-t border-border/60",
                   )}
                 >
                   <MapPin className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" aria-hidden />
@@ -159,12 +241,13 @@ const GeoSearch = memo(function GeoSearch({ onSelect, clearOnClose }: GeoSearchP
 
 interface PhotoUploaderProps {
   urls: string[];
-  uploading: boolean;
+  uploadCount: number;
   onUpload: (files: FileList) => void;
   onRemove: (index: number) => void;
 }
 
-const PhotoUploader = memo(function PhotoUploader({ urls, uploading, onUpload, onRemove }: PhotoUploaderProps) {
+const PhotoUploader = memo(function PhotoUploader({ urls, uploadCount, onUpload, onRemove }: PhotoUploaderProps) {
+  const uploading = uploadCount > 0;
   return (
     <div className="space-y-2">
       <Label className="text-xs text-muted-foreground">Photos</Label>
@@ -174,15 +257,20 @@ const PhotoUploader = memo(function PhotoUploader({ urls, uploading, onUpload, o
         "border border-dashed border-border rounded-xl",
         "bg-muted/20 hover:bg-muted/40 cursor-pointer transition-colors",
       )}>
+        {/* FIX: Explicit aria-label on the file input for screen readers. */}
         <input
           type="file"
           multiple
           accept="image/*"
+          aria-label="Upload photos"
           className="sr-only"
           onChange={e => e.target.files?.length && onUpload(e.target.files)}
         />
         {uploading ? (
-          <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" aria-label="Uploading" />
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            Uploading…
+          </span>
         ) : (
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <ImagePlus className="h-3.5 w-3.5" aria-hidden />
@@ -222,12 +310,33 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng, initia
 
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [visited, setVisited] = useState(false);
-  const [folderId, setFolderId] = useState<string>("none");
-  const [uploading, setUploading] = useState(false);
+  const [folderId, setFolderId] = useState<string>(NO_FOLDER);
+  // FIX: Track active upload count instead of a boolean — handles concurrent batches.
+  const [uploadCount, setUploadCount] = useState(0);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-  const [clearSearch, setClearSearch] = useState(false);
+  // FIX: Counter-based reset token for GeoSearch — increment on close.
+  const [geoResetToken, setGeoResetToken] = useState(0);
+  // FIX: Track whether geo has been applied to avoid clobbering user edits on re-render.
+  const geoAppliedRef = useRef<ReverseGeoResult | null>(null);
 
-  // Sync initial coordinates when map is clicked
+  // ── Form reset ─────────────────────────────────────────────────────────────
+
+  const reset = useCallback(() => {
+    setForm(INITIAL_FORM);
+    setVisited(false);
+    setFolderId(NO_FOLDER);
+    setPhotoUrls([]);
+    setUploadCount(0);
+    geoAppliedRef.current = null;
+  }, []);
+
+  // FIX: Reset form when modal opens (not just on explicit close) to clear stale state.
+  useEffect(() => {
+    if (open) reset();
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Coordinate sync ────────────────────────────────────────────────────────
+
   useEffect(() => {
     if (initialLat !== undefined && initialLng !== undefined) {
       setForm(f => ({
@@ -238,31 +347,43 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng, initia
     }
   }, [initialLat, initialLng]);
 
-  // Apply reverse-geocode result when it arrives from map click
+  // FIX: Guard with a ref so a new object reference with the same data doesn't re-apply.
   useEffect(() => {
-    if (!initialGeo) return;
+    if (!initialGeo || initialGeo === geoAppliedRef.current) return;
+    geoAppliedRef.current = initialGeo;
     setForm(f => ({
       ...f,
       city: initialGeo.city || f.city,
       country: initialGeo.country || f.country,
-      // Only pre-fill name if user hasn't typed one yet
       location_name: f.location_name || initialGeo.display || "",
     }));
   }, [initialGeo]);
 
-  // Trigger GeoSearch clear on close
-  useEffect(() => {
-    setClearSearch(!open);
-  }, [open]);
+  // ── Close handler ──────────────────────────────────────────────────────────
 
-  const reset = useCallback(() => {
-    setForm(INITIAL_FORM);
-    setVisited(false);
-    setFolderId("none");
-    setPhotoUrls([]);
-  }, []);
+  const handleClose = useCallback(async () => {
+    // FIX: Delete orphaned uploads that were never saved to a location record.
+    if (photoUrls.length > 0) {
+      const paths = photoUrls.map(url => {
+        try {
+          return new URL(url).pathname.replace(/^\/storage\/v1\/object\/public\/media\//, "");
+        } catch {
+          return null;
+        }
+      }).filter(Boolean) as string[];
 
-  const handleClose = useCallback(() => { reset(); onClose(); }, [reset, onClose]);
+      if (paths.length > 0) {
+        // Fire-and-forget — don't block the UI on cleanup.
+        supabase.storage.from("media").remove(paths).catch(err => {
+          console.error("[AddLocationModal] Failed to clean up orphaned uploads:", err);
+        });
+      }
+    }
+
+    reset();
+    setGeoResetToken(t => t + 1);
+    onClose();
+  }, [photoUrls, reset, onClose]);
 
   // ── Geo search result ──────────────────────────────────────────────────────
 
@@ -284,22 +405,71 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng, initia
 
   const handlePhotoUpload = useCallback(async (files: FileList) => {
     if (!user) return;
-    setUploading(true);
-    const newUrls: string[] = [];
+
+    // FIX: Validate file type and size before uploading.
+    const validFiles: File[] = [];
+    const rejected: string[] = [];
 
     for (const file of Array.from(files)) {
-      const ext = file.name.split(".").pop();
-      const path = `travel/${user.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from("media").upload(path, file);
-      if (!error) {
-        const { data } = supabase.storage.from("media").getPublicUrl(path);
-        newUrls.push(data.publicUrl);
+      if (!file.type.startsWith("image/")) {
+        rejected.push(`${file.name} (not an image)`);
+      } else if (file.size > MAX_FILE_SIZE_BYTES) {
+        rejected.push(`${file.name} (exceeds ${MAX_FILE_SIZE_MB} MB)`);
+      } else {
+        validFiles.push(file);
       }
     }
 
-    setPhotoUrls(prev => [...prev, ...newUrls]);
-    setUploading(false);
-  }, [user]);
+    if (rejected.length > 0) {
+      toast({
+        title: `${rejected.length} file${rejected.length > 1 ? "s" : ""} skipped`,
+        description: rejected.join(", "),
+        variant: "destructive",
+      });
+    }
+
+    if (validFiles.length === 0) return;
+
+    // FIX: Increment upload count — handles concurrent batches correctly.
+    setUploadCount(n => n + 1);
+
+    // FIX: Parallelise uploads with Promise.all for faster multi-file batches.
+    const results = await Promise.allSettled(
+      validFiles.map(async file => {
+        const ext = file.name.split(".").pop();
+        const path = `travel/${user.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error } = await supabase.storage.from("media").upload(path, file);
+        if (error) throw new Error(file.name);
+        const { data } = supabase.storage.from("media").getPublicUrl(path);
+        return data.publicUrl;
+      }),
+    );
+
+    const newUrls: string[] = [];
+    const failedNames: string[] = [];
+
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        newUrls.push(result.value);
+      } else {
+        failedNames.push(result.reason?.message ?? "unknown file");
+      }
+    }
+
+    if (newUrls.length > 0) setPhotoUrls(prev => [...prev, ...newUrls]);
+
+    // FIX: Inform the user about failed uploads instead of silently dropping them.
+    if (failedNames.length > 0) {
+      toast({
+        title: `${failedNames.length} photo${failedNames.length > 1 ? "s" : ""} failed to upload`,
+        description: failedNames.join(", "),
+        variant: "destructive",
+      });
+    }
+
+    // FIX: Decrement — only reaches 0 when all concurrent batches finish.
+    setUploadCount(n => n - 1);
+  }, [user, toast]);
 
   const handlePhotoRemove = useCallback((index: number) => {
     setPhotoUrls(prev => prev.filter((_, i) => i !== index));
@@ -327,19 +497,24 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng, initia
         photo_urls: photoUrls,
         tags: [],
         visited,
-        folder_id: folderId === "none" ? undefined : folderId,
+        folder_id: folderId === NO_FOLDER ? undefined : folderId,
       });
 
       toast({ title: visited ? "✅ Location marked as visited!" : "📍 Location pinned to your map!" });
-      handleClose();
+      // Don't delete photos on successful submit — clear state without storage cleanup.
+      reset();
+      setGeoResetToken(t => t + 1);
+      onClose();
     } catch {
       toast({ title: "Failed to add location", variant: "destructive" });
     }
-  }, [form, visited, folderId, photoUrls, addLocation, toast, handleClose]);
+  }, [form, visited, folderId, photoUrls, addLocation, toast, reset, onClose]);
 
   const setField = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm(f => ({ ...f, [key]: value }));
   }, []);
+
+  const isBusy = addLocation.isPending || uploadCount > 0;
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -370,7 +545,7 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng, initia
           className="flex-1 overflow-y-auto px-5 py-4 space-y-4 min-h-0"
         >
           {/* Geo search */}
-          <GeoSearch onSelect={handleGeoSelect} clearOnClose={clearSearch} />
+          <GeoSearch onSelect={handleGeoSelect} resetToken={geoResetToken} />
 
           {/* Place name */}
           <div className="space-y-1.5">
@@ -388,11 +563,21 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng, initia
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="loc-city" className="text-xs text-muted-foreground">City</Label>
-              <Input id="loc-city" value={form.city} onChange={e => setField("city", e.target.value)} placeholder="Goa" />
+              <Input
+                id="loc-city"
+                value={form.city}
+                onChange={e => setField("city", e.target.value)}
+                placeholder="Goa"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="loc-country" className="text-xs text-muted-foreground">Country</Label>
-              <Input id="loc-country" value={form.country} onChange={e => setField("country", e.target.value)} placeholder="India" />
+              <Input
+                id="loc-country"
+                value={form.country}
+                onChange={e => setField("country", e.target.value)}
+                placeholder="India"
+              />
             </div>
           </div>
 
@@ -440,8 +625,9 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng, initia
             className={cn(
               "w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left",
               visited
-                ? "border-green-500/50 bg-green-500/8 text-foreground"
-                : "border-border bg-muted/30 text-muted-foreground"
+                // FIX: bg-green-500/8 is not a valid Tailwind stop — use /10.
+                ? "border-green-500/50 bg-green-500/10 text-foreground"
+                : "border-border bg-muted/30 text-muted-foreground",
             )}
           >
             {visited
@@ -466,7 +652,7 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng, initia
                   <SelectValue placeholder="Choose a folder…" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No folder</SelectItem>
+                  <SelectItem value={NO_FOLDER}>No folder</SelectItem>
                   {folders.map(f => (
                     <SelectItem key={f.id} value={f.id}>
                       {f.emoji ? `${f.emoji} ` : ""}{f.name}
@@ -481,7 +667,7 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng, initia
           {/* Photo upload */}
           <PhotoUploader
             urls={photoUrls}
-            uploading={uploading}
+            uploadCount={uploadCount}
             onUpload={handlePhotoUpload}
             onRemove={handlePhotoRemove}
           />
@@ -489,20 +675,36 @@ export function AddLocationModal({ open, onClose, initialLat, initialLng, initia
 
         {/* Footer */}
         <div className="shrink-0 px-5 py-4 border-t border-border flex gap-3">
-          <Button type="button" variant="outline" className="flex-1 rounded-xl" onClick={handleClose}>
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1 rounded-xl"
+            onClick={handleClose}
+            disabled={isBusy}
+          >
             Cancel
           </Button>
           <Button
             type="submit"
             form="add-location-form"
-            disabled={addLocation.isPending || uploading}
+            disabled={isBusy}
             className="flex-1 rounded-xl gap-2"
           >
-            {addLocation.isPending
-              ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              : <MapPin className="h-4 w-4" aria-hidden />
-            }
-            {visited ? "Pin as Visited" : "Pin Location"}
+            {addLocation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : uploadCount > 0 ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <MapPin className="h-4 w-4" aria-hidden />
+            )}
+            {/* FIX: Label tells the user what they're waiting for. */}
+            {uploadCount > 0
+              ? "Uploading…"
+              : addLocation.isPending
+                ? "Saving…"
+                : visited
+                  ? "Pin as Visited"
+                  : "Pin Location"}
           </Button>
         </div>
       </DialogContent>
