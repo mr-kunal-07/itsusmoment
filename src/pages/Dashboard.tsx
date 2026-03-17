@@ -88,8 +88,7 @@ const NON_GRID_VIEWS: readonly ViewType[] = [
   "travel-map",
 ] as const;
 
-const SWIPE_ORDER: readonly ViewType[] = ["all", "timeline", "billing"] as const;
-
+const SWIPE_ORDER: ViewType[] = ["all", "chat"];
 const FILE_TYPE_FILTERS: readonly FileTypeFilter[] = ["all", "image", "video"] as const;
 
 const PAID_VIEWS: Record<string, GateModalState> = {
@@ -126,7 +125,7 @@ function viewToTab(view: ViewType): string {
 }
 
 function isSpecialView(view: string): view is ViewType {
-  return SPECIAL_VIEWS.includes(view as ViewType);
+  return (SPECIAL_VIEWS as readonly string[]).includes(view);
 }
 
 export default function Dashboard() {
@@ -166,10 +165,10 @@ export default function Dashboard() {
   const seenMediaRef = useRef<Set<string>>(new Set());
 
   // Computed values
-  const selectedView: FolderViewType = useMemo(
-    () => (folderParam ? folderParam : tabToView(tab)),
-    [folderParam, tab]
-  );
+  const selectedView = useMemo<FolderViewType>(() => {
+    if (folderParam) return folderParam as FolderViewType;
+    return tabToView(tab);
+  }, [folderParam, tab]);
 
   const isSpecial = useMemo(() => isSpecialView(selectedView), [selectedView]);
   const isChat = selectedView === "chat";
@@ -269,13 +268,19 @@ export default function Dashboard() {
   );
 
   // Swipe navigation
-  const swipeIndex = useMemo(() => SWIPE_ORDER.indexOf(selectedView as ViewType), [selectedView]);
+  const swipeIndex = useMemo(
+    () => SWIPE_ORDER.indexOf(selectedView as ViewType),
+    [selectedView]
+  );
 
+  const canSwipe = swipeIndex !== -1;
   const handleSwipeLeft = useCallback(() => {
-    if (swipeIndex >= 0 && swipeIndex < SWIPE_ORDER.length - 1) {
+    if (!canSwipe) return;
+
+    if (swipeIndex < SWIPE_ORDER.length - 1) {
       gatedNavigate(SWIPE_ORDER[swipeIndex + 1]);
     }
-  }, [swipeIndex, gatedNavigate]);
+  }, [swipeIndex, canSwipe, gatedNavigate]);
 
   const handleSwipeRight = useCallback(() => {
     if (swipeIndex > 0) {
