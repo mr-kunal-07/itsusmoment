@@ -19,6 +19,11 @@ import {
   Activity,
   Sparkles,
   Globe,
+  Shield,
+  MessagesSquare,
+  UserPlus,
+  MessageSquareMore,
+  MapPinned,
 } from "lucide-react";
 import { usePlan, getStorageLimit, formatStorageLimit } from "@/hooks/useSubscription";
 import { useIsAdmin } from "@/hooks/useAdmin";
@@ -236,26 +241,22 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
     return count > MAX_BADGE_COUNT ? `${MAX_BADGE_COUNT}+` : count;
   }, []);
 
-  // Navigation items
-  const navItems: NavItem[] = useMemo(
-    () => [
-      { id: "all", label: "All Files", icon: Home, count: allMedia.length, hiddenOnMobile: true },
-      { id: "starred", label: "Starred", icon: Star, count: starredCount },
-    ],
-    [allMedia.length, starredCount]
-  );
 
   const specialItems: NavItem[] = useMemo(
     () => [
-      { id: "chat", label: "Chat with Partner", icon: MessageCircleHeart, badge: unreadCount, hiddenOnMobile: true },
+      { id: "all", label: "All Files", icon: Home, count: allMedia.length, hiddenOnMobile: true },
+      { id: "starred", label: "Starred", icon: Star, count: starredCount },
+      { id: "chat", label: "Chat with Partner", icon: MessageSquareMore, badge: unreadCount, hiddenOnMobile: true },
+      { id: "travel-map", label: "Travel Map", icon: MapPinned, hiddenOnMobile: true },
       { id: "timeline", label: "Memories Timeline", icon: CalendarHeart, hiddenOnMobile: true },
       { id: "anniversaries", label: "Anniversaries", icon: Trophy },
       { id: "love-story", label: "Love Story Card", icon: Sparkles },
-      { id: "travel-map", label: "Travel Map", icon: Globe },
       { id: "activity", label: "Activity Feed", icon: Activity },
+      { id: "settings", label: "Settings", icon: Settings },
+      { id: "billing", label: "Plan", icon: Shield },
       { id: "recently-deleted", label: "Recently Deleted", icon: Trash2, badge: 0 },
     ],
-    [unreadCount]
+    [unreadCount, allMedia.length, starredCount]
   );
 
   const renderNavItem = useCallback(
@@ -287,101 +288,97 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
 
   return (
     <Sidebar className="border-r">
-      <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg overflow-hidden shrink-0">
-            <img src="/pwa-icon-192.png" alt="OurVault" className="h-full w-full object-cover" />
+      <SidebarHeader className="p-3 border-b border-sidebar-border">
+        {/* App branding */}
+        <div className="flex items-center gap-2">
+          <div className="relative h-7 w-7 rounded-lg overflow-hidden shrink-0 ring-1 ring-black/5 dark:ring-white/10">
+            <img
+              src="/pwa-icon-192.png"
+              alt="OurVault"
+              className="h-full w-full object-cover"
+            />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-bold font-heading tracking-tight gradient-text">usMoment</h2>
-            <p className="text-[10px] text-muted-foreground">Shared Media</p>
+            <h2 className="text-sm font-bold font-heading tracking-tight gradient-text leading-none">
+              usMoment
+            </h2>
+            <p className="text-[9px] text-muted-foreground/70 mt-0.5">
+              Shared memories
+            </p>
           </div>
         </div>
 
-        {isConnected ? (
-          <div className="mt-3 flex items-center gap-2 rounded-lg bg-primary/8 border border-primary/15 px-2.5 py-2">
-            <div className="flex items-center -space-x-1.5">
-              <Avatar className="h-6 w-6 ring-2 ring-sidebar border-0">
-                <AvatarImage src={myProfile?.avatar_url ?? undefined} />
-                <AvatarFallback className="text-[9px] bg-primary text-primary-foreground">
-                  {myInitials}
-                </AvatarFallback>
-              </Avatar>
-              <Avatar className="h-6 w-6 ring-2 ring-sidebar border-0">
-                <AvatarImage src={partnerProfile?.avatar_url ?? undefined} />
-                <AvatarFallback className="text-[9px] bg-muted text-muted-foreground">
-                  {partnerInitials}
-                </AvatarFallback>
-              </Avatar>
+        {/* Connection status card */}
+        <div className="mt-1">
+          {isConnected ? (
+            <div className="group relative rounded-lg bg-gradient-to-br from-primary/8 to-primary/4 border border-primary/20 p-2 transition-all hover:border-primary/30 hover:shadow-sm">
+              {/* Avatars */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center -space-x-2 shrink-0">
+                  <Avatar className="h-7 w-7 ring-2 ring-sidebar border border-primary/20 transition-transform group-hover:scale-105">
+                    <AvatarImage src={myProfile?.avatar_url ?? undefined} />
+                    <AvatarFallback className="text-[10px] bg-primary text-primary-foreground font-semibold">
+                      {myInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Avatar className="h-7 w-7 ring-2 ring-sidebar border border-primary/20 transition-transform group-hover:scale-105">
+                    <AvatarImage src={partnerProfile?.avatar_url ?? undefined} />
+                    <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary/80 to-primary/60 text-primary-foreground font-semibold">
+                      {partnerInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[10px] font-semibold text-foreground truncate leading-none">
+                      {myProfile?.display_name ?? "You"}
+                      <span className="text-muted-foreground font-normal"> & </span>
+                      {partnerProfile?.display_name ?? "Partner"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 mt-1">
+                    <div className="h-1 w-1 rounded-full bg-primary animate-pulse" />
+                    <p className="text-[9px] text-primary font-medium">Connected</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Subtle pulse effect */}
+              <div className="absolute inset-0 rounded-lg bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-medium text-foreground truncate">
-                {myProfile?.display_name ?? "You"} &amp; {partnerProfile?.display_name ?? "Partner"}
-              </p>
-              <p className="text-[9px] text-primary">● Connected</p>
+          ) : (
+            <div className="group relative rounded-lg bg-muted/30 border border-dashed border-border hover:border-muted-foreground/30 p-2 transition-all">
+              <div className="flex items-center gap-2">
+                {/* Single avatar */}
+                <Avatar className="h-7 w-7 ring-2 ring-sidebar shrink-0">
+                  <AvatarImage src={myProfile?.avatar_url ?? undefined} />
+                  <AvatarFallback className="text-[10px] bg-primary text-primary-foreground font-semibold">
+                    {myInitials}
+                  </AvatarFallback>
+                </Avatar>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-semibold text-foreground truncate leading-none">
+                    {myProfile?.display_name ?? user?.email?.split("@")[0] ?? "You"}
+                  </p>
+                  <div className="flex items-center gap-1 mt-1">
+                    <UserPlus className="h-2.5 w-2.5 text-muted-foreground/60" />
+                    <p className="text-[9px] text-muted-foreground/80">Link your partner</p>
+                  </div>
+                </div>
+
+                {/* CTA indicator */}
+                <ChevronRight className="h-3 w-3 text-muted-foreground/40 shrink-0 transition-transform group-hover:translate-x-0.5" />
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="mt-3 flex items-center gap-2 rounded-lg bg-muted/50 border border-border px-2.5 py-2">
-            <Avatar className="h-6 w-6">
-              <AvatarImage src={myProfile?.avatar_url ?? undefined} />
-              <AvatarFallback className="text-[9px] bg-primary text-primary-foreground">{myInitials}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-medium text-foreground truncate">
-                {myProfile?.display_name ?? user?.email?.split("@")[0] ?? "You"}
-              </p>
-              <p className="text-[9px] text-muted-foreground">No partner linked</p>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Primary Navigation */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>{navItems.map(renderNavItem)}</SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* For Us Section */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center gap-1.5">
-            <Heart className="h-3 w-3 text-primary fill-primary" /> For Us
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {specialItems
-                .filter((i) => i.id !== "recently-deleted")
-                .map(renderNavItem)}
-
-              {onThisDayMedia.length > 0 && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => selectView("on-this-day")}
-                    className={cn(
-                      "justify-between",
-                      selectedView === "on-this-day" && "bg-accent text-accent-foreground"
-                    )}
-                  >
-                    <span className="flex items-center">
-                      <span className="text-base mr-2">🗓️</span>
-                      <span>On This Day</span>
-                    </span>
-                    <Badge
-                      variant="secondary"
-                      className="text-xs h-5 px-1.5 font-normal animate-pulse bg-primary/15 text-primary border-0"
-                    >
-                      {formatBadgeCount(onThisDayMedia.length)}
-                    </Badge>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
         {/* Folders Section */}
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center justify-between">
@@ -419,6 +416,42 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* For Us Section */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {specialItems
+                .filter((i) => i.id !== "recently-deleted")
+                .map(renderNavItem)}
+
+              {onThisDayMedia.length > 0 && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => selectView("on-this-day")}
+                    className={cn(
+                      "justify-between",
+                      selectedView === "on-this-day" && "bg-accent text-accent-foreground"
+                    )}
+                  >
+                    <span className="flex items-center">
+                      <span className="text-base mr-2">🗓️</span>
+                      <span>On This Day</span>
+                    </span>
+                    <Badge
+                      variant="secondary"
+                      className="text-xs h-5 px-1.5 font-normal animate-pulse bg-primary/15 text-primary border-0"
+                    >
+                      {formatBadgeCount(onThisDayMedia.length)}
+                    </Badge>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+
       </SidebarContent>
 
       {/* Footer */}
@@ -448,44 +481,8 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
           </p>
         </div>
 
-        <div className="flex items-center gap-1 pt-0.5">
-          <SidebarMenuButton
-            onClick={() => selectView("settings")}
-            className={cn(
-              "flex-1 justify-start gap-1.5 text-xs text-muted-foreground hover:text-foreground",
-              selectedView === "settings" && "bg-accent text-accent-foreground"
-            )}
-          >
-            <Settings className="h-3.5 w-3.5 shrink-0" />
-            Settings
-          </SidebarMenuButton>
-
-          <SidebarMenuButton
-            onClick={() => selectView("billing")}
-            className={cn(
-              "flex-1 justify-start gap-1.5 text-xs",
-              plan === "soulmate"
-                ? "text-primary hover:text-primary"
-                : "text-muted-foreground hover:text-foreground",
-              selectedView === "billing" && "bg-accent text-accent-foreground"
-            )}
-          >
-            <Crown className="h-3.5 w-3.5 shrink-0" />
-            {plan === "soulmate" ? "Soulmate" : plan === "dating" ? "Dating" : "Upgrade"}
-          </SidebarMenuButton>
-        </div>
 
         <div className="flex items-center gap-1">
-          <SidebarMenuButton
-            onClick={() => selectView("recently-deleted")}
-            className={cn(
-              "flex-1 justify-start gap-1.5 text-xs text-muted-foreground hover:text-foreground",
-              selectedView === "recently-deleted" && "bg-accent text-accent-foreground"
-            )}
-          >
-            <Trash2 className="h-3.5 w-3.5 shrink-0" />
-            Trash
-          </SidebarMenuButton>
 
           {isAdmin && (
             <SidebarMenuButton
@@ -665,7 +662,7 @@ function FolderItem({
               </Badge>
             )}
           </SidebarMenuButton>
-          <div className="hidden group-hover:flex items-center gap-0.5 pr-1">
+          <div className="flex items-center gap-0.5 pr-1">
             <button
               onClick={handleEdit}
               className="p-1 rounded hover:bg-muted/50 transition-colors"

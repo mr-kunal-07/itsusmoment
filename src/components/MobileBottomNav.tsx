@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, memo, useMemo } from "react";
-import { Home, CalendarHeart, MessageCircleHeart, Upload, Map } from "lucide-react";
+import { Home, CalendarHeart, MessageCircleHeart, Upload, Map, MessageSquareMore, MapPinned } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ViewType, FolderViewType } from "@/components/AppSidebar";
 import { useAuth } from "@/hooks/useAuth";
@@ -60,8 +60,8 @@ const NAV_ITEMS: readonly NavItem[] = [
 ] as const;
 
 const NAV_ITEMS_AFTER_FAB: readonly NavItem[] = [
-  { id: "chat", label: "Chat", icon: MessageCircleHeart },
-  { id: "travel-map", label: "Map", icon: Map },
+  { id: "chat", label: "Chat", icon: MessageSquareMore },
+  { id: "travel-map", label: "Map", icon: MapPinned },
 ] as const;
 
 const QUERY_STALE_TIME = 0;
@@ -318,7 +318,7 @@ export const MobileBottomNav = memo(function MobileBottomNav({
       )}
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="bg-background/90 backdrop-blur-xl border-t border-border/60">
+      <div className="bg-background backdrop-blur-xl border-t border-border/60">
         <div className="flex items-center h-14 px-1">
           {/* Left nav items */}
           {NAV_ITEMS.map((item) => renderNavButton(item))}
