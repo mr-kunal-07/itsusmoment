@@ -15,13 +15,7 @@ import Join from "./pages/Join";
 import Admin from "./pages/Admin";
 import Index from "./pages/Index";
 
-/**
- * Scalability-tuned QueryClient:
- * - staleTime: 60s  — avoids refetching on every re-render / mount
- * - gcTime: 5 min   — keeps inactive cache alive to serve instant navigations
- * - retry: 1        — don't hammer the DB on transient failures
- * - refetchOnWindowFocus: false — avoids thundering-herd when 100K users tab-switch
- */
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

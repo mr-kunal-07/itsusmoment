@@ -2,12 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─────────────────────────────────────────────────────────────────────────
-   Design System — Pure Black / White
-   Dark  → near-black backgrounds, white text
-   Light → near-white backgrounds, black text
-   Zero color noise. Monochromatic only.
-───────────────────────────────────────────────────────────────────────── */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 

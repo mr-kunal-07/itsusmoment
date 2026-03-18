@@ -562,10 +562,10 @@ export default function Dashboard() {
 
   return (
     <SidebarProvider defaultOpen={typeof window !== "undefined" && window.innerWidth >= 1024}>
-      <div className="flex h-dvh w-full overflow-hidden bg-background">
+      <div className="flex h-dvh w-full overflow-hidden  ">
         <AppSidebar selectedView={selectedView} onSelectView={gatedNavigate} />
 
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden ">
           {/* Header */}
           {!isChat && (
             <header

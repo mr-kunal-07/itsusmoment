@@ -350,9 +350,9 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
                 <ContextMenuTrigger asChild>
                   <Card
                     className={cn(
-                      "overflow-hidden group cursor-pointer transition-all duration-200 break-inside-avoid border-border/60",
+                      "overflow-hidden group cursor-pointer transition-all duration-200 break-inside-avoid border-border",
                       "hover:shadow-lg hover:-translate-y-0.5 hover:border-border",
-                      isSelected && "ring-2 ring-primary shadow-md -translate-y-0.5"
+                      isSelected && "ring-1 ring-primary shadow-md -translate-y-0.5"
                     )}
                     draggable={!isSelecting}
                     onDragStart={e => handleDragStart(e, item)}
