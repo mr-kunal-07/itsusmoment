@@ -2,10 +2,6 @@
    
 > A private, couples-only digital vault — store memories, chat securely, and celebrate your relationship milestones together.
 
-
-🌐 **Live App:** [https://kunalkalynai.lovable.app](https://kunalkalynai.lovable.app)
-🔍 **Preview:** [https://id-preview--c99a1e2f-394d-4103-993c-872aae6cafdd.lovable.app](https://id-preview--c99a1e2f-394d-4103-993c-872aae6cafdd.lovable.app)
-
 ---
 
 ## 📖 Overview
