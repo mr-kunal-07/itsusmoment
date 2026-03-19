@@ -10,7 +10,7 @@ import {
   User, ArrowRight, ArrowLeft, Link2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { lovable } from "@/integrations/lovable/index";
+import { supabase } from "@/integrations/supabase/client";
 
 /* ── Constants ──────────────────────────────────────────────────── */
 const PARTNER_CODE_KEY = "pending_partner_code";
@@ -254,13 +254,17 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     savePartnerCode();
     setGoogleLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth`,
+      },
     });
-    // Only reset on error — on success the page navigates away
-    if (result && "error" in result && result.error) {
+
+    if (error) {
       setGoogleLoading(false);
-      showError("Google sign-in failed", String(result.error));
+      showError("Google sign-in failed", error.message);
     }
   };
 

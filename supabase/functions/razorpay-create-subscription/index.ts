@@ -1,99 +1,204 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { useState, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
-const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers":
-        "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
-// Create these plan IDs in your Razorpay dashboard under Products > Plans
-const PLAN_IDS: Record<string, string> = {
-    dating: Deno.env.get("RAZORPAY_PLAN_DATING") ?? "",
-    soulmate: Deno.env.get("RAZORPAY_PLAN_SOULMATE") ?? "",
-};
-
-serve(async (req) => {
-    if (req.method === "OPTIONS") {
-        return new Response(null, { headers: corsHeaders });
+declare global {
+    interface Window {
+        Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
     }
+}
 
-    const json = (data: unknown, status = 200) =>
-        new Response(JSON.stringify(data), {
-            status,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+interface RazorpayOptions {
+    key: string;
+    amount: number;
+    currency: string;
+    name: string;
+    description: string;
+    subscription_id?: string;
+    order_id?: string;
+    recurring?: boolean;
+    handler: (response: RazorpayResponse) => void;
+    prefill?: { name?: string; email?: string };
+    theme?: { color?: string };
+    modal?: { ondismiss?: () => void };
+    config?: {
+        display: {
+            blocks: Record<string, {
+                name: string;
+                instruments: Array<{ method: string; flows?: string[] }>;
+            }>;
+            sequence: string[];
+            preferences: { show_default_blocks: boolean };
+        };
+    };
+}
 
-    try {
-        const RAZORPAY_KEY_ID = Deno.env.get("RAZORPAY_KEY_ID");
-        const RAZORPAY_KEY_SECRET = Deno.env.get("RAZORPAY_KEY_SECRET");
-        const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-        const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+interface RazorpayInstance {
+    open: () => void;
+}
 
-        if (!RAZORPAY_KEY_ID) throw new Error("RAZORPAY_KEY_ID not configured");
-        if (!RAZORPAY_KEY_SECRET) throw new Error("RAZORPAY_KEY_SECRET not configured");
-        if (!SUPABASE_URL) throw new Error("SUPABASE_URL not configured");
-        if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY not configured");
+interface RazorpayResponse {
+    razorpay_order_id?: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    razorpay_subscription_id?: string;
+}
 
-        // Auth
-        const authHeader = req.headers.get("Authorization");
-        if (!authHeader) return json({ error: "Missing authorization" }, 401);
+export type BillingPlan = "dating" | "soulmate";
 
-        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        const token = authHeader.replace("Bearer ", "");
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-        if (authError || !user) return json({ error: "Unauthorized" }, 401);
+const RAZORPAY_URL = "https://checkout.razorpay.com/v1/checkout.js";
+const SCRIPT_TIMEOUT_MS = 10_000;
 
-        const { plan = "dating" } = await req.json();
-        const planId = PLAN_IDS[plan];
-        if (!planId) return json({ error: `No Razorpay plan configured for: ${plan}` }, 400);
+let scriptPromise: Promise<void> | null = null;
 
-        const credentials = btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`);
+function loadRazorpayScript(): Promise<void> {
+    if (window.Razorpay) return Promise.resolve();
+    if (scriptPromise) return scriptPromise;
 
-        // Create subscription via Razorpay API
-        const subRes = await fetch("https://api.razorpay.com/v1/subscriptions", {
-            method: "POST",
-            headers: {
-                Authorization: `Basic ${credentials}`,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                plan_id: planId,
-                total_count: 120,   // 10 years of monthly cycles
-                quantity: 1,
-                customer_notify: 1,     // Razorpay sends payment reminder emails
-                notes: {
-                    user_id: user.id,
-                    plan,
-                },
-            }),
-        });
+    scriptPromise = new Promise<void>((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = RAZORPAY_URL;
+        script.async = true;
 
-        if (!subRes.ok) {
-            const err = await subRes.json();
-            throw new Error(`Razorpay subscription creation failed: ${JSON.stringify(err)}`);
+        const timer = setTimeout(() => {
+            script.remove();
+            scriptPromise = null;
+            reject(new Error("Razorpay SDK timed out"));
+        }, SCRIPT_TIMEOUT_MS);
+
+        script.onload = () => { clearTimeout(timer); resolve(); };
+        script.onerror = () => {
+            clearTimeout(timer);
+            script.remove();
+            scriptPromise = null;
+            reject(new Error("Failed to load Razorpay SDK"));
+        };
+
+        document.body.appendChild(script);
+    });
+
+    return scriptPromise;
+}
+
+// Use supabase.functions.invoke instead of raw fetch
+// This automatically uses the correct project URL + auth
+async function callEdge<T>(
+    fnName: string,
+    body: Record<string, unknown>
+): Promise<T> {
+    const { data, error } = await supabase.functions.invoke<T>(fnName, {
+        body,
+    });
+    if (error) throw new Error(error.message ?? `${fnName} failed`);
+    if (!data) throw new Error(`${fnName} returned no data`);
+    return data;
+}
+
+export function useRazorpayCheckout() {
+    const { user } = useAuth();
+    const { toast } = useToast();
+    const queryClient = useQueryClient();
+    const [loading, setLoading] = useState(false);
+    const settledRef = useRef(false);
+
+    const checkout = async (plan: BillingPlan): Promise<void> => {
+        if (!user || loading) return;
+
+        settledRef.current = false;
+        setLoading(true);
+
+        try {
+            await loadRazorpayScript();
+
+            const orderData = await callEdge<{
+                key_id: string;
+                subscription_id: string;
+                amount: number;
+                currency: string;
+                description: string;
+            }>("razorpay-create-subscription", { plan });
+
+            console.log("Subscription created:", orderData);
+
+            await new Promise<void>((resolve, reject) => {
+                const settle = (fn: () => void) => {
+                    if (settledRef.current) return;
+                    settledRef.current = true;
+                    setLoading(false);
+                    fn();
+                };
+
+                const rzp = new window.Razorpay({
+                    key: orderData.key_id,
+                    amount: orderData.amount,
+                    currency: orderData.currency,
+                    name: "CoupleVault",
+                    description: orderData.description,
+                    subscription_id: orderData.subscription_id,
+                    recurring: true,
+                    prefill: { email: user.email },
+                    theme: { color: "#d4b896" },
+                    config: {
+                        display: {
+                            blocks: {
+                                upi: {
+                                    name: "Pay via UPI",
+                                    instruments: [
+                                        { method: "upi", flows: ["intent", "collect", "qr"] },
+                                    ],
+                                },
+                            },
+                            sequence: ["block.upi"],
+                            preferences: { show_default_blocks: false },
+                        },
+                    },
+                    modal: {
+                        ondismiss: () => settle(resolve),
+                    },
+                    handler: async (response: RazorpayResponse) => {
+                        try {
+                            console.log("Payment response:", response);
+
+                            await callEdge("razorpay-verify-payment", {
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                razorpay_subscription_id: response.razorpay_subscription_id,
+                                razorpay_order_id: response.razorpay_order_id,
+                                plan,
+                            });
+
+                            await queryClient.invalidateQueries({ queryKey: ["subscription"] });
+
+                            toast({
+                                title: `💕 ${plan === "soulmate" ? "Soulmate" : "Dating"} plan activated!`,
+                                description: "UPI AutoPay is set up. You won't need to pay manually again.",
+                            });
+
+                            settle(resolve);
+                        } catch (err) {
+                            settle(() => reject(err));
+                        }
+                    },
+                });
+
+                rzp.open();
+            });
+
+        } catch (err) {
+            if (!settledRef.current) {
+                setLoading(false);
+                settledRef.current = true;
+            }
+            console.error("Checkout error:", err);
+            toast({
+                title: "Payment failed",
+                description: err instanceof Error ? err.message : "Something went wrong",
+                variant: "destructive",
+            });
         }
+    };
 
-        const sub = await subRes.json();
-
-        // Fetch plan details to get amount/currency for the checkout
-        const planRes = await fetch(`https://api.razorpay.com/v1/plans/${planId}`, {
-            headers: { Authorization: `Basic ${credentials}` },
-        });
-        const planData = await planRes.json();
-
-        return json({
-            key_id: RAZORPAY_KEY_ID,
-            subscription_id: sub.id,
-            amount: planData.item.amount,
-            currency: planData.item.currency,
-            description: `CoupleVault ${plan} plan`,
-        });
-    } catch (err) {
-        console.error("razorpay-create-subscription error:", err);
-        return new Response(
-            JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-    }
-});
+    return { checkout, loading };
+}
