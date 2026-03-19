@@ -54,7 +54,7 @@ const HowItWorks = () => (
         ))}
       </div>
 
-      <a href="https://itsusmoment.lovable.app/auth">
+      <a href="/auth">
         <Button
           className="bg-[linear-gradient(135deg,#c06a2b,#caa27a)] text-[#fef9ec] border-0 shadow-[0_4px_20px_-4px_rgba(192,106,43,0.15)] text-sm px-6"
         >

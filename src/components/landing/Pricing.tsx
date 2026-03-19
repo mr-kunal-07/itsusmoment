@@ -59,8 +59,8 @@ const Pricing = () => (
             viewport={{ once: true }}
             transition={{ duration: 0.4, delay: i * 0.08 }}
             className={`relative rounded-xl p-4 sm:p-5 border ${p.highlight
-                ? "bg-[#fdf6e3] border-[#c06a2b] shadow-[0_16px_50px_-10px_rgba(0,0,0,0.18)] sm:scale-[1.03]"
-                : "bg-[rgba(253,246,227,0.8)] border-[rgba(216,207,194,0.3)] shadow-[0_12px_40px_-8px_rgba(0,0,0,0.12)]"
+              ? "bg-[#fdf6e3] border-[#c06a2b] shadow-[0_16px_50px_-10px_rgba(0,0,0,0.18)] sm:scale-[1.03]"
+              : "bg-[rgba(253,246,227,0.8)] border-[rgba(216,207,194,0.3)] shadow-[0_12px_40px_-8px_rgba(0,0,0,0.12)]"
               }`}
           >
 
@@ -98,12 +98,12 @@ const Pricing = () => (
               ))}
             </ul>
 
-            <a href="https://itsusmoment.lovable.app/auth" className="block">
+            <a href="/auth" className="block">
               <Button
                 size="sm"
                 className={`w-full text-xs sm:text-sm ${p.highlight
-                    ? "bg-[linear-gradient(135deg,#c06a2b,#caa27a)] text-[#fef9ec] border-0 shadow-[0_4px_20px_-4px_rgba(192,106,43,0.15)]"
-                    : "bg-transparent border border-[#c06a2b] text-[#c06a2b] hover:bg-[rgba(192,106,43,0.05)]"
+                  ? "bg-[linear-gradient(135deg,#c06a2b,#caa27a)] text-[#fef9ec] border-0 shadow-[0_4px_20px_-4px_rgba(192,106,43,0.15)]"
+                  : "bg-transparent border border-[#c06a2b] text-[#c06a2b] hover:bg-[rgba(192,106,43,0.05)]"
                   }`}
               >
                 {p.cta}

@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSwipeNav } from "@/hooks/useSwipeNav";
-import { Search, Upload, Moon, Sun, LayoutGrid, List, ArrowUpDown } from "lucide-react";
+import { Search, Upload, Moon, Sun, LayoutGrid, List, ArrowUpDown, FolderPlus } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePlan } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
-import { useMedia, useStarredMedia, useMoveMedia } from "@/hooks/useMedia";
+import { useMedia, useStarredMedia, useMoveMedia, getPublicUrl } from "@/hooks/useMedia";
 import { useFolders } from "@/hooks/useFolders";
 import { useTheme } from "@/hooks/useTheme";
 import { useProfile, useAllProfiles } from "@/hooks/useProfile";
@@ -34,6 +34,7 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useCreateFolder } from "@/hooks/useFolders";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +45,8 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { FolderGrid } from "@/components/FolderGrid";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 type FileTypeFilter = "all" | "image" | "video";
 type SortKey = "created_at" | "title" | "file_size";
@@ -151,7 +154,25 @@ export default function Dashboard() {
   const [dragOverMain, setDragOverMain] = useState(false);
   const [fileTypeFilter, setFileTypeFilter] = useState<FileTypeFilter>("all");
   const [gateModal, setGateModal] = useState<GateModalState | null>(null);
+  const [openAddFolder, setOpenAddFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const createFolder = useCreateFolder();
+  const handleCreateFolder = async () => {
+    const name = newFolderName.trim();
+    if (!name) return;
 
+    try {
+      await createFolder.mutateAsync({
+        name,
+        parentId: folderId ?? null
+      });
+
+      setNewFolderName("");
+      setOpenAddFolder(false);
+    } catch (err) {
+      console.error("Create folder failed:", err);
+    }
+  };
   const [viewMode, setViewMode] = useState<ViewMode>(() =>
     loadPreference<ViewMode>(STORAGE_KEYS.VIEW_MODE, "grid")
   );
@@ -186,26 +207,95 @@ export default function Dashboard() {
   }, [profile?.display_name, user?.email]);
 
   // Data fetching
-  const { data: regularMedia = [], isLoading } = useMedia(
+  // allMedia: all media with no filters — used for folder previews, counts, rootMedia
+  const { data: allMedia = [], isLoading: allMediaLoading } = useMedia(undefined, undefined);
+  // regularMedia: respects current folder + search filter
+  const { data: regularMedia = [], isLoading: regularLoading } = useMedia(
     isSpecial && selectedView !== "starred" ? undefined : folderId,
     search || undefined
   );
   const { data: starredMedia = [] } = useStarredMedia();
+  // Combined loading state
+  const isLoading = selectedView === "all" ? allMediaLoading : regularLoading;
+
+  // Recursively collect all descendant folder IDs for a given folder
+  const getDescendantIds = useCallback(
+    (folderId: string): string[] => {
+      const children = folders.filter((f) => f.parent_id === folderId);
+      return [
+        folderId,
+        ...children.flatMap((c) => getDescendantIds(c.id)),
+      ];
+    },
+    [folders]
+  );
+
+  // Helper: enrich a folder list with preview URLs + counts (recursive — includes sub-folders)
+  const enrichFolders = useCallback(
+    (folderList: typeof folders) =>
+      folderList.map((folder) => {
+        // All folder IDs in this subtree (folder + all descendants)
+        const subtreeIds = getDescendantIds(folder.id);
+
+        // All media anywhere in the subtree
+        const subtreeMedia = allMedia.filter((m) => subtreeIds.includes(m.folder_id ?? ""));
+
+        // For previews prefer direct images first, then fall back to descendant images
+        const directImages = allMedia.filter(
+          (m) => m.folder_id === folder.id && m.file_type === "image"
+        );
+        const previewMedia = directImages.length > 0
+          ? directImages
+          : subtreeMedia.filter((m) => m.file_type === "image");
+
+        return {
+          ...folder,
+          count: subtreeMedia.length,
+          previewUrls: previewMedia.slice(0, 4).map((m) => getPublicUrl(m.file_path)),
+        };
+      }),
+    [allMedia, folders, getDescendantIds]
+  );
+
+  // Root-level folders only (no parent_id) — shown in "all" view
+  const foldersWithPreviews = useMemo(
+    () => enrichFolders(folders.filter((f) => !f.parent_id)),
+    [folders, enrichFolders]
+  );
+
+  // Sub-folders of the currently open folder
+  const subFoldersWithPreviews = useMemo(() => {
+    if (isSpecial) return [];
+    return enrichFolders(folders.filter((f) => f.parent_id === selectedView));
+  }, [folders, enrichFolders, isSpecial, selectedView]);
 
   // Media processing
   const rawMedia = useMemo(() => {
     if (selectedView === "starred") return starredMedia;
     if (selectedView === "on-this-day") return onThisDayMedia;
+    // "all" view: use allMedia so we get everything regardless of folder
+    if (selectedView === "all") return allMedia;
     return regularMedia;
-  }, [selectedView, starredMedia, onThisDayMedia, regularMedia]);
+  }, [selectedView, starredMedia, onThisDayMedia, allMedia, regularMedia]);
 
   const typeFiltered = useMemo(() => {
     if (fileTypeFilter === "all") return rawMedia;
     return rawMedia.filter((m) => m.file_type === fileTypeFilter);
   }, [rawMedia, fileTypeFilter]);
 
+  // Apply search client-side for "all" view (allMedia has no server-side search)
+  const searchFiltered = useMemo(() => {
+    if (selectedView !== "all" || !search.trim()) return typeFiltered;
+    const q = search.trim().toLowerCase();
+    return typeFiltered.filter(
+      (m) =>
+        m.title?.toLowerCase().includes(q) ||
+        m.description?.toLowerCase().includes(q)
+    );
+  }, [typeFiltered, selectedView, search]);
+
   const media = useMemo(() => {
-    return [...typeFiltered].sort((a, b) => {
+    return [...searchFiltered].sort((a, b) => {
       let cmp = 0;
       if (sortKey === "created_at") {
         cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
@@ -216,7 +306,13 @@ export default function Dashboard() {
       }
       return sortDir === "asc" ? cmp : -cmp;
     });
-  }, [typeFiltered, sortKey, sortDir]);
+  }, [searchFiltered, sortKey, sortDir]);
+
+  // Unfiled media — no folder_id, shown below folder grid in "all" view
+  const rootMedia = useMemo(
+    () => media.filter((m) => !m.folder_id),
+    [media]
+  );
 
   const currentFolder = useMemo(() => {
     if (isSpecial) return null;
@@ -276,7 +372,6 @@ export default function Dashboard() {
   const canSwipe = swipeIndex !== -1;
   const handleSwipeLeft = useCallback(() => {
     if (!canSwipe) return;
-
     if (swipeIndex < SWIPE_ORDER.length - 1) {
       gatedNavigate(SWIPE_ORDER[swipeIndex + 1]);
     }
@@ -320,32 +415,25 @@ export default function Dashboard() {
     setDragOverMain(false);
   }, []);
 
-  const handleMainDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setDragOverMain(false);
-      if (e.dataTransfer.files.length > 0) {
-        setUploadOpen(true);
-      }
-    },
-    []
-  );
+  const handleMainDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverMain(false);
+    if (e.dataTransfer.files.length > 0) {
+      setUploadOpen(true);
+    }
+  }, []);
 
   // Preview handlers
   const handlePreview = useCallback(
     (item: { id: string }) => {
       const idx = media.findIndex((m) => m.id === item.id);
-      if (idx >= 0) {
-        setPreviewIndex(idx);
-      }
+      if (idx >= 0) setPreviewIndex(idx);
     },
     [media]
   );
 
   const handlePreviewClose = useCallback((open: boolean) => {
-    if (!open) {
-      setPreviewIndex(-1);
-    }
+    if (!open) setPreviewIndex(-1);
   }, []);
 
   const handleTimelinePreview = useCallback(
@@ -367,17 +455,9 @@ export default function Dashboard() {
   }, [selectedView, isSpecial]);
 
   // Effects
-  useEffect(() => {
-    savePreference(STORAGE_KEYS.VIEW_MODE, viewMode);
-  }, [viewMode]);
-
-  useEffect(() => {
-    savePreference(STORAGE_KEYS.SORT_KEY, sortKey);
-  }, [sortKey]);
-
-  useEffect(() => {
-    savePreference(STORAGE_KEYS.SORT_DIR, sortDir);
-  }, [sortDir]);
+  useEffect(() => { savePreference(STORAGE_KEYS.VIEW_MODE, viewMode); }, [viewMode]);
+  useEffect(() => { savePreference(STORAGE_KEYS.SORT_KEY, sortKey); }, [sortKey]);
+  useEffect(() => { savePreference(STORAGE_KEYS.SORT_DIR, sortDir); }, [sortDir]);
 
   // Realtime partner uploads
   useEffect(() => {
@@ -398,7 +478,6 @@ export default function Dashboard() {
           const row = payload.new as { uploaded_by: string; id: string; title?: string };
           if (row.uploaded_by !== partnerId) return;
           if (seenMediaRef.current.has(row.id)) return;
-
           seenMediaRef.current.add(row.id);
           toast({
             title: `${partnerName} added a new photo 💕`,
@@ -408,27 +487,21 @@ export default function Dashboard() {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [user, couple, profiles, toast]);
 
   // Move media handler
   useEffect(() => {
     const handler = (e: Event) => {
       const { mediaId, folderId: targetFolderId } = (e as CustomEvent).detail;
-
       moveMedia
         .mutateAsync({ id: mediaId, folderId: targetFolderId })
-        .then(() => {
-          toast({ title: "Moved to folder" });
-        })
+        .then(() => { toast({ title: "Moved to folder" }); })
         .catch((error) => {
           console.error("Failed to move media:", error);
           toast({ title: "Failed to move", variant: "destructive" });
         });
     };
-
     window.addEventListener("move-media", handler);
     return () => window.removeEventListener("move-media", handler);
   }, [moveMedia, toast]);
@@ -436,7 +509,6 @@ export default function Dashboard() {
   // Render helpers
   const renderFileTypeFilter = useCallback(() => {
     if (!isGridView) return null;
-
     return (
       <div className="hidden md:flex items-center gap-0.5 p-0.5 rounded-lg bg-muted shrink-0">
         {FILE_TYPE_FILTERS.map((filter) => (
@@ -459,13 +531,11 @@ export default function Dashboard() {
 
   const renderSortMenu = useCallback(() => {
     if (!isGridView) return null;
-
     const sortItems: Array<{ key: SortKey; label: string }> = [
       { key: "created_at", label: "Date" },
       { key: "title", label: "Name" },
       { key: "file_size", label: "Size" },
     ];
-
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -490,32 +560,98 @@ export default function Dashboard() {
 
   const renderPageHeader = useCallback(() => {
     if (selectedView === "settings" || selectedView === "travel-map") return null;
-
     return (
-      <div className={cn(selectedView === "billing" ? "mb-0" : "mb-3 sm:mb-5")}>
-        {!isSpecial && (
-          <FolderBreadcrumb
-            folderId={selectedView}
-            folders={folders}
-            onNavigate={setSelectedView}
-          />
+      <div
+        className={cn(
+          "flex flex-col gap-2",
+          selectedView === "billing" ? "mb-0" : "mb-3 sm:mb-5"
         )}
+      >
+        {/* Top Row → Breadcrumb + Actions */}
+        <div className="flex items-center justify-between gap-2 min-h-[32px]">
+          {/* Breadcrumb — only inside real folders */}
+          <div className="flex-1">
+            {!isSpecial && (
+              <FolderBreadcrumb
+                folderId={selectedView}
+                folders={folders}
+                onNavigate={setSelectedView}
+              />
+            )}
+          </div>
+
+          {/* Add Folder Button */}
+          {selectedView !== "billing" && (selectedView === "all" || !isSpecial) && (
+            <Dialog open={openAddFolder} onOpenChange={setOpenAddFolder}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-8 px-2 gap-1.5"
+                  aria-label="Create folder"
+                >
+                  <FolderPlus className="h-4 w-4" />
+                  <span className="text-xs">Add folder</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-xs">
+                <DialogHeader>
+                  <DialogTitle className="text-sm flex items-center gap-2">
+                    <FolderPlus className="h-4 w-4 text-primary" />
+                    {selectedView === "all" ? "New Folder" : "New Subfolder"}
+                  </DialogTitle>
+                </DialogHeader>
+                <form
+                  onSubmit={(e) => { e.preventDefault(); handleCreateFolder(); }}
+                  className="space-y-3"
+                >
+                  <Input
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    placeholder="Folder name"
+                    className="h-10 text-sm"
+                    autoFocus
+                    maxLength={50}
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setOpenAddFolder(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" size="sm" disabled={!newFolderName.trim() || createFolder.isPending}>
+                      Create
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+
+        {/* Title */}
         {selectedView !== "billing" && (
-          <h1 className="hidden sm:block text-xl sm:text-2xl font-bold font-heading tracking-tight text-foreground">
+          <h1 className="hidden sm:block text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
             {pageTitle}
           </h1>
         )}
+
+        {/* On This Day */}
         {selectedView === "on-this-day" && onThisDayMedia.length > 0 && (
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            🗓️ {onThisDayMedia.length} {onThisDayMedia.length === 1 ? "memory" : "memories"} from
-            previous years on this date
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            🗓️ {onThisDayMedia.length}{" "}
+            {onThisDayMedia.length === 1 ? "memory" : "memories"} from previous years
+            on this date
           </p>
         )}
-        {isGridView && !isLoading && selectedView !== "on-this-day" && (
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
-            {media.length} file{media.length !== 1 ? "s" : ""}
-          </p>
-        )}
+
+        {/* File Count */}
+        {isGridView &&
+          !isLoading &&
+          selectedView !== "on-this-day" &&
+          selectedView !== "all" && (
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {media.length} file{media.length !== 1 ? "s" : ""}
+            </p>
+          )}
       </div>
     );
   }, [
@@ -528,6 +664,10 @@ export default function Dashboard() {
     isGridView,
     isLoading,
     media.length,
+    openAddFolder,        // ← add
+    newFolderName,        // ← add
+    handleCreateFolder,
+    createFolder.isPending,
   ]);
 
   const renderMainContent = useCallback(() => {
@@ -548,24 +688,117 @@ export default function Dashboard() {
         return <SettingsView onNavigateBilling={() => setSelectedView("billing")} />;
       case "recently-deleted":
         return <RecentlyDeletedView />;
-      default:
+
+      case "all":
         return (
-          <MediaGrid
-            media={media}
-            loading={isLoading}
-            onPreview={handlePreview}
-            viewMode={viewMode}
-          />
+          <>
+            {/* ── Folders section ── */}
+            {foldersWithPreviews.length > 0 && (
+              <div className="mb-6 sm:mb-8">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                  Folders
+                </h2>
+                <FolderGrid
+                  folders={foldersWithPreviews}
+                  onOpen={(id) => setSelectedView(id)}
+                />
+              </div>
+            )}
+
+            {/* ── Root-level files (not inside any folder) ── */}
+            {rootMedia.length > 0 && (
+              <div>
+                {foldersWithPreviews.length > 0 && (
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                    Files
+                  </h2>
+                )}
+                <p className="text-xs sm:text-sm text-muted-foreground mb-3">
+                  {rootMedia.length} file{rootMedia.length !== 1 ? "s" : ""}
+                </p>
+                <MediaGrid
+                  media={rootMedia}
+                  loading={isLoading}
+                  onPreview={handlePreview}
+                  viewMode={viewMode}
+                />
+              </div>
+            )}
+
+            {/* ── Truly empty state ── */}
+            {foldersWithPreviews.length === 0 && rootMedia.length === 0 && !isLoading && (
+              <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+                <p className="text-base font-medium text-foreground">No files yet</p>
+                <p className="text-sm mt-1 text-muted-foreground/70">
+                  Upload photos and videos to get started
+                </p>
+              </div>
+            )}
+          </>
+        );
+
+      default:
+        // Inside a specific folder — show sub-folders then media
+        return (
+          <>
+            {subFoldersWithPreviews.length > 0 && (
+              <div className="mb-6 sm:mb-8">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                  Folders
+                </h2>
+                <FolderGrid
+                  folders={subFoldersWithPreviews}
+                  onOpen={(id) => setSelectedView(id)}
+                />
+              </div>
+            )}
+
+            {(media.length > 0 || isLoading) && (
+              <div>
+                {subFoldersWithPreviews.length > 0 && media.length > 0 && (
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                    Files
+                  </h2>
+                )}
+                <MediaGrid
+                  media={media}
+                  loading={isLoading}
+                  onPreview={handlePreview}
+                  viewMode={viewMode}
+                />
+              </div>
+            )}
+
+            {subFoldersWithPreviews.length === 0 && media.length === 0 && !isLoading && (
+              <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+                <p className="text-base font-medium text-foreground">This folder is empty</p>
+                <p className="text-sm mt-1 text-muted-foreground/70">
+                  Upload files or create sub-folders to get started
+                </p>
+              </div>
+            )}
+          </>
         );
     }
-  }, [selectedView, handleTimelinePreview, media, isLoading, handlePreview, viewMode, setSelectedView]);
+  }, [
+    selectedView,
+    handleTimelinePreview,
+    foldersWithPreviews,
+    subFoldersWithPreviews,
+    rootMedia,
+    media,
+    isLoading,
+    handlePreview,
+    viewMode,
+    setSelectedView,
+  ]);
 
   return (
     <SidebarProvider defaultOpen={typeof window !== "undefined" && window.innerWidth >= 1024}>
-      <div className="flex h-dvh w-full overflow-hidden  ">
+      <div className="flex h-dvh w-full overflow-hidden">
         <AppSidebar selectedView={selectedView} onSelectView={gatedNavigate} />
 
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden ">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Header */}
           {!isChat && (
             <header

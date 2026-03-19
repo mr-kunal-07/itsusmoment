@@ -52,7 +52,7 @@ const Hero = () => (
         transition={{ duration: 0.7, delay: 0.22 }}
         className="flex flex-col xs:flex-row items-center justify-center gap-2.5 mb-5"
       >
-        <a href="https://itsusmoment.lovable.app/auth">
+        <a href="/auth">
           <Button
             size="lg"
             className="bg-[linear-gradient(135deg,#c06a2b,#caa27a)] text-[#fef9ec] border-0 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.12)] text-sm sm:text-base px-6 sm:px-8 h-11"

@@ -12,8 +12,6 @@ import {
   Heart,
   CalendarHeart,
   Trophy,
-  MessageCircleHeart,
-  Crown,
   ShieldCheck,
   Settings,
   Activity,
@@ -29,7 +27,7 @@ import { usePlan, getStorageLimit, formatStorageLimit } from "@/hooks/useSubscri
 import { useIsAdmin } from "@/hooks/useAdmin";
 import { DaysTogether } from "@/components/DaysTogether";
 import { useFolders, useCreateFolder, useRenameFolder, useDeleteFolder, Folder } from "@/hooks/useFolders";
-import { useMedia } from "@/hooks/useMedia";
+import { useMedia, useRecentlyDeletedMedia } from "@/hooks/useMedia";
 import { useStorageUsage, useAllProfiles, useProfile } from "@/hooks/useProfile";
 import { useOnThisDay } from "@/hooks/useMemories";
 import { useMyCouple } from "@/hooks/useCouple";
@@ -111,6 +109,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
   const { data: profiles = [] } = useAllProfiles();
   const { data: myProfile } = useProfile();
   const { data: messages = [] } = useMessages();
+  const { data: deletedMedia = [] } = useRecentlyDeletedMedia();
 
   const createFolder = useCreateFolder();
   const renameFolder = useRenameFolder();
@@ -127,7 +126,11 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
 
   // Computed values
   const isConnected = couple?.status === "active";
-  const partnerId = isConnected ? (couple.user1_id === user?.id ? couple.user2_id : couple.user1_id) : null;
+  const partnerId = isConnected
+    ? couple.user1_id === user?.id
+      ? couple.user2_id
+      : couple.user1_id
+    : null;
   const partnerProfile = useMemo(
     () => (partnerId ? profiles.find((p) => p.user_id === partnerId) : null),
     [partnerId, profiles]
@@ -152,14 +155,35 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
 
   const rootFolders = useMemo(() => folders.filter((f) => !f.parent_id), [folders]);
 
-  const folderCounts = useMemo(() => {
+  // Build a map of direct counts first (folder_id → count)
+  const directCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     allMedia.forEach((m) => {
-      const key = m.folder_id ?? "__unfiled__";
-      counts[key] = (counts[key] ?? 0) + 1;
+      if (!m.folder_id) return;
+      counts[m.folder_id] = (counts[m.folder_id] ?? 0) + 1;
     });
     return counts;
   }, [allMedia]);
+
+  // Recursively sum counts for a folder + all its descendants
+  const getRecursiveCount = useCallback(
+    (folderId: string): number => {
+      const direct = directCounts[folderId] ?? 0;
+      const children = folders.filter((f) => f.parent_id === folderId);
+      const childSum = children.reduce((sum, c) => sum + getRecursiveCount(c.id), 0);
+      return direct + childSum;
+    },
+    [directCounts, folders]
+  );
+
+  // folderCounts now includes all descendant media — used by sidebar badges
+  const folderCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    folders.forEach((f) => {
+      counts[f.id] = getRecursiveCount(f.id);
+    });
+    return counts;
+  }, [folders, getRecursiveCount]);
 
   const storageLimit = useMemo(() => getStorageLimit(plan), [plan]);
   const storageLabel = useMemo(() => formatStorageLimit(plan), [plan]);
@@ -183,7 +207,6 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
     async (parentId?: string | null) => {
       const trimmedName = newFolderName.trim();
       if (!trimmedName) return;
-
       try {
         await createFolder.mutateAsync({ name: trimmedName, parentId: parentId ?? null });
         setNewFolderName("");
@@ -200,7 +223,6 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
     async (id: string) => {
       const trimmedName = editName.trim();
       if (!trimmedName) return;
-
       try {
         await renameFolder.mutateAsync({ id, name: trimmedName });
         setEditingId(null);
@@ -213,12 +235,9 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
 
   const handleDelete = useCallback(async () => {
     if (!deletingFolder) return;
-
     try {
       await deleteFolder.mutateAsync(deletingFolder.id);
-      if (selectedView === deletingFolder.id) {
-        onSelectView("all");
-      }
+      if (selectedView === deletingFolder.id) onSelectView("all");
       setDeletingFolder(null);
     } catch (error) {
       console.error("Failed to delete folder:", error);
@@ -241,7 +260,6 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
     return count > MAX_BADGE_COUNT ? `${MAX_BADGE_COUNT}+` : count;
   }, []);
 
-
   const specialItems: NavItem[] = useMemo(
     () => [
       { id: "all", label: "All Files", icon: Home, count: allMedia.length, hiddenOnMobile: true },
@@ -251,12 +269,11 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
       { id: "timeline", label: "Memories Timeline", icon: CalendarHeart, hiddenOnMobile: true },
       { id: "anniversaries", label: "Anniversaries", icon: Trophy },
       { id: "love-story", label: "Love Story Card", icon: Sparkles },
-      { id: "activity", label: "Activity Feed", icon: Activity },
       { id: "settings", label: "Settings", icon: Settings },
       { id: "billing", label: "Plan", icon: Shield },
-      { id: "recently-deleted", label: "Recently Deleted", icon: Trash2, badge: 0 },
+      { id: "recently-deleted", label: "Recently Deleted", icon: Trash2, badge: deletedMedia.length },
     ],
-    [unreadCount, allMedia.length, starredCount]
+    [unreadCount, allMedia.length, starredCount, deletedMedia.length]
   );
 
   const renderNavItem = useCallback(
@@ -292,19 +309,13 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
         {/* App branding */}
         <div className="flex items-center gap-2">
           <div className="relative h-7 w-7 rounded-lg overflow-hidden shrink-0 ring-1 ring-black/5 dark:ring-white/10">
-            <img
-              src="/pwa-icon-192.png"
-              alt="OurVault"
-              className="h-full w-full object-cover"
-            />
+            <img src="/pwa-icon-192.png" alt="OurVault" className="h-full w-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-sm font-bold font-heading tracking-tight gradient-text leading-none">
               usMoment
             </h2>
-            <p className="text-[9px] text-muted-foreground/70 mt-0.5">
-              Shared memories
-            </p>
+            <p className="text-[9px] text-muted-foreground/70 mt-0.5">Shared memories</p>
           </div>
         </div>
 
@@ -312,7 +323,6 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
         <div className="mt-1">
           {isConnected ? (
             <div className="group relative rounded-lg bg-gradient-to-br from-primary/8 to-primary/4 border border-primary/20 p-2 transition-all hover:border-primary/30 hover:shadow-sm">
-              {/* Avatars */}
               <div className="flex items-center gap-2">
                 <div className="flex items-center -space-x-2 shrink-0">
                   <Avatar className="h-7 w-7 ring-2 ring-sidebar border border-primary/20 transition-transform group-hover:scale-105">
@@ -328,8 +338,6 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
                     </AvatarFallback>
                   </Avatar>
                 </div>
-
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p className="text-[10px] font-semibold text-foreground truncate leading-none">
@@ -344,22 +352,17 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
                   </div>
                 </div>
               </div>
-
-              {/* Subtle pulse effect */}
               <div className="absolute inset-0 rounded-lg bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
             </div>
           ) : (
             <div className="group relative rounded-lg bg-muted/30 border border-dashed border-border hover:border-muted-foreground/30 p-2 transition-all">
               <div className="flex items-center gap-2">
-                {/* Single avatar */}
                 <Avatar className="h-7 w-7 ring-2 ring-sidebar shrink-0">
                   <AvatarImage src={myProfile?.avatar_url ?? undefined} />
                   <AvatarFallback className="text-[10px] bg-primary text-primary-foreground font-semibold">
                     {myInitials}
                   </AvatarFallback>
                 </Avatar>
-
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-semibold text-foreground truncate leading-none">
                     {myProfile?.display_name ?? user?.email?.split("@")[0] ?? "You"}
@@ -369,8 +372,6 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
                     <p className="text-[9px] text-muted-foreground/80">Link your partner</p>
                   </div>
                 </div>
-
-                {/* CTA indicator */}
                 <ChevronRight className="h-3 w-3 text-muted-foreground/40 shrink-0 transition-transform group-hover:translate-x-0.5" />
               </div>
             </div>
@@ -421,9 +422,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {specialItems
-                .filter((i) => i.id !== "recently-deleted")
-                .map(renderNavItem)}
+              {specialItems.map(renderNavItem)}
 
               {onThisDayMedia.length > 0 && (
                 <SidebarMenuItem>
@@ -450,8 +449,6 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-
       </SidebarContent>
 
       {/* Footer */}
@@ -481,9 +478,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
           </p>
         </div>
 
-
         <div className="flex items-center gap-1">
-
           {isAdmin && (
             <SidebarMenuButton
               onClick={() => {
@@ -499,7 +494,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
         </div>
       </SidebarFooter>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       <AlertDialog open={!!deletingFolder} onOpenChange={(open) => !open && setDeletingFolder(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -555,7 +550,7 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
   );
 }
 
-// FolderItem Component
+/* ── FolderItem ──────────────────────────────────────────────────── */
 interface FolderItemProps {
   folder: Folder;
   allFolders: Folder[];
@@ -589,8 +584,12 @@ function FolderItem({
 }: FolderItemProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const children = useMemo(() => allFolders.filter((f) => f.parent_id === folder.id), [allFolders, folder.id]);
+  const children = useMemo(
+    () => allFolders.filter((f) => f.parent_id === folder.id),
+    [allFolders, folder.id]
+  );
 
+  // Use recursive count from folderCounts (includes all descendants)
   const count = folderCounts[folder.id] ?? 0;
   const isSelected = selectedView === folder.id;
   const hasChildren = children.length > 0;
@@ -613,11 +612,8 @@ function FolderItem({
   );
 
   const handleBlur = useCallback(() => {
-    if (!editName.trim()) {
-      setEditingId(null);
-    } else {
-      onRename(folder.id);
-    }
+    if (!editName.trim()) setEditingId(null);
+    else onRename(folder.id);
   }, [editName, folder.id, onRename, setEditingId]);
 
   return (
@@ -643,13 +639,19 @@ function FolderItem({
               aria-label={expanded ? "Collapse folder" : "Expand folder"}
             >
               <ChevronRight
-                className={cn("h-3 w-3 text-muted-foreground transition-transform", expanded && "rotate-90")}
+                className={cn(
+                  "h-3 w-3 text-muted-foreground transition-transform",
+                  expanded && "rotate-90"
+                )}
               />
             </button>
           )}
           <SidebarMenuButton
             onClick={() => onSelectView(folder.id)}
-            className={cn("flex-1 justify-between min-w-0", isSelected && "bg-accent text-accent-foreground")}
+            className={cn(
+              "flex-1 justify-between min-w-0",
+              isSelected && "bg-accent text-accent-foreground"
+            )}
           >
             <span className="flex items-center min-w-0">
               {folder.emoji && <span className="mr-1.5 text-sm">{folder.emoji}</span>}

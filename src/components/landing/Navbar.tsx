@@ -34,7 +34,7 @@ const Navbar = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <a href="https://itsusmoment.lovable.app/auth">
+            <a href="/auth">
               <Button
                 variant="ghost"
                 size="sm"
@@ -44,7 +44,7 @@ const Navbar = () => {
               </Button>
             </a>
 
-            <a href="https://itsusmoment.lovable.app/auth">
+            <a href="/auth">
               <Button
                 size="sm"
                 className="bg-[linear-gradient(135deg,#c06a2b,#caa27a)] text-[#fef9ec] border-0 shadow-[0_4px_20px_-4px_rgba(192,106,43,0.15)]"
@@ -76,7 +76,7 @@ const Navbar = () => {
               </a>
             ))}
 
-            <a href="https://itsusmoment.lovable.app/auth" className="mt-2">
+            <a href="/auth" className="mt-2">
               <Button
                 size="sm"
                 className="w-full bg-[linear-gradient(135deg,#c06a2b,#caa27a)] text-[#fef9ec] border-0"

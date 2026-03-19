@@ -39,15 +39,15 @@
 
     --radius: 0.55rem;
 
-    /* Sidebar */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 35%;
-    --sidebar-primary: 0 0% 9%;
+    /* Sidebar - matched with warm theme */
+    --sidebar-background: 30 18% 96%;
+    --sidebar-foreground: 30 10% 35%;
+    --sidebar-primary: 20 40% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 93%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 0 0% 9%;
+    --sidebar-accent: 30 15% 92%;
+    --sidebar-accent-foreground: 30 10% 25%;
+    --sidebar-border: 30 15% 88%;
+    --sidebar-ring: 20 30% 50%;
 
     /* Effects */
     --gradient-primary: linear-gradient(135deg, hsl(0 0% 20%), hsl(0 0% 10%));
@@ -103,15 +103,17 @@
     --input: 0 0% 16%;
     --ring: 0 0% 100%;
 
-    /* Sidebar */
-    --sidebar-background: 0 0% 10%;
-    --sidebar-foreground: 0 0% 50%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 0 0% 0%;
-    --sidebar-accent: 0 0% 16%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 0 0% 14%;
-    --sidebar-ring: 0 0% 100%;
+    --sidebar-background: 30 10% 11%;
+    --sidebar-foreground: 30 8% 65%;
+
+    --sidebar-primary: 20 40% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+
+    --sidebar-accent: 30 8% 18%;
+    --sidebar-accent-foreground: 30 10% 92%;
+
+    --sidebar-border: 30 8% 20%;
+    --sidebar-ring: 20 40% 55%;
 
     /* Effects */
     --gradient-primary: linear-gradient(135deg, hsl(0 0% 85%), hsl(0 0% 70%));
@@ -135,6 +137,65 @@
     --wa-voice-thumb: 0 0% 70%;
     --wa-text: 0 0% 92%;
     --wa-text-meta: 0 0% 52%;
+  }
+}
+
+@layer base {
+  :root {
+    /* Light mode (very soft, warm neutral) */
+    --background: 30 20% 97%;
+    --foreground: 30 10% 20%;
+
+    --border: 30 15% 88%;
+    --input: 30 15% 88%;
+    --ring: 20 30% 50%;
+
+    --primary: 20 40% 45%;
+    /* muted warm tone */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 30 15% 93%;
+    --secondary-foreground: 30 10% 25%;
+
+    --muted: 30 15% 93%;
+    --muted-foreground: 30 8% 45%;
+
+    --accent: 30 15% 93%;
+    --accent-foreground: 30 10% 25%;
+
+    --card: 30 20% 99%;
+    --card-foreground: 30 10% 20%;
+
+    --popover: 30 20% 99%;
+    --popover-foreground: 30 10% 20%;
+  }
+
+  .dark {
+    /* Dark mode (soft dark, no eye strain) */
+    --background: 30 10% 10%;
+    --foreground: 30 10% 92%;
+
+    --border: 30 8% 20%;
+    --input: 30 8% 20%;
+    --ring: 20 40% 55%;
+
+    --primary: 20 40% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 30 8% 16%;
+    --secondary-foreground: 30 10% 92%;
+
+    --muted: 30 8% 16%;
+    --muted-foreground: 30 8% 65%;
+
+    --accent: 30 8% 18%;
+    --accent-foreground: 30 10% 92%;
+
+    --card: 30 10% 12%;
+    --card-foreground: 30 10% 92%;
+
+    --popover: 30 10% 12%;
+    --popover-foreground: 30 10% 92%;
   }
 }
 
