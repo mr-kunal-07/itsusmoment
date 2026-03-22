@@ -35,17 +35,32 @@ const validate = {
 };
 
 async function validatePartnerCode(code: string): Promise<CodeValidationResult> {
-  const { data, error } = await supabase
+  const { data, error, count } = await supabase
     .from("couples")
-    .select("user2_id")
+    .select("user2_id", { count: "exact" })
     .eq("invite_code", code)
     .maybeSingle();
 
+  // Hard Supabase/network error
   if (error) {
     return { ok: false, reason: "error", message: "Unable to verify partner code. Please try again." };
   }
 
-  if (!data || data.user2_id !== null) {
+  // count === 0 means the row genuinely does not exist (deleted/expired)
+  // data === null with count === null means RLS silently blocked the read —
+  // treat as a transient error so the user can still proceed rather than
+  // being incorrectly sent to /invite-expired
+  if (count === 0) {
+    return { ok: false, reason: "committed" };
+  }
+
+  if (!data) {
+    // RLS blocked — can't confirm either way, let user attempt submission
+    return { ok: false, reason: "error", message: "Unable to verify partner code. Please try again." };
+  }
+
+  // Row found — check if partner slot is already taken
+  if (data.user2_id !== null) {
     return { ok: false, reason: "committed" };
   }
 
@@ -288,7 +303,7 @@ export default function Auth() {
       setPartnerCode(normalised);
       setMode("signup");
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const resetForm = useCallback(() => {
