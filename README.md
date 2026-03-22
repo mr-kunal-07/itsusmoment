@@ -9,7 +9,7 @@
 OurVault is a full-stack couples-only web application that acts as a private shared space for two partners. It combines a secure media vault, end-to-end encrypted real-time chat, relationship timeline, anniversary tracking, a shared bucket list, and a premium subscription system — all within a beautiful, installable Progressive Web App.
  
 --
-
+ 
 ## ✨ Features
 
 ### 🔐 Authentication & Partner Linking
