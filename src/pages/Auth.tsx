@@ -354,7 +354,7 @@ export default function Auth() {
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-2.5 mb-3">
             <div className="h-10 w-10 rounded-xl overflow-hidden">
-              <img src="/logo.png" alt="" aria-hidden />
+              <img src="/logo.png" alt="" width={40} height={40} aria-hidden />
             </div>
             <h1 className="text-2xl font-semibold">
               <span className="gradient-text">usMoment</span>

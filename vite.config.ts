@@ -38,7 +38,6 @@ export default defineConfig(({ mode }) => ({
             "@radix-ui/react-avatar",
             "@radix-ui/react-checkbox",
             "@radix-ui/react-switch",
-            "@radix-ui/react-slider",
           ],
           // Charts (recharts) — loaded only on admin/analytics views
           "vendor-charts": ["recharts"],

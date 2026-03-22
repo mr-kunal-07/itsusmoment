@@ -13,7 +13,7 @@ import TrustBadges from "@/components/landing/TrustBadges"
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-[#fdf6e3] text-[#1f2a1f]">
+    <main className="min-h-screen bg-[#fdf6e3] text-[#1f2a1f]">
       <Navbar />
       <Hero />
       <Stats />
@@ -26,7 +26,7 @@ const Index = () => {
       <FAQ />
       <FinalCTA />
       <Footer />
-    </div>
+    </main>
   )
 }
 

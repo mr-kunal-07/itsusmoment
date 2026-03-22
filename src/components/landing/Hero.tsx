@@ -96,8 +96,11 @@ const Hero = () => (
           <img
             src={heroCollage}
             alt="usMoment — your private memory vault for couples"
+            width={768}
+            height={432}
             className="w-full h-auto object-cover"
             loading="eager"
+            fetchPriority="high"
           />
         </div>
 

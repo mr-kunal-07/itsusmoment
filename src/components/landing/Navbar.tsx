@@ -17,7 +17,7 @@ const Navbar = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           <a href="/" className="flex items-center gap-1">
-            <img src="/favicon.ico" alt="usMoment" className="w-8 h-8" />
+            <img src="/favicon.ico" alt="usMoment" width={32} height={32} className="w-8 h-8" />
             <span className=" text-md font-semibold text-[#1f2a1f]">usMoment</span>
           </a>
 
