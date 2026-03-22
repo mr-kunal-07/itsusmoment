@@ -17,7 +17,7 @@ import Admin from "./pages/Admin";
 import Index from "./pages/Index";
 import AuthCallback from "./pages/AuthCallback";
 
-// ─── Query client ─────────────────────────────────────────────────────────────
+// ─── Query Client ─────────────────────────────────────────────────────────────
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,13 +28,11 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
     },
-    mutations: {
-      retry: 0,
-    },
+    mutations: { retry: 0 },
   },
 });
 
-// ─── Shared loading screen ────────────────────────────────────────────────────
+// ─── Shared Components ────────────────────────────────────────────────────────
 
 function LoadingScreen() {
   return (
@@ -44,34 +42,23 @@ function LoadingScreen() {
   );
 }
 
-// ─── Route guards ─────────────────────────────────────────────────────────────
+// ─── Route Guards ─────────────────────────────────────────────────────────────
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  // FIX: was destructuring `user` and `loading` — useAuth now exports
-  //      `session` and `bootstrapping` (renamed in the production rewrite).
   const { session, bootstrapping } = useAuth();
   const { locked, lockMethod, unlock } = useAppLock(!!session);
 
-  // Still bootstrapping — don't redirect yet, just show spinner
   if (bootstrapping) return <LoadingScreen />;
-
-  // No session → send to auth
   if (!session) return <Navigate to="/auth" replace />;
-
-  // App-lock screen (PIN / biometric)
   if (locked) return <AppLockScreen lockMethod={lockMethod} onUnlock={unlock} />;
 
   return <>{children}</>;
 }
 
 function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
-  // FIX: same — was using `user`/`loading`, now `session`/`bootstrapping`
   const { session, bootstrapping } = useAuth();
 
-  // Still bootstrapping — render spinner instead of flash-redirecting
   if (bootstrapping) return <LoadingScreen />;
-
-  // Already logged in → send to dashboard
   if (session) return <Navigate to="/dashboard" replace />;
 
   return <>{children}</>;
@@ -87,26 +74,24 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-
-            {/* ── Public routes ── */}
+            {/* Public */}
             <Route path="/" element={<PublicOnlyRoute><Index /></PublicOnlyRoute>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/join" element={<Join />} />
 
-            {/* ── Dashboard — folder route must come before :tab ── */}
+            {/* Dashboard — folder route must come before :tab */}
             <Route path="/dashboard/folder/:folderId" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/dashboard/:tab" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
-            {/* ── Other protected ── */}
+            {/* Protected */}
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
 
-            {/* ── 404 ── */}
+            {/* 404 */}
             <Route path="*" element={<NotFound />} />
-
           </Routes>
         </AuthProvider>
       </BrowserRouter>

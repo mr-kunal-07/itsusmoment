@@ -13,11 +13,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// § UTILITIES
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ── [21] Structured logger ────────────────────────────────────────────────────
+// ─── Logger ───────────────────────────────────────────────────────────────────
 
 type LogCtx = Record<string, unknown>;
 
@@ -29,16 +25,13 @@ export const authLog = {
   error: (msg: string, ctx?: LogCtx) => console.error(`[auth] ${msg}`, ctx ?? ""),
 };
 
-// ── [18] SSR-safe environment helpers ────────────────────────────────────────
+// ─── Environment ──────────────────────────────────────────────────────────────
 
 export const isBrowser = typeof window !== "undefined";
 export const getOrigin = () => (isBrowser ? window.location.origin : "");
 export const getPathname = () => (isBrowser ? window.location.pathname : "/");
 
-// ── [7, 13] Safe storage factory ─────────────────────────────────────────────
-// [13] Supabase owns localStorage — we use sessionStorage only for ephemeral
-//      pre-auth payloads. Zero overlap, zero conflict.
-// [7]  Wrapped so Safari Private Browsing never crashes auth.
+// ─── Safe Storage ─────────────────────────────────────────────────────────────
 
 type SafeStore = {
   get: (k: string) => string | null;
@@ -57,12 +50,11 @@ function makeSafeStorage(pick: () => Storage | null): SafeStore {
   };
 }
 
-// [A3] Single source of truth — Auth.tsx imports from here, no local redefinition
 export const ephemeralStorage = makeSafeStorage(() => window.sessionStorage);
 export const PARTNER_CODE_KEY = "usMoment:pending_partner_code";
 export const JOIN_REDIRECT_KEY = "usMoment:join_redirect";
 
-// ── [5, 6, 17] Redirect sanitisation ─────────────────────────────────────────
+// ─── Redirect Sanitisation ────────────────────────────────────────────────────
 
 const REDIRECT_ALLOWLIST = ["/chat", "/memories", "/map", "/profile", "/join", "/"] as const;
 
@@ -74,20 +66,15 @@ export function sanitiseRedirect(raw: string | null): string | null {
     const allowed = REDIRECT_ALLOWLIST.some(
       p => url.pathname === p || url.pathname.startsWith(`${p}/`)
     );
-    if (!allowed) return null;
-    return url.pathname; // strip query params + hash
+    return allowed ? url.pathname : null;
   } catch {
     return null;
   }
 }
 
-// ── [22] Retry helper ─────────────────────────────────────────────────────────
+// ─── Retry Helper ─────────────────────────────────────────────────────────────
 
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  attempts = 3,
-  baseDelayMs = 600,
-): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3, baseDelayMs = 600): Promise<T> {
   let lastError: unknown;
   for (let i = 0; i < attempts; i++) {
     try { return await fn(); }
@@ -100,60 +87,41 @@ async function withRetry<T>(
   throw lastError;
 }
 
-// ── Partner code validation ───────────────────────────────────────────────────
-// [A3, S2] Central validation so both the UI and storage layer use the same rules.
+// ─── Partner Code ─────────────────────────────────────────────────────────────
 
 const PARTNER_CODE_RE = /^[A-Z0-9]{6,8}$/;
 
-export function normalisePartnerCode(raw: string): string {
-  return raw.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
-}
+export const normalisePartnerCode = (raw: string) =>
+  raw.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
 
-export function isValidPartnerCode(code: string): boolean {
-  return PARTNER_CODE_RE.test(code);
-}
+export const isValidPartnerCode = (code: string) => PARTNER_CODE_RE.test(code);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// § TYPES
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface AuthResult<D = Session | null> {
   data: D | null;
   error: AuthError | null;
 }
 
-// [A2] Added "googleOAuth" key so Auth.tsx can read actionLoading.googleOAuth
 export type AuthActionKey =
-  | "signIn"
-  | "signUp"
-  | "signOut"
-  | "resetPassword"
-  | "googleOAuth";
+  | "signIn" | "signUp" | "signOut" | "resetPassword" | "googleOAuth";
 
 export interface AuthContextType {
-  // State
   user: User | null;
-  session: Session | null;   // [12] prefer session over user
-  bootstrapping: boolean;          // true only during initial load
-  sessionExpired: boolean;          // [23] server-side expiry detected
-
-  // Action state
+  session: Session | null;
+  bootstrapping: boolean;
+  sessionExpired: boolean;
   actionLoading: Partial<Record<AuthActionKey, boolean>>;
   authError: AuthError | null;
   clearAuthError: () => void;
-
-  // Actions
   signIn: (email: string, password: string) => Promise<AuthResult>;
   signUp: (email: string, password: string, displayName: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
   resetPasswordForEmail: (email: string) => Promise<AuthResult<null>>;
-  // [A1] OAuth through context — no direct supabase import needed in pages
   signInWithOAuth: (provider: Provider) => Promise<AuthResult<null>>;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// § AUTH STATE REDUCER
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Reducer ──────────────────────────────────────────────────────────────────
 
 interface AuthState {
   user: User | null;
@@ -173,16 +141,10 @@ type ReducerAction =
 function authReducer(state: AuthState, action: ReducerAction): AuthState {
   switch (action.type) {
     case "BOOTSTRAP":
-      return {
-        user: action.session?.user ?? null,
-        session: action.session,
-        bootstrapping: false,
-        sessionExpired: false,
-      };
+      return { user: action.session?.user ?? null, session: action.session, bootstrapping: false, sessionExpired: false };
     case "SIGNED_IN":
     case "TOKEN_REFRESHED":
     case "USER_UPDATED":
-      // [12] user and session always updated atomically
       return { ...state, user: action.session.user, session: action.session, sessionExpired: false };
     case "SIGNED_OUT":
       return { user: null, session: null, bootstrapping: false, sessionExpired: action.expired };
@@ -193,9 +155,7 @@ function authReducer(state: AuthState, action: ReducerAction): AuthState {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// § POST-AUTH ACTIONS
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Post-Auth Actions ────────────────────────────────────────────────────────
 
 function usePostAuthActions() {
   const done = useRef(new Set<string>());
@@ -205,31 +165,27 @@ function usePostAuthActions() {
     if (done.current.has(userId)) return;
     done.current.add(userId);
 
-    // 1. Partner invite code
     const rawCode = ephemeralStorage.get(PARTNER_CODE_KEY);
     if (rawCode) {
       const code = normalisePartnerCode(rawCode);
       if (isValidPartnerCode(code)) {
         try {
           await withRetry(async () => {
-            return await supabase
+            await supabase
               .rpc("accept_couple_invite", { _invite_code: code })
               .throwOnError();
           });
-          ephemeralStorage.remove(PARTNER_CODE_KEY); // [14] remove only on success
+          ephemeralStorage.remove(PARTNER_CODE_KEY);
           authLog.info("Partner invite accepted", { userId });
         } catch (err) {
-          // [4] Code stays so the join page can surface feedback
           authLog.error("accept_couple_invite failed", { err });
         }
       } else {
-        // Malformed code — discard silently rather than hitting the DB
         ephemeralStorage.remove(PARTNER_CODE_KEY);
         authLog.warn("Discarded invalid partner code", { rawCode });
       }
     }
 
-    // 2. Post-login redirect
     const rawRedirect = ephemeralStorage.get(JOIN_REDIRECT_KEY);
     if (rawRedirect) {
       ephemeralStorage.remove(JOIN_REDIRECT_KEY);
@@ -248,9 +204,7 @@ function usePostAuthActions() {
   return { run, clearForUser };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// § AUTH PROVIDER
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Auth Provider ────────────────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -267,7 +221,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   if (state.session) hadSession.current = true;
 
-  // ── [1, 3, 8, 11, 16] Single session source ──────────────────────────────
   useEffect(() => {
     let bootstrapped = false;
 
@@ -303,7 +256,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // [8] Safety net — unblock if INITIAL_SESSION never fires
     const timeout = setTimeout(() => {
       if (!bootstrapped) {
         authLog.warn("INITIAL_SESSION did not fire — forcing bootstrap");
@@ -317,7 +269,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [runPostAuth]);
 
-  // ── Action helpers ────────────────────────────────────────────────────────
+  // ─── Action Helpers ───────────────────────────────────────────────────────
 
   const startAction = useCallback((key: AuthActionKey) => {
     inFlight.current[key] = true;
@@ -332,14 +284,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isInFlight = (key: AuthActionKey) => !!inFlight.current[key];
-
   const clearAuthError = useCallback(() => setAuthError(null), []);
 
-  // ── signIn ────────────────────────────────────────────────────────────────
-  const signIn = useCallback(async (
-    email: string,
-    password: string,
-  ): Promise<AuthResult> => {
+  // ─── Actions ──────────────────────────────────────────────────────────────
+
+  const signIn = useCallback(async (email: string, password: string): Promise<AuthResult> => {
     if (isInFlight("signIn")) return { data: null, error: null };
     startAction("signIn");
     try {
@@ -351,21 +300,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       endAction("signIn", err);
       return { data: null, error: err };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startAction, endAction]);
+  }, [startAction, endAction]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── signUp ────────────────────────────────────────────────────────────────
-  const signUp = useCallback(async (
-    email: string,
-    password: string,
-    displayName: string,
-  ): Promise<AuthResult> => {
+  const signUp = useCallback(async (email: string, password: string, displayName: string): Promise<AuthResult> => {
     if (isInFlight("signUp")) return { data: null, error: null };
     startAction("signUp");
     try {
       const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+        email, password,
         options: {
           data: { display_name: displayName },
           emailRedirectTo: `${getOrigin()}/auth/callback`,
@@ -378,10 +320,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       endAction("signUp", err);
       return { data: null, error: err };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startAction, endAction]);
+  }, [startAction, endAction]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── signOut ───────────────────────────────────────────────────────────────
   const signOut = useCallback(async (): Promise<void> => {
     if (isInFlight("signOut")) return;
     startAction("signOut");
@@ -393,13 +333,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     endAction("signOut", null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startAction, endAction, clearForUser, state.user?.id]);
+  }, [startAction, endAction, clearForUser, state.user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── resetPasswordForEmail ─────────────────────────────────────────────────
-  const resetPasswordForEmail = useCallback(async (
-    email: string,
-  ): Promise<AuthResult<null>> => {
+  const resetPasswordForEmail = useCallback(async (email: string): Promise<AuthResult<null>> => {
     if (isInFlight("resetPassword")) return { data: null, error: null };
     startAction("resetPassword");
     try {
@@ -413,18 +349,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       endAction("resetPassword", err);
       return { data: null, error: err };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startAction, endAction]);
+  }, [startAction, endAction]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── [A1] signInWithOAuth — abstracted through context ────────────────────
-  // [A2] Tracked under "googleOAuth" key — no manual state needed in Auth.tsx
-  // [S1] redirectTo correctly points to /auth/callback for PKCE code exchange
-  const signInWithOAuth = useCallback(async (
-    provider: Provider,
-  ): Promise<AuthResult<null>> => {
+  const signInWithOAuth = useCallback(async (provider: Provider): Promise<AuthResult<null>> => {
     if (isInFlight("googleOAuth")) return { data: null, error: null };
     startAction("googleOAuth");
-    // Store current path so post-auth redirect can return the user here
     const current = getPathname();
     if (current && current !== "/login" && current !== "/auth") {
       ephemeralStorage.set(JOIN_REDIRECT_KEY, current);
@@ -432,25 +361,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: {
-          redirectTo: `${getOrigin()}/auth/callback`,
-        },
+        options: { redirectTo: `${getOrigin()}/auth/callback` },
       });
-      // On success the browser redirects — endAction won't run.
-      // On error we clean up.
-      if (error) {
-        endAction("googleOAuth", error);
-        return { data: null, error };
-      }
-      // Loading stays true until redirect — intentional.
+      if (error) { endAction("googleOAuth", error); return { data: null, error }; }
       return { data: null, error: null };
     } catch (e) {
       const err = e as AuthError;
       endAction("googleOAuth", err);
       return { data: null, error: err };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startAction, endAction]);
+  }, [startAction, endAction]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const value: AuthContextType = {
     user: state.user,
@@ -470,16 +390,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// § HOOKS
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Hooks ────────────────────────────────────────────────────────────────────
 
 export function useAuth(): AuthContextType {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error(
-    "[useAuth] must be called inside <AuthProvider>. " +
-    "Ensure AuthProvider wraps your app in App.tsx."
-  );
+  if (!ctx) throw new Error("[useAuth] must be called inside <AuthProvider>.");
   return ctx;
 }
 

@@ -1,5 +1,3 @@
-
-
 import { useState, useCallback, useId } from "react";
 import { Navigate } from "react-router-dom";
 import {
@@ -23,29 +21,17 @@ import { cn } from "@/lib/utils";
 
 type Mode = "signin" | "signup" | "forgot";
 
-// ─── Validation helpers ───────────────────────────────────────────────────────
+// ─── Validation ───────────────────────────────────────────────────────────────
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function validateEmail(v: string): string | null {
-  if (!v.trim()) return "Email is required.";
-  if (!EMAIL_RE.test(v)) return "Please enter a valid email address.";
-  return null;
-}
+const validate = {
+  email: (v: string) => !v.trim() ? "Email is required." : !EMAIL_RE.test(v) ? "Please enter a valid email address." : null,
+  password: (v: string) => !v ? "Password is required." : v.length < 6 ? "Password must be at least 6 characters." : null,
+  displayName: (v: string) => !v.trim() ? "Please enter your name." : v.trim().length < 2 ? "Name must be at least 2 characters." : null,
+};
 
-function validatePassword(v: string): string | null {
-  if (!v) return "Password is required.";
-  if (v.length < 6) return "Password must be at least 6 characters.";
-  return null;
-}
-
-function validateDisplayName(v: string): string | null {
-  if (!v.trim()) return "Please enter your name.";
-  if (v.trim().length < 2) return "Name must be at least 2 characters.";
-  return null;
-}
-
-// ─── Small reusable UI components ─────────────────────────────────────────────
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function GoogleIcon() {
   return (
@@ -69,9 +55,7 @@ interface FieldProps {
 function Field({ label, htmlFor, error, hint, children }: FieldProps) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={htmlFor} className="text-sm font-medium">
-        {label}
-      </Label>
+      <Label htmlFor={htmlFor} className="text-sm font-medium">{label}</Label>
       {children}
       {error && (
         <p className="text-xs text-destructive flex items-center gap-1 mt-1" role="alert">
@@ -93,9 +77,7 @@ interface InputIconProps extends React.InputHTMLAttributes<HTMLInputElement> {
 function InputIcon({ icon, suffix, error, className, ...rest }: InputIconProps) {
   return (
     <div className="relative flex items-center">
-      <span className="absolute left-3 text-muted-foreground pointer-events-none select-none">
-        {icon}
-      </span>
+      <span className="absolute left-3 text-muted-foreground pointer-events-none select-none">{icon}</span>
       <Input
         {...rest}
         aria-invalid={error ? "true" : "false"}
@@ -106,21 +88,14 @@ function InputIcon({ icon, suffix, error, className, ...rest }: InputIconProps) 
           className,
         )}
       />
-      {suffix && (
-        <span className="absolute right-3 flex items-center">{suffix}</span>
-      )}
+      {suffix && <span className="absolute right-3 flex items-center">{suffix}</span>}
     </div>
   );
 }
 
-interface GoogleBtnProps {
-  loading: boolean;
-  onClick: () => void;
-  label?: string;
-  disabled?: boolean;
-}
-
-function GoogleBtn({ loading, onClick, label = "Continue with Google", disabled }: GoogleBtnProps) {
+function GoogleBtn({ loading, onClick, label = "Continue with Google", disabled }: {
+  loading: boolean; onClick: () => void; label?: string; disabled?: boolean;
+}) {
   return (
     <button
       type="button"
@@ -151,12 +126,7 @@ function Divider() {
   );
 }
 
-interface SubmitBtnProps {
-  loading: boolean;
-  children: React.ReactNode;
-}
-
-function SubmitBtn({ loading, children }: SubmitBtnProps) {
+function SubmitBtn({ loading, children }: { loading: boolean; children: React.ReactNode }) {
   return (
     <button
       type="submit"
@@ -197,15 +167,7 @@ function Header({ title, subtitle }: { title: string; subtitle: string }) {
   );
 }
 
-function ModeSwitch({
-  question,
-  action,
-  onSwitch,
-}: {
-  question: string;
-  action: string;
-  onSwitch: () => void;
-}) {
+function ModeSwitch({ question, action, onSwitch }: { question: string; action: string; onSwitch: () => void }) {
   return (
     <p className="mt-5 text-center text-sm text-muted-foreground">
       {question}{" "}
@@ -220,16 +182,15 @@ function ModeSwitch({
   );
 }
 
-// ── Password strength (bonus UX) ──────────────────────────────────────────────
+// ─── Password Strength ────────────────────────────────────────────────────────
 
-function passwordStrength(pw: string): { score: number; label: string; colour: string } {
+function passwordStrength(pw: string) {
   if (!pw) return { score: 0, label: "", colour: "bg-border" };
   let score = 0;
   if (pw.length >= 8) score++;
   if (/[A-Z]/.test(pw)) score++;
   if (/[0-9]/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
-
   const map = [
     { label: "Weak", colour: "bg-destructive" },
     { label: "Fair", colour: "bg-orange-500" },
@@ -247,13 +208,7 @@ function PasswordStrengthBar({ password }: { password: string }) {
     <div className="mt-1.5 space-y-1">
       <div className="flex gap-1" aria-hidden>
         {[0, 1, 2, 3].map(i => (
-          <div
-            key={i}
-            className={cn(
-              "h-1 flex-1 rounded-full transition-all duration-300",
-              i < score ? colour : "bg-border/50",
-            )}
-          />
+          <div key={i} className={cn("h-1 flex-1 rounded-full transition-all duration-300", i < score ? colour : "bg-border/50")} />
         ))}
       </div>
       <p className="text-[11px] text-muted-foreground">{label}</p>
@@ -261,25 +216,11 @@ function PasswordStrengthBar({ password }: { password: string }) {
   );
 }
 
-// ── Password match indicator ───────────────────────────────────────────────────
-
-function PasswordMatchHint({
-  password,
-  confirm,
-}: {
-  password: string;
-  confirm: string;
-}) {
+function PasswordMatchHint({ password, confirm }: { password: string; confirm: string }) {
   if (!confirm) return null;
   const match = password === confirm;
   return (
-    <p
-      className={cn(
-        "text-xs flex items-center gap-1 mt-1",
-        match ? "text-green-600" : "text-destructive",
-      )}
-      aria-live="polite"
-    >
+    <p className={cn("text-xs flex items-center gap-1 mt-1", match ? "text-green-600" : "text-destructive")} aria-live="polite">
       {match
         ? <><CheckCircle2 className="h-3 w-3" aria-hidden />Passwords match</>
         : <><XCircle className="h-3 w-3" aria-hidden />Passwords don't match</>}
@@ -287,88 +228,53 @@ function PasswordMatchHint({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// § MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function Auth() {
-  const {
-    session,
-    bootstrapping,
-    actionLoading,
-    signIn,
-    signUp,
-    resetPasswordForEmail,
-    signInWithOAuth,         // [A1] no direct supabase import needed
-  } = useAuth();
+  const { session, bootstrapping, actionLoading, signIn, signUp, resetPasswordForEmail, signInWithOAuth } = useAuth();
   const { toast } = useToast();
 
-  // ── Mode ─────────────────────────────────────────────────────────────────
   const [mode, setMode] = useState<Mode>("signin");
-
-  // ── Field state ───────────────────────────────────────────────────────────
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [partnerCode, setPartnerCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-
-  // ── Field errors ──────────────────────────────────────────────────────────
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
 
-  // ── Derived loading flags from context [D5] ────────────────────────────────
   const signingIn = !!actionLoading.signIn;
   const signingUp = !!actionLoading.signUp;
   const resetting = !!actionLoading.resetPassword;
   const oauthLoading = !!actionLoading.googleOAuth;
   const anyLoading = signingIn || signingUp || resetting || oauthLoading;
 
-  // Stable IDs for accessibility
   const uid = useId();
   const id = (name: string) => `${uid}-${name}`;
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
-
   const resetForm = useCallback(() => {
-    setPassword("");
-    setConfirmPassword("");
-    setDisplayName("");
-    setPartnerCode("");
-    setShowPassword(false);
-    setErrors({});
+    setPassword(""); setConfirmPassword(""); setDisplayName("");
+    setPartnerCode(""); setShowPassword(false); setErrors({});
   }, []);
 
-  // [T5] Reset form AND submitting flags when switching mode
-  const switchMode = useCallback((next: Mode) => {
-    resetForm();
-    setMode(next);
-  }, [resetForm]);
+  const switchMode = useCallback((next: Mode) => { resetForm(); setMode(next); }, [resetForm]);
 
-  const addError = (key: string, msg: string) =>
-    setErrors(prev => ({ ...prev, [key]: msg }));
+  const addError = (key: string, msg: string) => setErrors(prev => ({ ...prev, [key]: msg }));
 
   const showError = useCallback((title: string, description?: string) => {
     toast({ title, description, variant: "destructive" });
   }, [toast]);
 
-  // ── Partner code input handler ─────────────────────────────────────────────
-  // [L3, L7] Normalise at input time — strip spaces/symbols, uppercase, max 8 chars
   const handlePartnerCodeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setPartnerCode(normalisePartnerCode(e.target.value));
   }, []);
 
-  // FIX: useCallback MUST be declared before any early return — Rules of Hooks.
-  // Previously handleGoogleSignIn was below the bootstrapping/session guards,
-  // causing "Rendered more hooks than during the previous render" on re-renders.
+  // Must be declared before early returns — Rules of Hooks
   const handleGoogleSignIn = useCallback(async () => {
     const { error } = await signInWithOAuth("google");
     if (error) showError("Google sign-in failed", error.message);
   }, [signInWithOAuth, showError]);
 
-  // ── Guards ────────────────────────────────────────────────────────────────
-
-  // [T1] bootstrapping replaces the old `loading`
   if (bootstrapping) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -377,60 +283,40 @@ export default function Auth() {
     );
   }
 
-  // [T2] Guard on session, not user
   if (session) return <Navigate to="/dashboard" replace />;
-
-  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-
-    // Client-side validation
-    const emailErr = validateEmail(email);
-    const passErr = validatePassword(password);
-    if (emailErr || passErr) {
-      if (emailErr) addError("email", emailErr);
-      if (passErr) addError("password", passErr);
-      return;
-    }
-
+    const emailErr = validate.email(email);
+    const passErr = validate.password(password);
+    if (emailErr) addError("email", emailErr);
+    if (passErr) addError("password", passErr);
+    if (emailErr || passErr) return;
     const { error } = await signIn(email, password);
     if (error) showError("Sign in failed", error.message);
-    // On success, onAuthStateChange → SIGNED_IN fires → state updates → Navigate renders
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-
-    // Client-side validation
-    const nameErr = validateDisplayName(displayName);
-    const emailErr = validateEmail(email);
-    const passErr = validatePassword(password);
+    const nameErr = validate.displayName(displayName);
+    const emailErr = validate.email(email);
+    const passErr = validate.password(password);
     const confirmErr = password !== confirmPassword ? "Passwords don't match." : null;
     const codeErr = partnerCode && !isValidPartnerCode(partnerCode)
-      ? "Partner code must be 6–8 characters (letters and numbers only)."
-      : null;
+      ? "Partner code must be 6–8 characters (letters and numbers only)." : null;
 
-    const hasError = nameErr || emailErr || passErr || confirmErr || codeErr;
-    if (hasError) {
-      if (nameErr) addError("displayName", nameErr);
-      if (emailErr) addError("email", emailErr);
-      if (passErr) addError("password", passErr);
-      if (confirmErr) addError("confirmPassword", confirmErr);
-      if (codeErr) addError("partnerCode", codeErr);
-      return;
-    }
+    if (nameErr) addError("displayName", nameErr);
+    if (emailErr) addError("email", emailErr);
+    if (passErr) addError("password", passErr);
+    if (confirmErr) addError("confirmPassword", confirmErr);
+    if (codeErr) addError("partnerCode", codeErr);
+    if (nameErr || emailErr || passErr || confirmErr || codeErr) return;
 
     const { error } = await signUp(email, password, displayName.trim());
+    if (error) { showError("Sign up failed", error.message); return; }
 
-    if (error) {
-      showError("Sign up failed", error.message);
-      return;
-    }
-
-    // [L1] Write partner code to storage ONLY after confirmed successful signUp
     if (partnerCode && isValidPartnerCode(partnerCode)) {
       ephemeralStorage.set(PARTNER_CODE_KEY, partnerCode);
     }
@@ -441,20 +327,15 @@ export default function Auth() {
         ? "Check your email to verify. Your partner code will be applied automatically."
         : "Check your email to verify your account.",
     });
-
     switchMode("signin");
   };
 
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-
-    // [L5] Programmatic guard — don't hit the API with an empty/invalid email
-    const emailErr = validateEmail(email);
+    const emailErr = validate.email(email);
     if (emailErr) { addError("email", emailErr); return; }
-
     const { error } = await resetPasswordForEmail(email);
-
     if (error) {
       showError("Failed to send reset email", error.message);
     } else {
@@ -463,23 +344,13 @@ export default function Auth() {
     }
   };
 
-  // ── Derived ───────────────────────────────────────────────────────────────
-
   const passwordType = showPassword ? "text" : "password";
-  const passwordToggle = (
-    <PasswordToggle
-      show={showPassword}
-      onToggle={() => setShowPassword(v => !v)}
-    />
-  );
-
-  // ── Render ────────────────────────────────────────────────────────────────
+  const passwordToggle = <PasswordToggle show={showPassword} onToggle={() => setShowPassword(v => !v)} />;
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-background overflow-hidden px-4 py-10 sm:py-16">
       <div className="relative z-10 w-full max-w-[420px]">
 
-        {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-2.5 mb-3">
             <div className="h-10 w-10 rounded-xl overflow-hidden">
@@ -491,170 +362,66 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* Card */}
         <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm">
 
-          {/* ══ SIGN IN ══════════════════════════════════════════════════ */}
           {mode === "signin" && (
             <>
               <Header title="Welcome back" subtitle="Sign in to your account" />
-
-              <GoogleBtn
-                loading={oauthLoading}
-                onClick={handleGoogleSignIn}
-                disabled={anyLoading && !oauthLoading}
-              />
-
+              <GoogleBtn loading={oauthLoading} onClick={handleGoogleSignIn} disabled={anyLoading && !oauthLoading} />
               <Divider />
-
               <form onSubmit={handleSignIn} noValidate className="space-y-4">
                 <Field label="Email" htmlFor={id("si-email")} error={errors.email}>
-                  <InputIcon
-                    id={id("si-email")}
-                    icon={<Mail className="h-4 w-4" />}
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    autoComplete="email"
-                    required
-                    error={!!errors.email}
-                    aria-describedby={errors.email ? `${id("si-email")}-err` : undefined}
-                  />
+                  <InputIcon id={id("si-email")} icon={<Mail className="h-4 w-4" />} type="email"
+                    placeholder="Enter your email" value={email} onChange={e => setEmail(e.target.value)}
+                    autoComplete="email" required error={!!errors.email} />
                 </Field>
-
-                <Field
-                  label="Password"
-                  htmlFor={id("si-password")}
-                  error={errors.password}
+                <Field label="Password" htmlFor={id("si-password")} error={errors.password}
                   hint={
-                    <button
-                      type="button"
-                      onClick={() => switchMode("forgot")}
-                      className="text-xs text-primary hover:text-primary/80 transition-colors"
-                    >
+                    <button type="button" onClick={() => switchMode("forgot")}
+                      className="text-xs text-primary hover:text-primary/80 transition-colors">
                       Forgot password?
                     </button>
-                  }
-                >
-                  <InputIcon
-                    id={id("si-password")}
-                    icon={<Lock className="h-4 w-4" />}
-                    type={passwordType}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                    required
-                    suffix={passwordToggle}
-                    error={!!errors.password}
-                  />
+                  }>
+                  <InputIcon id={id("si-password")} icon={<Lock className="h-4 w-4" />} type={passwordType}
+                    placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)}
+                    autoComplete="current-password" required suffix={passwordToggle} error={!!errors.password} />
                 </Field>
-
-                <SubmitBtn loading={signingIn}>
-                  Sign in <ArrowRight className="h-4 w-4" />
-                </SubmitBtn>
+                <SubmitBtn loading={signingIn}>Sign in <ArrowRight className="h-4 w-4" /></SubmitBtn>
               </form>
-
-              <ModeSwitch
-                question="Don't have an account?"
-                action="Create one"
-                onSwitch={() => switchMode("signup")}
-              />
+              <ModeSwitch question="Don't have an account?" action="Create one" onSwitch={() => switchMode("signup")} />
             </>
           )}
 
-          {/* ══ SIGN UP ══════════════════════════════════════════════════ */}
           {mode === "signup" && (
             <>
               <Header title="Create account" subtitle="Join your private couple space" />
-
-              <GoogleBtn
-                loading={oauthLoading}
-                onClick={handleGoogleSignIn}
-                label="Sign up with Google"
-                disabled={anyLoading && !oauthLoading}
-              />
-
+              <GoogleBtn loading={oauthLoading} onClick={handleGoogleSignIn} label="Sign up with Google" disabled={anyLoading && !oauthLoading} />
               <Divider />
-
               <form onSubmit={handleSignUp} noValidate className="space-y-4">
                 <Field label="Your Name" htmlFor={id("su-name")} error={errors.displayName}>
-                  <InputIcon
-                    id={id("su-name")}
-                    icon={<User className="h-4 w-4" />}
-                    type="text"
-                    placeholder="Your name"
-                    value={displayName}
-                    onChange={e => setDisplayName(e.target.value)}
-                    autoComplete="name"
-                    required
-                    error={!!errors.displayName}
-                  />
+                  <InputIcon id={id("su-name")} icon={<User className="h-4 w-4" />} type="text"
+                    placeholder="Your name" value={displayName} onChange={e => setDisplayName(e.target.value)}
+                    autoComplete="name" required error={!!errors.displayName} />
                 </Field>
-
                 <Field label="Email" htmlFor={id("su-email")} error={errors.email}>
-                  <InputIcon
-                    id={id("su-email")}
-                    icon={<Mail className="h-4 w-4" />}
-                    type="email"
-                    placeholder="Your email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    autoComplete="email"
-                    required
-                    error={!!errors.email}
-                  />
+                  <InputIcon id={id("su-email")} icon={<Mail className="h-4 w-4" />} type="email"
+                    placeholder="Your email" value={email} onChange={e => setEmail(e.target.value)}
+                    autoComplete="email" required error={!!errors.email} />
                 </Field>
-
                 <Field label="Password" htmlFor={id("su-password")} error={errors.password}>
-                  <InputIcon
-                    id={id("su-password")}
-                    icon={<Lock className="h-4 w-4" />}
-                    type={passwordType}
-                    placeholder="Min. 6 characters"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    autoComplete="new-password"
-                    required
-                    suffix={passwordToggle}
-                    error={!!errors.password}
-                  />
+                  <InputIcon id={id("su-password")} icon={<Lock className="h-4 w-4" />} type={passwordType}
+                    placeholder="Min. 6 characters" value={password} onChange={e => setPassword(e.target.value)}
+                    autoComplete="new-password" required suffix={passwordToggle} error={!!errors.password} />
                   <PasswordStrengthBar password={password} />
                 </Field>
-
-                <Field
-                  label="Confirm Password"
-                  htmlFor={id("su-confirm")}
-                  error={errors.confirmPassword}
-                >
-                  <InputIcon
-                    id={id("su-confirm")}
-                    icon={<Lock className="h-4 w-4" />}
-                    type={passwordType}
-                    placeholder="Repeat password"
-                    value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
-                    autoComplete="new-password"
-                    required
-                    suffix={passwordToggle}
-                    error={!!errors.confirmPassword}
-                  />
-                  {/* [L4] Real-time match indicator */}
+                <Field label="Confirm Password" htmlFor={id("su-confirm")} error={errors.confirmPassword}>
+                  <InputIcon id={id("su-confirm")} icon={<Lock className="h-4 w-4" />} type={passwordType}
+                    placeholder="Repeat password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                    autoComplete="new-password" required suffix={passwordToggle} error={!!errors.confirmPassword} />
                   <PasswordMatchHint password={password} confirm={confirmPassword} />
                 </Field>
-
-                {/* Optional partner code */}
-                <Field
-                  label="Partner's Invite Code"
-                  htmlFor={id("su-partner")}
-                  error={errors.partnerCode}
-                  hint={
-                    <p className="text-[11px] text-muted-foreground">
-                      Have a code from your partner? Enter it here to connect on signup.
-                    </p>
-                  }
-                >
+                <Field label="Partner's Invite Code" htmlFor={id("su-partner")} error={errors.partnerCode}
+                  hint={<p className="text-[11px] text-muted-foreground">Have a code from your partner? Enter it here to connect on signup.</p>}>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
                       <Link2 className="h-4 w-4" />
@@ -662,75 +429,39 @@ export default function Auth() {
                     <div className="absolute right-2 top-1/2 -translate-y-1/2">
                       <span className="text-[10px] text-muted-foreground select-none">Optional</span>
                     </div>
-                    <Input
-                      id={id("su-partner")}
-                      type="text"
-                      placeholder="e.g. AB12CD34"
-                      value={partnerCode}
-                      onChange={handlePartnerCodeChange}
-                      maxLength={8}
-                      autoComplete="off"
-                      autoCapitalize="characters"
-                      spellCheck={false}
+                    <Input id={id("su-partner")} type="text" placeholder="e.g. AB12CD34"
+                      value={partnerCode} onChange={handlePartnerCodeChange}
+                      maxLength={8} autoComplete="off" autoCapitalize="characters" spellCheck={false}
                       aria-invalid={!!errors.partnerCode}
-                      className={cn(
-                        "pl-10 pr-20 h-11 font-mono tracking-widest uppercase bg-background/50",
-                        errors.partnerCode ? "border-destructive" : "border-border/60",
-                      )}
-                    />
+                      className={cn("pl-10 pr-20 h-11 font-mono tracking-widest uppercase bg-background/50",
+                        errors.partnerCode ? "border-destructive" : "border-border/60")} />
                   </div>
                 </Field>
-
                 <SubmitBtn loading={signingUp}>
                   {partnerCode
                     ? <><Heart className="h-4 w-4" />Create &amp; Connect</>
                     : <>Create account <ArrowRight className="h-4 w-4" /></>}
                 </SubmitBtn>
               </form>
-
-              <ModeSwitch
-                question="Already have an account?"
-                action="Sign in"
-                onSwitch={() => switchMode("signin")}
-              />
+              <ModeSwitch question="Already have an account?" action="Sign in" onSwitch={() => switchMode("signin")} />
             </>
           )}
 
-          {/* ══ FORGOT PASSWORD ══════════════════════════════════════════ */}
           {mode === "forgot" && (
             <>
-              <button
-                type="button"
-                onClick={() => switchMode("signin")}
-                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-5 focus-visible:outline-none focus-visible:underline"
-              >
+              <button type="button" onClick={() => switchMode("signin")}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-5 focus-visible:outline-none focus-visible:underline">
                 <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
                 Back to sign in
               </button>
-
-              <Header
-                title="Reset password"
-                subtitle="We'll send a reset link to your email"
-              />
-
+              <Header title="Reset password" subtitle="We'll send a reset link to your email" />
               <form onSubmit={handleForgot} noValidate className="space-y-4">
                 <Field label="Email" htmlFor={id("fp-email")} error={errors.email}>
-                  <InputIcon
-                    id={id("fp-email")}
-                    icon={<Mail className="h-4 w-4" />}
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    autoComplete="email"
-                    required
-                    error={!!errors.email}
-                  />
+                  <InputIcon id={id("fp-email")} icon={<Mail className="h-4 w-4" />} type="email"
+                    placeholder="Enter your email" value={email} onChange={e => setEmail(e.target.value)}
+                    autoComplete="email" required error={!!errors.email} />
                 </Field>
-
-                <SubmitBtn loading={resetting}>
-                  Send reset link <ArrowRight className="h-4 w-4" />
-                </SubmitBtn>
+                <SubmitBtn loading={resetting}>Send reset link <ArrowRight className="h-4 w-4" /></SubmitBtn>
               </form>
             </>
           )}
