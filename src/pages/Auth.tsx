@@ -284,24 +284,33 @@ export default function Auth() {
   const uid = useId();
   const id = (name: string) => `${uid}-${name}`;
 
+  // On mount: if ?code= is present, immediately show the signup form
+  // with the code pre-filled — don't wait for DB validation.
+  // Validation still runs in the background; if committed it redirects.
+  // This way the form appears instantly with no loading delay.
   useEffect(() => {
     const codeFromUrl = searchParams.get("code");
     if (!codeFromUrl) return;
 
     const normalised = normalisePartnerCode(codeFromUrl);
 
+    // Malformed code — redirect immediately (no DB call needed)
     if (!isValidPartnerCode(normalised)) {
       navigate("/invite-expired", { replace: true });
       return;
     }
 
+    // Show form instantly with code pre-filled
+    setPartnerCode(normalised);
+    setMode("signup");
+
+    // Validate in background — only redirect if definitively committed
     validatePartnerCode(normalised).then((result) => {
       if (result.reason === "committed") {
         navigate("/invite-expired", { replace: true });
-        return;
       }
-      setPartnerCode(normalised);
-      setMode("signup");
+      // "error" (RLS/network) → do nothing, let user attempt submission
+      // "valid" → already showing the form, nothing to do
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
