@@ -81,15 +81,16 @@ interface GoogleButtonProps {
   loading: boolean;
   onClick: () => void;
   label?: string;
+  disabled?: boolean;
 }
-function GoogleButton({ loading, onClick, label = "Continue with Google" }: GoogleButtonProps) {
+function GoogleButton({ loading, onClick, label = "Continue with Google", disabled }: GoogleButtonProps) {
   return (
     <Button
       type="button"
       variant="outline"
       className="w-full gap-2.5 h-11 border-border/60"
       onClick={onClick}
-      disabled={loading}
+      disabled={loading || disabled}
       aria-busy={loading}
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon />}
@@ -175,7 +176,8 @@ export default function Auth() {
 
   /* ── Helpers ───────────────────────────────────────────────────── */
   function resetForm() {
-    setEmail("");
+    // We intentionally keep the `email` state so users don't have to re-type it 
+    // when switching between sign-in, sign-up, and forgot password.
     setPassword("");
     setDisplayName("");
     setConfirmPassword("");
@@ -190,7 +192,11 @@ export default function Auth() {
 
   function savePartnerCode() {
     const code = partnerCode.trim().toUpperCase();
-    if (code) sessionStorage.setItem(PARTNER_CODE_KEY, code);
+    if (code) {
+      sessionStorage.setItem(PARTNER_CODE_KEY, code);
+    } else {
+      sessionStorage.removeItem(PARTNER_CODE_KEY);
+    }
   }
 
   function showError(title: string, message?: string) {
@@ -277,14 +283,14 @@ export default function Auth() {
 
   /* ── Render ────────────────────────────────────────────────────── */
   return (
-    <div className="relative  flex items-center justify-center bg-background overflow-hidden px-4 py-10 sm:py-16">
+    <div className="relative flex items-center justify-center bg-background overflow-hidden px-4 py-10 sm:py-16">
 
       <div className="relative z-10 w-full max-w-[420px]">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8 animate-fade-in-up">
           <div className="flex items-center gap-2.5 mb-3">
             <div className="h-10 w-10 rounded-xl ">
-              <img src="/logo.png" alt="" />
+              <img src="/logo.png" alt="usMoment Logo" />
             </div>
             <h1 className="text-2xl font-semibold">
               <span className="gradient-text">usMoment</span>
@@ -300,11 +306,15 @@ export default function Auth() {
             <>
               <Header title="Welcome back" subtitle="Sign in to your account to continue" />
 
-              <GoogleButton loading={googleLoading} onClick={handleGoogleSignIn} />
+              <GoogleButton 
+                loading={googleLoading} 
+                onClick={handleGoogleSignIn} 
+                disabled={submitting}
+              />
 
               <Divider />
 
-              <form onSubmit={handleSignIn} className="space-y-4" noValidate>
+              <form onSubmit={handleSignIn} className="space-y-4">
                 <Field label="Email" id="si-email">
                   <InputWithIcon
                     icon={<Mail className="h-4 w-4" />}
@@ -366,11 +376,12 @@ export default function Auth() {
                 loading={googleLoading}
                 onClick={handleGoogleSignIn}
                 label="Sign up with Google"
+                disabled={submitting}
               />
 
               <Divider />
 
-              <form onSubmit={handleSignUp} className="space-y-4" noValidate>
+              <form onSubmit={handleSignUp} className="space-y-4">
                 <Field label="Your Name" id="su-name">
                   <InputWithIcon
                     icon={<User className="h-4 w-4" />}
@@ -486,7 +497,7 @@ export default function Auth() {
                 subtitle="We'll send a reset link to your email"
               />
 
-              <form onSubmit={handleForgot} className="space-y-4" noValidate>
+              <form onSubmit={handleForgot} className="space-y-4">
                 <Field label="Email" id="fp-email">
                   <InputWithIcon
                     icon={<Mail className="h-4 w-4" />}
