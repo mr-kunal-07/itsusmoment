@@ -1,29 +1,55 @@
-import { useState } from "react";
+
+
+import { useState, useCallback, useId } from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
+import {
+  useAuth,
+  PARTNER_CODE_KEY,
+  ephemeralStorage,
+  normalisePartnerCode,
+  isValidPartnerCode,
+} from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
   Eye, EyeOff, Heart, Loader2, Mail, Lock,
   User, ArrowRight, ArrowLeft, Link2,
+  CheckCircle2, XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 
-/* ── Constants ──────────────────────────────────────────────────── */
-const PARTNER_CODE_KEY = "pending_partner_code";
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-/* ── Types ──────────────────────────────────────────────────────── */
 type Mode = "signin" | "signup" | "forgot";
 
-/* ── Sub-components ─────────────────────────────────────────────── */
+// ─── Validation helpers ───────────────────────────────────────────────────────
 
-/** Tiny Google "G" SVG – kept isolated so it's tree-shakeable. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validateEmail(v: string): string | null {
+  if (!v.trim()) return "Email is required.";
+  if (!EMAIL_RE.test(v)) return "Please enter a valid email address.";
+  return null;
+}
+
+function validatePassword(v: string): string | null {
+  if (!v) return "Password is required.";
+  if (v.length < 6) return "Password must be at least 6 characters.";
+  return null;
+}
+
+function validateDisplayName(v: string): string | null {
+  if (!v.trim()) return "Please enter your name.";
+  if (v.trim().length < 2) return "Name must be at least 2 characters.";
+  return null;
+}
+
+// ─── Small reusable UI components ─────────────────────────────────────────────
+
 function GoogleIcon() {
   return (
-    <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+    <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden>
       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
       <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
       <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
@@ -34,37 +60,48 @@ function GoogleIcon() {
 
 interface FieldProps {
   label: string;
-  id: string;
+  htmlFor: string;
+  error?: string | null;
   hint?: React.ReactNode;
   children: React.ReactNode;
 }
-function Field({ label, id, hint, children }: FieldProps) {
+
+function Field({ label, htmlFor, error, hint, children }: FieldProps) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-sm font-medium">
+      <Label htmlFor={htmlFor} className="text-sm font-medium">
         {label}
       </Label>
       {children}
-      {hint && <div className="mt-1">{hint}</div>}
+      {error && (
+        <p className="text-xs text-destructive flex items-center gap-1 mt-1" role="alert">
+          <XCircle className="h-3 w-3 shrink-0" aria-hidden />
+          {error}
+        </p>
+      )}
+      {!error && hint && <div className="mt-1">{hint}</div>}
     </div>
   );
 }
 
-interface InputWithIconProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputIconProps extends React.InputHTMLAttributes<HTMLInputElement> {
   icon: React.ReactNode;
   suffix?: React.ReactNode;
+  error?: boolean;
 }
-function InputWithIcon({ icon, suffix, className, ...props }: InputWithIconProps) {
+
+function InputIcon({ icon, suffix, error, className, ...rest }: InputIconProps) {
   return (
     <div className="relative flex items-center">
       <span className="absolute left-3 text-muted-foreground pointer-events-none select-none">
         {icon}
       </span>
       <Input
-        {...props}
+        {...rest}
+        aria-invalid={error ? "true" : "false"}
         className={cn(
-          "pl-10 h-11 bg-background/50 border-border/60",
-          "transition-all",
+          "pl-10 h-11 bg-background/50 transition-all",
+          error ? "border-destructive focus-visible:ring-destructive/40" : "border-border/60",
           suffix ? "pr-10" : "pr-3",
           className,
         )}
@@ -76,33 +113,37 @@ function InputWithIcon({ icon, suffix, className, ...props }: InputWithIconProps
   );
 }
 
-/** Reusable "Continue with Google" button. */
-interface GoogleButtonProps {
+interface GoogleBtnProps {
   loading: boolean;
   onClick: () => void;
   label?: string;
   disabled?: boolean;
 }
-function GoogleButton({ loading, onClick, label = "Continue with Google", disabled }: GoogleButtonProps) {
+
+function GoogleBtn({ loading, onClick, label = "Continue with Google", disabled }: GoogleBtnProps) {
   return (
-    <Button
+    <button
       type="button"
-      variant="outline"
-      className="w-full gap-2.5 h-11 border-border/60"
       onClick={onClick}
       disabled={loading || disabled}
       aria-busy={loading}
+      className={cn(
+        "w-full flex items-center justify-center gap-2.5 h-11 rounded-lg",
+        "border border-border/60 bg-background/50 text-sm font-medium",
+        "hover:bg-accent/50 active:scale-[0.98] transition-all",
+        "disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+      )}
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon />}
       {label}
-    </Button>
+    </button>
   );
 }
 
-/** Horizontal "or" divider. */
 function Divider() {
   return (
-    <div className="flex py-5 items-center gap-3">
+    <div className="flex items-center gap-3 py-5">
       <div className="flex-1 h-px bg-border/60" />
       <span className="text-xs text-muted-foreground select-none">or</span>
       <div className="flex-1 h-px bg-border/60" />
@@ -110,144 +151,309 @@ function Divider() {
   );
 }
 
-/** Reusable submit button with spinner. */
-interface SubmitButtonProps {
+interface SubmitBtnProps {
   loading: boolean;
   children: React.ReactNode;
 }
-function SubmitButton({ loading, children }: SubmitButtonProps) {
+
+function SubmitBtn({ loading, children }: SubmitBtnProps) {
   return (
-    <Button
+    <button
       type="submit"
-      className="w-full gap-2 glow-primary mt-2"
       disabled={loading}
       aria-busy={loading}
+      className={cn(
+        "w-full flex items-center justify-center gap-2 h-11 rounded-lg mt-2",
+        "bg-primary text-primary-foreground text-sm font-medium",
+        "hover:bg-primary/90 active:scale-[0.98] transition-all",
+        "disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+      )}
     >
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : children}
-    </Button>
+    </button>
   );
 }
 
-/** Toggle between show/hide password. */
-interface PasswordToggleProps {
-  show: boolean;
-  onToggle: () => void;
-}
-function PasswordToggle({ show, onToggle }: PasswordToggleProps) {
+function PasswordToggle({ show, onToggle }: { show: boolean; onToggle: () => void }) {
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-label={show ? "Hide password" : "Show password"}
-      className="text-muted-foreground hover:text-foreground transition-colors"
+      className="text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none"
     >
       {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
     </button>
   );
 }
 
-/* ── Main component ─────────────────────────────────────────────── */
+function Header({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="mb-5">
+      <h2 className="text-xl font-bold font-heading">{title}</h2>
+      <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+    </div>
+  );
+}
+
+function ModeSwitch({
+  question,
+  action,
+  onSwitch,
+}: {
+  question: string;
+  action: string;
+  onSwitch: () => void;
+}) {
+  return (
+    <p className="mt-5 text-center text-sm text-muted-foreground">
+      {question}{" "}
+      <button
+        type="button"
+        onClick={onSwitch}
+        className="text-primary hover:text-primary/80 font-medium transition-colors focus-visible:outline-none focus-visible:underline"
+      >
+        {action}
+      </button>
+    </p>
+  );
+}
+
+// ── Password strength (bonus UX) ──────────────────────────────────────────────
+
+function passwordStrength(pw: string): { score: number; label: string; colour: string } {
+  if (!pw) return { score: 0, label: "", colour: "bg-border" };
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+  const map = [
+    { label: "Weak", colour: "bg-destructive" },
+    { label: "Fair", colour: "bg-orange-500" },
+    { label: "Good", colour: "bg-yellow-500" },
+    { label: "Strong", colour: "bg-green-500" },
+    { label: "Great", colour: "bg-emerald-500" },
+  ];
+  return { score, ...map[score] };
+}
+
+function PasswordStrengthBar({ password }: { password: string }) {
+  if (!password) return null;
+  const { score, label, colour } = passwordStrength(password);
+  return (
+    <div className="mt-1.5 space-y-1">
+      <div className="flex gap-1" aria-hidden>
+        {[0, 1, 2, 3].map(i => (
+          <div
+            key={i}
+            className={cn(
+              "h-1 flex-1 rounded-full transition-all duration-300",
+              i < score ? colour : "bg-border/50",
+            )}
+          />
+        ))}
+      </div>
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+// ── Password match indicator ───────────────────────────────────────────────────
+
+function PasswordMatchHint({
+  password,
+  confirm,
+}: {
+  password: string;
+  confirm: string;
+}) {
+  if (!confirm) return null;
+  const match = password === confirm;
+  return (
+    <p
+      className={cn(
+        "text-xs flex items-center gap-1 mt-1",
+        match ? "text-green-600" : "text-destructive",
+      )}
+      aria-live="polite"
+    >
+      {match
+        ? <><CheckCircle2 className="h-3 w-3" aria-hidden />Passwords match</>
+        : <><XCircle className="h-3 w-3" aria-hidden />Passwords don't match</>}
+    </p>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// § MAIN COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function Auth() {
-  const { user, loading, signIn, signUp, resetPasswordForEmail } = useAuth();
+  const {
+    session,
+    bootstrapping,
+    actionLoading,
+    signIn,
+    signUp,
+    resetPasswordForEmail,
+    signInWithOAuth,         // [A1] no direct supabase import needed
+  } = useAuth();
   const { toast } = useToast();
 
+  // ── Mode ─────────────────────────────────────────────────────────────────
   const [mode, setMode] = useState<Mode>("signin");
-  const [submitting, setSubmitting] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
-  // Shared field state
+  // ── Field state ───────────────────────────────────────────────────────────
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [partnerCode, setPartnerCode] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  /* ── Auth: early returns ───────────────────────────────────────── */
-  if (loading) {
+  // ── Field errors ──────────────────────────────────────────────────────────
+  const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
+
+  // ── Derived loading flags from context [D5] ────────────────────────────────
+  const signingIn = !!actionLoading.signIn;
+  const signingUp = !!actionLoading.signUp;
+  const resetting = !!actionLoading.resetPassword;
+  const oauthLoading = !!actionLoading.googleOAuth;
+  const anyLoading = signingIn || signingUp || resetting || oauthLoading;
+
+  // Stable IDs for accessibility
+  const uid = useId();
+  const id = (name: string) => `${uid}-${name}`;
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  const resetForm = useCallback(() => {
+    setPassword("");
+    setConfirmPassword("");
+    setDisplayName("");
+    setPartnerCode("");
+    setShowPassword(false);
+    setErrors({});
+  }, []);
+
+  // [T5] Reset form AND submitting flags when switching mode
+  const switchMode = useCallback((next: Mode) => {
+    resetForm();
+    setMode(next);
+  }, [resetForm]);
+
+  const addError = (key: string, msg: string) =>
+    setErrors(prev => ({ ...prev, [key]: msg }));
+
+  const showError = useCallback((title: string, description?: string) => {
+    toast({ title, description, variant: "destructive" });
+  }, [toast]);
+
+  // ── Partner code input handler ─────────────────────────────────────────────
+  // [L3, L7] Normalise at input time — strip spaces/symbols, uppercase, max 8 chars
+  const handlePartnerCodeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setPartnerCode(normalisePartnerCode(e.target.value));
+  }, []);
+
+  // FIX: useCallback MUST be declared before any early return — Rules of Hooks.
+  // Previously handleGoogleSignIn was below the bootstrapping/session guards,
+  // causing "Rendered more hooks than during the previous render" on re-renders.
+  const handleGoogleSignIn = useCallback(async () => {
+    const { error } = await signInWithOAuth("google");
+    if (error) showError("Google sign-in failed", error.message);
+  }, [signInWithOAuth, showError]);
+
+  // ── Guards ────────────────────────────────────────────────────────────────
+
+  // [T1] bootstrapping replaces the old `loading`
+  if (bootstrapping) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" aria-label="Loading…" />
       </div>
     );
   }
-  if (user) return <Navigate to="/dashboard" replace />;
 
-  /* ── Helpers ───────────────────────────────────────────────────── */
-  function resetForm() {
-    // We intentionally keep the `email` state so users don't have to re-type it 
-    // when switching between sign-in, sign-up, and forgot password.
-    setPassword("");
-    setDisplayName("");
-    setConfirmPassword("");
-    setPartnerCode("");
-    setShowPassword(false);
-  }
+  // [T2] Guard on session, not user
+  if (session) return <Navigate to="/dashboard" replace />;
 
-  function switchMode(next: Mode) {
-    resetForm();
-    setMode(next);
-  }
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
-  function savePartnerCode() {
-    const code = partnerCode.trim().toUpperCase();
-    if (code) {
-      sessionStorage.setItem(PARTNER_CODE_KEY, code);
-    } else {
-      sessionStorage.removeItem(PARTNER_CODE_KEY);
-    }
-  }
-
-  function showError(title: string, message?: string) {
-    toast({ title, description: message, variant: "destructive" });
-  }
-
-  /* ── Handlers ──────────────────────────────────────────────────── */
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
+    setErrors({});
+
+    // Client-side validation
+    const emailErr = validateEmail(email);
+    const passErr = validatePassword(password);
+    if (emailErr || passErr) {
+      if (emailErr) addError("email", emailErr);
+      if (passErr) addError("password", passErr);
+      return;
+    }
+
     const { error } = await signIn(email, password);
-    setSubmitting(false);
     if (error) showError("Sign in failed", error.message);
+    // On success, onAuthStateChange → SIGNED_IN fires → state updates → Navigate renders
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
 
-    if (password !== confirmPassword) {
-      showError("Passwords don't match");
+    // Client-side validation
+    const nameErr = validateDisplayName(displayName);
+    const emailErr = validateEmail(email);
+    const passErr = validatePassword(password);
+    const confirmErr = password !== confirmPassword ? "Passwords don't match." : null;
+    const codeErr = partnerCode && !isValidPartnerCode(partnerCode)
+      ? "Partner code must be 6–8 characters (letters and numbers only)."
+      : null;
+
+    const hasError = nameErr || emailErr || passErr || confirmErr || codeErr;
+    if (hasError) {
+      if (nameErr) addError("displayName", nameErr);
+      if (emailErr) addError("email", emailErr);
+      if (passErr) addError("password", passErr);
+      if (confirmErr) addError("confirmPassword", confirmErr);
+      if (codeErr) addError("partnerCode", codeErr);
       return;
     }
-    if (password.length < 6) {
-      showError("Password too short", "Must be at least 6 characters.");
-      return;
-    }
 
-    savePartnerCode();
-    setSubmitting(true);
-    const { error } = await signUp(email, password, displayName);
-    setSubmitting(false);
+    const { error } = await signUp(email, password, displayName.trim());
 
     if (error) {
-      sessionStorage.removeItem(PARTNER_CODE_KEY);
       showError("Sign up failed", error.message);
-    } else {
-      toast({
-        title: "Account created! 🎉",
-        description: partnerCode.trim()
-          ? "Verify your email — your partner will be linked automatically."
-          : "Check your email to verify your account.",
-      });
-      switchMode("signin");
+      return;
     }
+
+    // [L1] Write partner code to storage ONLY after confirmed successful signUp
+    if (partnerCode && isValidPartnerCode(partnerCode)) {
+      ephemeralStorage.set(PARTNER_CODE_KEY, partnerCode);
+    }
+
+    toast({
+      title: "Account created! 🎉",
+      description: partnerCode
+        ? "Check your email to verify. Your partner code will be applied automatically."
+        : "Check your email to verify your account.",
+    });
+
+    switchMode("signin");
   };
 
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
+    setErrors({});
+
+    // [L5] Programmatic guard — don't hit the API with an empty/invalid email
+    const emailErr = validateEmail(email);
+    if (emailErr) { addError("email", emailErr); return; }
+
     const { error } = await resetPasswordForEmail(email);
-    setSubmitting(false);
 
     if (error) {
       showError("Failed to send reset email", error.message);
@@ -257,40 +463,27 @@ export default function Auth() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    savePartnerCode();
-    setGoogleLoading(true);
+  // ── Derived ───────────────────────────────────────────────────────────────
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth`,
-      },
-    });
-
-    if (error) {
-      setGoogleLoading(false);
-      showError("Google sign-in failed", error.message);
-    }
-  };
-
-  /* ── Derived helpers ───────────────────────────────────────────── */
-  const passwordSuffix = (
-    <PasswordToggle show={showPassword} onToggle={() => setShowPassword((v) => !v)} />
-  );
   const passwordType = showPassword ? "text" : "password";
-  const hasPartnerCode = partnerCode.trim().length > 0;
+  const passwordToggle = (
+    <PasswordToggle
+      show={showPassword}
+      onToggle={() => setShowPassword(v => !v)}
+    />
+  );
 
-  /* ── Render ────────────────────────────────────────────────────── */
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
-    <div className="relative flex items-center justify-center bg-background overflow-hidden px-4 py-10 sm:py-16">
-
+    <div className="relative flex min-h-screen items-center justify-center bg-background overflow-hidden px-4 py-10 sm:py-16">
       <div className="relative z-10 w-full max-w-[420px]">
+
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8 animate-fade-in-up">
+        <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-2.5 mb-3">
-            <div className="h-10 w-10 rounded-xl ">
-              <img src="/logo.png" alt="usMoment Logo" />
+            <div className="h-10 w-10 rounded-xl overflow-hidden">
+              <img src="/logo.png" alt="" aria-hidden />
             </div>
             <h1 className="text-2xl font-semibold">
               <span className="gradient-text">usMoment</span>
@@ -299,38 +492,41 @@ export default function Auth() {
         </div>
 
         {/* Card */}
-        <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+        <div className="bg-card border border-border rounded-2xl p-6 sm:p-7 shadow-sm">
 
-          {/* ── SIGN IN ── */}
+          {/* ══ SIGN IN ══════════════════════════════════════════════════ */}
           {mode === "signin" && (
             <>
-              <Header title="Welcome back" subtitle="Sign in to your account to continue" />
+              <Header title="Welcome back" subtitle="Sign in to your account" />
 
-              <GoogleButton 
-                loading={googleLoading} 
-                onClick={handleGoogleSignIn} 
-                disabled={submitting}
+              <GoogleBtn
+                loading={oauthLoading}
+                onClick={handleGoogleSignIn}
+                disabled={anyLoading && !oauthLoading}
               />
 
               <Divider />
 
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <Field label="Email" id="si-email">
-                  <InputWithIcon
+              <form onSubmit={handleSignIn} noValidate className="space-y-4">
+                <Field label="Email" htmlFor={id("si-email")} error={errors.email}>
+                  <InputIcon
+                    id={id("si-email")}
                     icon={<Mail className="h-4 w-4" />}
-                    id="si-email"
                     type="email"
                     placeholder="Enter your email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={e => setEmail(e.target.value)}
                     autoComplete="email"
                     required
+                    error={!!errors.email}
+                    aria-describedby={errors.email ? `${id("si-email")}-err` : undefined}
                   />
                 </Field>
 
                 <Field
                   label="Password"
-                  id="si-password"
+                  htmlFor={id("si-password")}
+                  error={errors.password}
                   hint={
                     <button
                       type="button"
@@ -341,22 +537,23 @@ export default function Auth() {
                     </button>
                   }
                 >
-                  <InputWithIcon
+                  <InputIcon
+                    id={id("si-password")}
                     icon={<Lock className="h-4 w-4" />}
-                    id="si-password"
                     type={passwordType}
                     placeholder="••••••••"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={e => setPassword(e.target.value)}
                     autoComplete="current-password"
                     required
-                    suffix={passwordSuffix}
+                    suffix={passwordToggle}
+                    error={!!errors.password}
                   />
                 </Field>
 
-                <SubmitButton loading={submitting}>
+                <SubmitBtn loading={signingIn}>
                   Sign in <ArrowRight className="h-4 w-4" />
-                </SubmitButton>
+                </SubmitBtn>
               </form>
 
               <ModeSwitch
@@ -367,109 +564,128 @@ export default function Auth() {
             </>
           )}
 
-          {/* ── SIGN UP ── */}
+          {/* ══ SIGN UP ══════════════════════════════════════════════════ */}
           {mode === "signup" && (
             <>
-              <Header title="Create account" subtitle="Join the private vault" />
+              <Header title="Create account" subtitle="Join your private couple space" />
 
-              <GoogleButton
-                loading={googleLoading}
+              <GoogleBtn
+                loading={oauthLoading}
                 onClick={handleGoogleSignIn}
                 label="Sign up with Google"
-                disabled={submitting}
+                disabled={anyLoading && !oauthLoading}
               />
 
               <Divider />
 
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <Field label="Your Name" id="su-name">
-                  <InputWithIcon
+              <form onSubmit={handleSignUp} noValidate className="space-y-4">
+                <Field label="Your Name" htmlFor={id("su-name")} error={errors.displayName}>
+                  <InputIcon
+                    id={id("su-name")}
                     icon={<User className="h-4 w-4" />}
-                    id="su-name"
                     type="text"
                     placeholder="Your name"
                     value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
+                    onChange={e => setDisplayName(e.target.value)}
                     autoComplete="name"
                     required
+                    error={!!errors.displayName}
                   />
                 </Field>
 
-                <Field label="Email" id="su-email">
-                  <InputWithIcon
+                <Field label="Email" htmlFor={id("su-email")} error={errors.email}>
+                  <InputIcon
+                    id={id("su-email")}
                     icon={<Mail className="h-4 w-4" />}
-                    id="su-email"
                     type="email"
                     placeholder="Your email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={e => setEmail(e.target.value)}
                     autoComplete="email"
                     required
+                    error={!!errors.email}
                   />
                 </Field>
 
-                <Field label="Password" id="su-password">
-                  <InputWithIcon
+                <Field label="Password" htmlFor={id("su-password")} error={errors.password}>
+                  <InputIcon
+                    id={id("su-password")}
                     icon={<Lock className="h-4 w-4" />}
-                    id="su-password"
                     type={passwordType}
                     placeholder="Min. 6 characters"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={e => setPassword(e.target.value)}
                     autoComplete="new-password"
                     required
-                    suffix={passwordSuffix}
+                    suffix={passwordToggle}
+                    error={!!errors.password}
                   />
+                  <PasswordStrengthBar password={password} />
                 </Field>
 
-                <Field label="Confirm Password" id="su-confirm">
-                  <InputWithIcon
+                <Field
+                  label="Confirm Password"
+                  htmlFor={id("su-confirm")}
+                  error={errors.confirmPassword}
+                >
+                  <InputIcon
+                    id={id("su-confirm")}
                     icon={<Lock className="h-4 w-4" />}
-                    id="su-confirm"
                     type={passwordType}
                     placeholder="Repeat password"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={e => setConfirmPassword(e.target.value)}
                     autoComplete="new-password"
                     required
-                    suffix={passwordSuffix}
+                    suffix={passwordToggle}
+                    error={!!errors.confirmPassword}
                   />
+                  {/* [L4] Real-time match indicator */}
+                  <PasswordMatchHint password={password} confirm={confirmPassword} />
                 </Field>
 
                 {/* Optional partner code */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="su-partner" className="text-sm font-medium flex items-center gap-1.5">
-                      <Heart className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-                      Partner's Invite Code
-                    </Label>
-                    <span className="text-[10px] text-muted-foreground select-none">Optional</span>
+                <Field
+                  label="Partner's Invite Code"
+                  htmlFor={id("su-partner")}
+                  error={errors.partnerCode}
+                  hint={
+                    <p className="text-[11px] text-muted-foreground">
+                      Have a code from your partner? Enter it here to connect on signup.
+                    </p>
+                  }
+                >
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+                      <Link2 className="h-4 w-4" />
+                    </span>
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                      <span className="text-[10px] text-muted-foreground select-none">Optional</span>
+                    </div>
+                    <Input
+                      id={id("su-partner")}
+                      type="text"
+                      placeholder="e.g. AB12CD34"
+                      value={partnerCode}
+                      onChange={handlePartnerCodeChange}
+                      maxLength={8}
+                      autoComplete="off"
+                      autoCapitalize="characters"
+                      spellCheck={false}
+                      aria-invalid={!!errors.partnerCode}
+                      className={cn(
+                        "pl-10 pr-20 h-11 font-mono tracking-widest uppercase bg-background/50",
+                        errors.partnerCode ? "border-destructive" : "border-border/60",
+                      )}
+                    />
                   </div>
-                  <InputWithIcon
-                    icon={<Link2 className="h-4 w-4" />}
-                    id="su-partner"
-                    type="text"
-                    placeholder="e.g. AB12CD34"
-                    value={partnerCode}
-                    onChange={(e) => setPartnerCode(e.target.value.toUpperCase())}
-                    maxLength={8}
-                    className="font-mono tracking-widest uppercase"
-                    autoComplete="off"
-                    autoCapitalize="characters"
-                    spellCheck={false}
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    Have a code from your partner? Enter it here to connect instantly on signup.
-                  </p>
-                </div>
+                </Field>
 
-                <SubmitButton loading={submitting}>
-                  {hasPartnerCode ? (
-                    <><Heart className="h-4 w-4" /> Create &amp; Connect</>
-                  ) : (
-                    <>Create account <ArrowRight className="h-4 w-4" /></>
-                  )}
-                </SubmitButton>
+                <SubmitBtn loading={signingUp}>
+                  {partnerCode
+                    ? <><Heart className="h-4 w-4" />Create &amp; Connect</>
+                    : <>Create account <ArrowRight className="h-4 w-4" /></>}
+                </SubmitBtn>
               </form>
 
               <ModeSwitch
@@ -480,15 +696,15 @@ export default function Auth() {
             </>
           )}
 
-          {/* ── FORGOT PASSWORD ── */}
+          {/* ══ FORGOT PASSWORD ══════════════════════════════════════════ */}
           {mode === "forgot" && (
             <>
               <button
                 type="button"
                 onClick={() => switchMode("signin")}
-                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-5"
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-5 focus-visible:outline-none focus-visible:underline"
               >
-                <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
                 Back to sign in
               </button>
 
@@ -497,23 +713,24 @@ export default function Auth() {
                 subtitle="We'll send a reset link to your email"
               />
 
-              <form onSubmit={handleForgot} className="space-y-4">
-                <Field label="Email" id="fp-email">
-                  <InputWithIcon
+              <form onSubmit={handleForgot} noValidate className="space-y-4">
+                <Field label="Email" htmlFor={id("fp-email")} error={errors.email}>
+                  <InputIcon
+                    id={id("fp-email")}
                     icon={<Mail className="h-4 w-4" />}
-                    id="fp-email"
                     type="email"
                     placeholder="Enter your email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={e => setEmail(e.target.value)}
                     autoComplete="email"
                     required
+                    error={!!errors.email}
                   />
                 </Field>
 
-                <SubmitButton loading={submitting}>
+                <SubmitBtn loading={resetting}>
                   Send reset link <ArrowRight className="h-4 w-4" />
-                </SubmitButton>
+                </SubmitBtn>
               </form>
             </>
           )}
@@ -523,43 +740,6 @@ export default function Auth() {
           Private · Secure · Just for us ❤️
         </p>
       </div>
-    </div>
-  );
-}
-
-/* ── Additional shared sub-components ───────────────────────────── */
-
-interface HeaderProps {
-  title: string;
-  subtitle: string;
-}
-function Header({ title, subtitle }: HeaderProps) {
-  return (
-    <div className="mb-5">
-      <h2 className="text-xl font-bold font-heading">{title}</h2>
-      <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
-    </div>
-  );
-}
-
-interface ModeSwitchProps {
-  question: string;
-  action: string;
-  onSwitch: () => void;
-}
-function ModeSwitch({ question, action, onSwitch }: ModeSwitchProps) {
-  return (
-    <div className="mt-5 text-center">
-      <p className="text-sm text-muted-foreground">
-        {question}{" "}
-        <button
-          type="button"
-          onClick={onSwitch}
-          className="text-primary hover:text-primary/80 font-medium transition-colors"
-        >
-          {action}
-        </button>
-      </p>
     </div>
   );
 }
