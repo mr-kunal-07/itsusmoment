@@ -1,5 +1,5 @@
-import { useState, useCallback, useId } from "react";
-import { Navigate } from "react-router-dom";
+import { useState, useCallback, useId, useEffect } from "react";
+import { Navigate, useSearchParams, useNavigate } from "react-router-dom";
 import {
   useAuth,
   PARTNER_CODE_KEY,
@@ -7,6 +7,7 @@ import {
   normalisePartnerCode,
   isValidPartnerCode,
 } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -17,11 +18,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type Mode = "signin" | "signup" | "forgot";
 
-// ─── Validation ───────────────────────────────────────────────────────────────
+type CodeValidationResult = {
+  ok: boolean;
+  reason: "valid" | "committed" | "error";
+  message?: string;
+};
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -31,7 +34,23 @@ const validate = {
   displayName: (v: string) => !v.trim() ? "Please enter your name." : v.trim().length < 2 ? "Name must be at least 2 characters." : null,
 };
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+async function validatePartnerCode(code: string): Promise<CodeValidationResult> {
+  const { data, error } = await supabase
+    .from("couples")
+    .select("user2_id")
+    .eq("invite_code", code)
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, reason: "error", message: "Unable to verify partner code. Please try again." };
+  }
+
+  if (!data || data.user2_id !== null) {
+    return { ok: false, reason: "committed" };
+  }
+
+  return { ok: true, reason: "valid" };
+}
 
 function GoogleIcon() {
   return (
@@ -182,8 +201,6 @@ function ModeSwitch({ question, action, onSwitch }: { question: string; action: 
   );
 }
 
-// ─── Password Strength ────────────────────────────────────────────────────────
-
 function passwordStrength(pw: string) {
   if (!pw) return { score: 0, label: "", colour: "bg-border" };
   let score = 0;
@@ -228,11 +245,11 @@ function PasswordMatchHint({ password, confirm }: { password: string; confirm: s
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function Auth() {
   const { session, bootstrapping, actionLoading, signIn, signUp, resetPasswordForEmail, signInWithOAuth } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
@@ -252,6 +269,28 @@ export default function Auth() {
   const uid = useId();
   const id = (name: string) => `${uid}-${name}`;
 
+  useEffect(() => {
+    const codeFromUrl = searchParams.get("code");
+    if (!codeFromUrl) return;
+
+    const normalised = normalisePartnerCode(codeFromUrl);
+
+    if (!isValidPartnerCode(normalised)) {
+      navigate("/invite-expired", { replace: true });
+      return;
+    }
+
+    validatePartnerCode(normalised).then((result) => {
+      if (result.reason === "committed") {
+        navigate("/invite-expired", { replace: true });
+        return;
+      }
+      setPartnerCode(normalised);
+      setMode("signup");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const resetForm = useCallback(() => {
     setPassword(""); setConfirmPassword(""); setDisplayName("");
     setPartnerCode(""); setShowPassword(false); setErrors({});
@@ -269,11 +308,33 @@ export default function Auth() {
     setPartnerCode(normalisePartnerCode(e.target.value));
   }, []);
 
-  // Must be declared before early returns — Rules of Hooks
+  const runCodePreflight = useCallback(async (): Promise<boolean> => {
+    if (!partnerCode || !isValidPartnerCode(partnerCode)) return true;
+
+    const result = await validatePartnerCode(partnerCode);
+
+    if (result.ok) {
+      return true;
+    } else if (result.reason === "committed") {
+      navigate("/invite-expired", { replace: true });
+      return false;
+    } else {
+      setErrors(prev => ({ ...prev, partnerCode: result.message ?? "Unable to verify partner code." }));
+      return false;
+    }
+  }, [partnerCode, navigate]);
+
   const handleGoogleSignIn = useCallback(async () => {
+    const passed = await runCodePreflight();
+    if (!passed) return;
+
+    if (partnerCode && isValidPartnerCode(partnerCode)) {
+      ephemeralStorage.set(PARTNER_CODE_KEY, partnerCode);
+    }
+
     const { error } = await signInWithOAuth("google");
     if (error) showError("Google sign-in failed", error.message);
-  }, [signInWithOAuth, showError]);
+  }, [partnerCode, runCodePreflight, signInWithOAuth, showError]);
 
   if (bootstrapping) {
     return (
@@ -300,19 +361,23 @@ export default function Auth() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+
     const nameErr = validate.displayName(displayName);
     const emailErr = validate.email(email);
     const passErr = validate.password(password);
     const confirmErr = password !== confirmPassword ? "Passwords don't match." : null;
-    const codeErr = partnerCode && !isValidPartnerCode(partnerCode)
+    const formatErr = partnerCode && !isValidPartnerCode(partnerCode)
       ? "Partner code must be 6–8 characters (letters and numbers only)." : null;
 
     if (nameErr) addError("displayName", nameErr);
     if (emailErr) addError("email", emailErr);
     if (passErr) addError("password", passErr);
     if (confirmErr) addError("confirmPassword", confirmErr);
-    if (codeErr) addError("partnerCode", codeErr);
-    if (nameErr || emailErr || passErr || confirmErr || codeErr) return;
+    if (formatErr) addError("partnerCode", formatErr);
+    if (nameErr || emailErr || passErr || confirmErr || formatErr) return;
+
+    const passed = await runCodePreflight();
+    if (!passed) return;
 
     const { error } = await signUp(email, password, displayName.trim());
     if (error) { showError("Sign up failed", error.message); return; }

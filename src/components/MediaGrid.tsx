@@ -211,13 +211,13 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
     return (
       <div className={cn(
         viewMode === "grid"
-          ? "columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-3 sm:gap-4 space-y-3 sm:space-y-4"
+          ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3"
           : "space-y-2"
       )}>
         {Array.from({ length: 8 }).map((_, i) => (
           viewMode === "grid" ? (
-            <Card key={i} className="overflow-hidden break-inside-avoid border-border/50">
-              <Skeleton className="w-full" style={{ height: `${150 + (i * 37) % 150}px` }} />
+            <Card key={i} className="overflow-hidden border-border/50">
+              <Skeleton className="w-full h-40 sm:h-44" />
               <div className="p-3 space-y-2"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-3 w-1/2" /></div>
             </Card>
           ) : (
@@ -227,7 +227,6 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
       </div>
     );
   }
-
   if (media.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
@@ -341,7 +340,7 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
 
       {/* ── Grid view ─────────────────────────────────────────────── */}
       {viewMode === "grid" ? (
-        <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-2 sm:gap-4 space-y-2 sm:space-y-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
           {media.map(item => {
             const isSelected = selected.has(item.id);
             const uploaderName = uploaderMap[item.uploaded_by];
@@ -358,7 +357,7 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
                     onDragStart={e => handleDragStart(e, item)}
                   >
                     <div
-                      className="relative bg-muted overflow-hidden"
+                      className="relative bg-muted overflow-hidden h-36 sm:h-40 md:h-44"
                       onClick={() => isSelecting ? toggleSelect(item.id) : onPreview(item)}
                     >
                       {item.file_type === "video" ? (
@@ -412,12 +411,14 @@ export function MediaGrid({ media, loading, onPreview, viewMode, hasMore, onLoad
                     <div className="p-3 flex items-start justify-between gap-1">
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium truncate leading-tight">{item.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{formatSize(item.file_size)} · {format(new Date(item.created_at), "MMM d")}</p>
-                        {uploaderName && (
-                          <p className="text-xs text-muted-foreground/70 mt-0.5 flex items-center gap-1">
-                            <User className="h-2.5 w-2.5" />{uploaderName}
-                          </p>
-                        )}
+                        <div className="flex items-center  gap-1">
+                          {uploaderName && (
+                            <p className="text-sm text-muted-foreground mt-0.5 flex items-center gap-0.5">
+                              <User className="h-3 w-3" />{uploaderName}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground/70 mt-0.5">{format(new Date(item.created_at), "MMM d")}</p>
+                        </div>
                       </div>
                       {!isSelecting && (
                         <DropdownMenu>

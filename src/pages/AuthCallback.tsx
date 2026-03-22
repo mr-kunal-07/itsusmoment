@@ -41,7 +41,7 @@ export default function AuthCallback() {
 
         const timeoutId = setTimeout(() => {
             authLog.warn("Auth callback timed out — no session received");
-            navigate("/login?error=callback_timeout", { replace: true });
+            navigate("/auth?error=callback_timeout", { replace: true });
         }, CALLBACK_TIMEOUT_MS);
 
         return () => {

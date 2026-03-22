@@ -10,11 +10,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type Mode = "invite" | "join";
-
-// ─── Small reusable components ────────────────────────────────────────────────
 
 function CopyButton({
   value,
@@ -92,8 +88,6 @@ function PermanentWarning() {
   );
 }
 
-// ─── State: linked ────────────────────────────────────────────────────────────
-
 function LinkedState({
   partnerProfile,
 }: {
@@ -104,7 +98,6 @@ function LinkedState({
 
   return (
     <div className="space-y-3">
-      {/* Partner row */}
       <div className="flex items-center gap-4 p-4 rounded-xl border border-primary/20 bg-primary/5">
         <div className="relative">
           <Avatar className="h-12 w-12 ring-2 ring-primary/30">
@@ -127,7 +120,6 @@ function LinkedState({
         </div>
       </div>
 
-      {/* Admin perms */}
       <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-2.5">
         <div className="flex items-center gap-2 text-xs font-medium text-foreground">
           <UserCheck className="h-3.5 w-3.5 text-primary" />
@@ -147,7 +139,6 @@ function LinkedState({
         </ul>
       </div>
 
-      {/* Permanent bond */}
       <div className="flex items-center gap-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3.5 py-3">
         <Lock className="h-3.5 w-3.5 text-amber-500 shrink-0" />
         <p className="text-xs text-muted-foreground">
@@ -158,8 +149,6 @@ function LinkedState({
     </div>
   );
 }
-
-// ─── State: pending invite ────────────────────────────────────────────────────
 
 function PendingState({
   inviteCode,
@@ -196,23 +185,16 @@ function PendingState({
 
   return (
     <div className="space-y-3">
-      {/* Code card */}
       <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
         <p className="text-xs font-medium text-muted-foreground">Share with your partner:</p>
 
-        {/* Big code */}
         <div className="relative flex items-center justify-between gap-3 px-4 py-4 bg-background rounded-xl border border-border group">
           <span className="font-mono text-2xl sm:text-3xl font-bold tracking-[.3em] text-foreground">
             {inviteCode}
           </span>
-          <CopyButton
-            value={inviteCode}
-            label="Copy code"
-            className="shrink-0"
-          />
+          <CopyButton value={inviteCode} label="Copy code" className="shrink-0" />
         </div>
 
-        {/* Share / link buttons */}
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -238,13 +220,11 @@ function PendingState({
         </div>
       </div>
 
-      {/* Waiting indicator */}
       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground py-1">
         <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
         Waiting for your partner to accept…
       </div>
 
-      {/* Accept partner's code instead */}
       <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-2.5">
         <p className="text-xs font-medium text-muted-foreground">
           Got a code from your partner instead?
@@ -282,8 +262,6 @@ function PendingState({
     </div>
   );
 }
-
-// ─── State: invite tab ────────────────────────────────────────────────────────
 
 function InviteTab({
   onGenerate,
@@ -325,8 +303,6 @@ function InviteTab({
   );
 }
 
-// ─── State: join tab ──────────────────────────────────────────────────────────
-
 function JoinTab({
   onAccept,
   isAccepting,
@@ -338,8 +314,7 @@ function JoinTab({
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    // Auto-extract code if user pastes a full invite URL
-    const match = val.match(/[?&]code=([A-Z0-9]{8})/i);
+    const match = val.match(/[?&]code=([A-Z0-9]{6,8})/i);
     if (match) {
       setCode(match[1].toUpperCase());
     } else {
@@ -355,7 +330,6 @@ function JoinTab({
           <p className="text-xs text-muted-foreground">8-character code, or paste the full invite link</p>
         </div>
 
-        {/* Large code input */}
         <input
           value={code}
           onChange={handleChange}
@@ -369,7 +343,6 @@ function JoinTab({
           )}
         />
 
-        {/* Progress dots */}
         <div className="flex justify-center gap-1.5" aria-hidden>
           {Array.from({ length: 8 }).map((_, i) => (
             <div
@@ -382,7 +355,6 @@ function JoinTab({
           ))}
         </div>
 
-        {/* Join button */}
         <button
           type="button"
           onClick={() => onAccept(code)}
@@ -404,8 +376,6 @@ function JoinTab({
   );
 }
 
-// ─── PartnerConnect ───────────────────────────────────────────────────────────
-
 export function PartnerConnect() {
   const { user } = useAuth();
   const { data: couple, isLoading } = useMyCouple();
@@ -423,11 +393,12 @@ export function PartnerConnect() {
   const isLinked = couple?.status === "active";
   const isPending = couple?.status === "pending";
   const inviteCode = couple?.invite_code ?? "";
+
+  // Fixed: points to /auth so Auth.tsx picks up ?code= on arrival
   const inviteLink = inviteCode
-    ? `${window.location.origin}/join?code=${inviteCode}`
+    ? `${window.location.origin}/auth?code=${inviteCode}`
     : "";
 
-  // ── Shared accept handler ────────────────────────────────────────────────
   const handleAccept = useCallback(async (code: string) => {
     if (!code.trim()) return;
     try {
@@ -450,7 +421,6 @@ export function PartnerConnect() {
     }
   }, [createInvite, toast]);
 
-  // ── Loading ──────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="flex items-center justify-center gap-2.5 py-8 text-sm text-muted-foreground">
@@ -460,12 +430,10 @@ export function PartnerConnect() {
     );
   }
 
-  // ── Linked ───────────────────────────────────────────────────────────────
   if (isLinked && partnerProfile) {
     return <LinkedState partnerProfile={partnerProfile} />;
   }
 
-  // ── Pending (creator view) ───────────────────────────────────────────────
   if (isPending && couple?.user1_id === user?.id) {
     return (
       <PendingState
@@ -477,7 +445,6 @@ export function PartnerConnect() {
     );
   }
 
-  // ── No couple yet ─────────────────────────────────────────────────────────
   return (
     <div className="space-y-3">
       <TabBar mode={mode} onChange={setMode} />

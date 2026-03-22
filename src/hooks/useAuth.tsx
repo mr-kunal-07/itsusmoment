@@ -355,7 +355,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isInFlight("googleOAuth")) return { data: null, error: null };
     startAction("googleOAuth");
     const current = getPathname();
-    if (current && current !== "/login" && current !== "/auth") {
+    if (current && current !== "/auth") {
       ephemeralStorage.set(JOIN_REDIRECT_KEY, current);
     }
     try {
@@ -402,7 +402,7 @@ export function useAuthOptional(): AuthContextType | undefined {
   return useContext(AuthContext);
 }
 
-export function useRequireAuth(loginPath = "/login"): AuthContextType {
+export function useRequireAuth(loginPath = "/auth"): AuthContextType {
   const auth = useAuth();
   const navigate = useNavigate();
 

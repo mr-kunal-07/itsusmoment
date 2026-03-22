@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePlan } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
 import { useMedia, useStarredMedia, useMoveMedia, getPublicUrl } from "@/hooks/useMedia";
-import { useFolders } from "@/hooks/useFolders";
+import { useDeleteFolder, useFolders, useRenameFolder } from "@/hooks/useFolders";
 import { useTheme } from "@/hooks/useTheme";
 import { useProfile, useAllProfiles } from "@/hooks/useProfile";
 import { useOnThisDay } from "@/hooks/useMemories";
@@ -157,6 +157,8 @@ export default function Dashboard() {
   const [openAddFolder, setOpenAddFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const createFolder = useCreateFolder();
+  const renameFolder = useRenameFolder(); // add
+  const deleteFolder = useDeleteFolder()
   const handleCreateFolder = async () => {
     const name = newFolderName.trim();
     if (!name) return;
@@ -701,6 +703,8 @@ export default function Dashboard() {
                 <FolderGrid
                   folders={foldersWithPreviews}
                   onOpen={(id) => setSelectedView(id)}
+                  onRename={(id, name) => renameFolder.mutate({ id, name })}
+                  onDelete={(id) => deleteFolder.mutate(id)}
                 />
               </div>
             )}
@@ -749,6 +753,8 @@ export default function Dashboard() {
                 <FolderGrid
                   folders={subFoldersWithPreviews}
                   onOpen={(id) => setSelectedView(id)}
+                  onRename={(id, name) => renameFolder.mutate({ id, name })}
+                  onDelete={(id) => deleteFolder.mutate(id)}
                 />
               </div>
             )}

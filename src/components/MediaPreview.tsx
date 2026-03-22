@@ -4,7 +4,7 @@ import { useAllProfiles } from "@/hooks/useProfile";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { ChevronLeft, ChevronRight, Download, Link, User, MessageCircleHeart, Tag } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Link, User, MessageCircleHeart, Tag, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { LoveNotesPanel } from "@/components/LoveNotesPanel";
 import { TagsPanel } from "@/components/TagsPanel";
@@ -216,11 +216,11 @@ export function MediaPreview({ media, currentIndex, open, onOpenChange, onNaviga
           {/* Meta */}
           <div className="space-y-0.5 text-xs sm:text-sm text-muted-foreground">
             {item.description && <p className="text-foreground text-sm">{item.description}</p>}
-            <p>Uploaded {format(new Date(item.created_at), "MMM d, yyyy 'at' h:mm a")}</p>
+            <p className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5 " /> {format(new Date(item.created_at), "MMM d, yyyy 'at' h:mm a")}</p>
             <p>{item.file_name} · {formatSize(item.file_size)} · {item.mime_type}</p>
             {uploaderName && (
               <p className="flex items-center gap-1">
-                <User className="h-3.5 w-3.5" /> Uploaded by {uploaderName}
+                <User className="h-3.5 w-3.5" />By {uploaderName}
               </p>
             )}
           </div>

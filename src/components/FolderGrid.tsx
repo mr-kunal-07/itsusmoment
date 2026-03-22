@@ -1,7 +1,9 @@
-import { useState, useCallback, useId } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { ImageIcon, Pencil, Trash2, X, Check, AlertTriangle } from "lucide-react";
 
-/* ── Types ──────────────────────────────────────────────────────── */
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface FolderItem {
     id: string;
     name: string;
@@ -12,268 +14,423 @@ interface FolderItem {
 interface Props {
     folders: FolderItem[];
     onOpen: (id: string) => void;
+    onRename: (id: string, newName: string) => void;
+    onDelete: (id: string) => void;
 }
 
-/* ── Constants ───────────────────────────────────────────────────── */
-const COLLAGE = { x: 10, y: 52, w: 132, h: 68, gap: 2 } as const;
+interface MenuState {
+    folder: FolderItem;
+    // desktop anchor position
+    x?: number;
+    y?: number;
+}
 
-/* ── Empty State ─────────────────────────────────────────────────── */
+// ─── Empty State ──────────────────────────────────────────────────────────────
+
 function EmptyState() {
     return (
         <div className="flex flex-col items-center justify-center py-20 select-none">
-            <svg
-                width="64"
-                height="64"
-                viewBox="0 0 64 64"
-                fill="none"
-                className="mb-5 opacity-60"
-                aria-hidden="true"
-            >
-                <rect
-                    x="2" y="14" width="60" height="44" rx="8"
-                    className="fill-amber-200 dark:fill-amber-800"
-                    stroke="currentColor" strokeOpacity="0.06" strokeWidth="0.5"
-                />
-                <path
-                    d="M2 22 Q2 14 10 14 L24 14 Q28 14 30 18 L32 22 L62 22 L62 58 Q62 58 54 58 L10 58 Q2 58 2 50 Z"
-                    className="fill-amber-300 dark:fill-amber-700"
-                />
-                <rect
-                    x="2" y="22" width="60" height="36" rx="7"
-                    className="fill-amber-200 dark:fill-amber-800"
-                />
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" className="mb-5 opacity-50" aria-hidden="true">
+                <rect x="2" y="14" width="60" height="44" rx="8" className="fill-primary/20" stroke="currentColor" strokeOpacity="0.06" strokeWidth="0.5" />
+                <path d="M2 22 Q2 14 10 14 L24 14 Q28 14 30 18 L32 22 L62 22 L62 58 Q62 58 54 58 L10 58 Q2 58 2 50 Z" className="fill-primary/30" />
+                <rect x="2" y="22" width="60" height="36" rx="7" className="fill-primary/20" />
             </svg>
-            <p className="text-[15px] font-semibold text-foreground tracking-tight">
-                No folders yet
-            </p>
-            <p className="text-[13px] text-muted-foreground mt-1">
-                Create a folder to get started
-            </p>
+            <p className="text-[15px] font-semibold text-foreground tracking-tight">No folders yet</p>
+            <p className="text-[13px] text-muted-foreground mt-1">Create a folder to get started</p>
         </div>
     );
 }
 
-/* ── Collage layout ──────────────────────────────────────────────── */
-interface CollageProps {
-    previews: string[];
-    clipId: string;
-}
+// ─── Folder Icon ──────────────────────────────────────────────────────────────
 
-function FolderCollage({ previews, clipId }: CollageProps) {
-    const { x, y, w, h, gap } = COLLAGE;
-    const count = Math.min(previews.length, 4);
-    const clip = `url(#${clipId})`;
-
-    if (count === 1) {
-        return (
-            <image
-                href={previews[0]}
-                x={x} y={y} width={w} height={h}
-                preserveAspectRatio="xMidYMid slice"
-                clipPath={clip}
-            />
-        );
-    }
-
-    const cw = Math.floor((w - gap) / 2);
-    const ch = Math.floor((h - gap) / 2);
-    const x2 = x + cw + gap;
-    const y2 = y + ch + gap;
-
-    if (count === 2) {
-        return (
-            <g clipPath={clip}>
-                <image href={previews[0]} x={x} y={y} width={cw} height={h} preserveAspectRatio="xMidYMid slice" />
-                <image href={previews[1]} x={x2} y={y} width={cw} height={h} preserveAspectRatio="xMidYMid slice" />
-            </g>
-        );
-    }
-
-    if (count === 3) {
-        return (
-            <g clipPath={clip}>
-                <image href={previews[0]} x={x} y={y} width={cw} height={h} preserveAspectRatio="xMidYMid slice" />
-                <image href={previews[1]} x={x2} y={y} width={cw} height={ch} preserveAspectRatio="xMidYMid slice" />
-                <image href={previews[2]} x={x2} y={y2} width={cw} height={ch} preserveAspectRatio="xMidYMid slice" />
-            </g>
-        );
-    }
-
+function FolderIcon({ previewUrls }: { previewUrls?: string[] }) {
+    const preview = previewUrls?.[0];
     return (
-        <g clipPath={clip}>
-            <image href={previews[0]} x={x} y={y} width={cw} height={ch} preserveAspectRatio="xMidYMid slice" />
-            <image href={previews[1]} x={x2} y={y} width={cw} height={ch} preserveAspectRatio="xMidYMid slice" />
-            <image href={previews[2]} x={x} y={y2} width={cw} height={ch} preserveAspectRatio="xMidYMid slice" />
-            <image href={previews[3]} x={x2} y={y2} width={cw} height={ch} preserveAspectRatio="xMidYMid slice" />
-        </g>
+        <div className="relative w-full aspect-square select-none px-2 pt-2">
+            <div className="relative w-full h-full">
+                <div className="absolute inset-0 bg-card border border-border rounded-xl shadow-sm rotate-[-10deg] -translate-x-2 -translate-y-1" />
+                <div className="absolute inset-0 bg-card border border-border rounded-xl shadow-sm rotate-[6deg] translate-x-2 translate-y-1" />
+                <div className="relative w-full h-full bg-card border border-border rounded-xl shadow-md rotate-[-2deg] p-1 pb-5">
+                    <div className="relative w-full h-full bg-muted rounded-lg overflow-hidden border border-border/40">
+                        {preview ? (
+                            <img src={preview} alt="Collection preview" className="w-full h-full object-cover" draggable="false" />
+                        ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/40">
+                                <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6 mb-1 stroke-[1.5]" />
+                                <span className="text-[7px] sm:text-[8px] font-bold uppercase tracking-widest text-center px-1">Empty</span>
+                            </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-background/5 to-background/10 pointer-events-none" />
+                    </div>
+                    <div className="absolute bottom-1.5 left-2 right-2 h-1.5 bg-muted-foreground/10 rounded-full" />
+                </div>
+            </div>
+        </div>
     );
 }
 
-/* ── Folder Icon SVG ─────────────────────────────────────────────── */
-interface FolderIconProps {
-    uid: string;
-    previewUrls?: string[];
-    isHovered: boolean;
+// ─── Action Panel (shared content) ───────────────────────────────────────────
+
+interface ActionPanelContentProps {
+    folder: FolderItem;
+    onRename: (id: string, newName: string) => void;
+    onDelete: (id: string) => void;
+    onClose: () => void;
 }
 
-function FolderIcon({ uid, previewUrls, isHovered }: FolderIconProps) {
-    const previews = previewUrls?.slice(0, 4) ?? [];
-    const hasPreviews = previews.length > 0;
-    const clipId = `clip-${uid}`;
-    const gradBackId = `gb-${uid}`;
-    const gradFrontId = `gf-${uid}`;
-    const { x, y, w, h } = COLLAGE;
+function ActionPanelContent({ folder, onRename, onDelete, onClose }: ActionPanelContentProps) {
+    const [view, setView] = useState<"menu" | "rename" | "confirm">("menu");
+    const [nameValue, setNameValue] = useState(folder.name);
+    const inputRef = useRef<HTMLInputElement>(null);
 
-    return (
-        <div className="relative w-full select-none" style={{ aspectRatio: "1 / 0.85" }}>
-            <svg
-                viewBox="0 0 152 128"
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-full h-full"
-                aria-hidden="true"
-                style={{
-                    filter: isHovered
-                        ? "drop-shadow(0 10px 24px rgba(0,0,0,0.20)) drop-shadow(0 2px 5px rgba(0,0,0,0.12))"
-                        : "drop-shadow(0 5px 14px rgba(0,0,0,0.13)) drop-shadow(0 1px 3px rgba(0,0,0,0.09))",
-                    transition: "filter 0.2s ease",
-                }}
-            >
-                <defs>
-                    <linearGradient id={gradBackId} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#FBD95B" />
-                        <stop offset="100%" stopColor="#F5A623" />
-                    </linearGradient>
-                    <linearGradient id={gradFrontId} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#FDEEA0" />
-                        <stop offset="100%" stopColor="#FAD44A" />
-                    </linearGradient>
-                    {hasPreviews && (
-                        <clipPath id={clipId}>
-                            <rect x={x} y={y} width={w} height={h} rx="6" />
-                        </clipPath>
+    useEffect(() => {
+        if (view === "rename") setTimeout(() => inputRef.current?.focus(), 50);
+    }, [view]);
+
+    const handleRename = useCallback(() => {
+        const trimmed = nameValue.trim();
+        if (!trimmed || trimmed === folder.name) { onClose(); return; }
+        onRename(folder.id, trimmed);
+        onClose();
+    }, [nameValue, folder, onRename, onClose]);
+
+    const handleDelete = useCallback(() => {
+        onDelete(folder.id);
+        onClose();
+    }, [folder.id, onDelete, onClose]);
+
+    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+        if (e.key === "Enter") handleRename();
+        if (e.key === "Escape") onClose();
+    }, [handleRename, onClose]);
+
+    if (view === "rename") {
+        return (
+            <div className="p-4 space-y-3">
+                <p className="text-xs font-medium text-muted-foreground">Rename folder</p>
+                <input
+                    ref={inputRef}
+                    value={nameValue}
+                    onChange={e => setNameValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    maxLength={40}
+                    className={cn(
+                        "w-full h-10 px-3 rounded-lg text-sm bg-background border border-border",
+                        "focus:outline-none focus:ring-2 focus:ring-ring",
+                        "text-foreground placeholder:text-muted-foreground",
                     )}
-                </defs>
-
-                {/* Back tab */}
-                <path
-                    d="M8 36 Q8 26 18 26 L58 26 Q65 26 69 33 L76 42 L144 42 Q152 42 152 50 L152 118 Q152 126 144 126 L8 126 Q0 126 0 118 L0 44 Q0 36 8 36Z"
-                    fill={`url(#${gradBackId})`}
                 />
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setView("menu")}
+                        className={cn(
+                            "flex-1 h-9 rounded-lg text-xs font-medium border border-border",
+                            "text-muted-foreground hover:bg-accent transition-colors",
+                        )}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleRename}
+                        disabled={!nameValue.trim()}
+                        className={cn(
+                            "flex-1 h-9 rounded-lg text-xs font-medium",
+                            "bg-primary text-primary-foreground hover:bg-primary/90 transition-colors",
+                            "disabled:opacity-50 disabled:cursor-not-allowed",
+                        )}
+                    >
+                        <Check className="h-3.5 w-3.5 inline mr-1" />
+                        Save
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
-                {/* Front body */}
-                <rect x="0" y="42" width="152" height="84" rx="10" fill={`url(#${gradFrontId})`} />
+    if (view === "confirm") {
+        return (
+            <div className="p-4 space-y-3">
+                <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                    <div>
+                        <p className="text-sm font-semibold text-foreground">Delete folder?</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                            "{folder.name}" and all its contents will be permanently deleted.
+                        </p>
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setView("menu")}
+                        className={cn(
+                            "flex-1 h-9 rounded-lg text-xs font-medium border border-border",
+                            "text-muted-foreground hover:bg-accent transition-colors",
+                        )}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleDelete}
+                        className={cn(
+                            "flex-1 h-9 rounded-lg text-xs font-medium",
+                            "bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors",
+                        )}
+                    >
+                        <Trash2 className="h-3.5 w-3.5 inline mr-1" />
+                        Delete
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
-                {/* Inner area */}
-                {hasPreviews ? (
-                    <>
-                        <FolderCollage previews={previews} clipId={clipId} />
-                        <rect x={x} y={y} width={w} height={h} rx="6"
-                            fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="1" />
-                        <rect x={x} y={y} width={w} height="13" rx="6"
-                            fill="rgba(255,255,255,0.10)" />
-                    </>
-                ) : (
-                    <>
-                        <rect x={x} y={y} width={w} height={h} rx="6"
-                            fill="rgba(255,255,255,0.18)" />
-                        <line x1="26" y1="74" x2="122" y2="74"
-                            stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" strokeLinecap="round" />
-                        <line x1="26" y1="86" x2="98" y2="86"
-                            stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" strokeLinecap="round" />
-                        <line x1="26" y1="98" x2="110" y2="98"
-                            stroke="rgba(255,255,255,0.20)" strokeWidth="1.5" strokeLinecap="round" />
-                    </>
+    return (
+        <div className="p-2">
+            <p className="text-xs font-medium text-muted-foreground px-2 pt-1 pb-2 truncate">
+                {folder.name}
+            </p>
+            <button
+                type="button"
+                onClick={() => setView("rename")}
+                className={cn(
+                    "w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm",
+                    "text-foreground hover:bg-accent transition-colors text-left",
                 )}
-
-                {/* Top sheen */}
-                <rect x="0" y="42" width="152" height="16" rx="10"
-                    fill="rgba(255,255,255,0.13)" />
-            </svg>
+            >
+                <Pencil className="h-4 w-4 text-muted-foreground shrink-0" />
+                Rename
+            </button>
+            <button
+                type="button"
+                onClick={() => setView("confirm")}
+                className={cn(
+                    "w-full flex items-center gap-3 px-3 h-10 rounded-lg text-sm",
+                    "text-destructive hover:bg-destructive/10 transition-colors text-left",
+                )}
+            >
+                <Trash2 className="h-4 w-4 shrink-0" />
+                Delete
+            </button>
         </div>
     );
 }
 
-/* ── Folder Card ─────────────────────────────────────────────────── */
+// ─── Desktop Context Menu (floating popover) ──────────────────────────────────
+
+interface ContextMenuProps {
+    menu: MenuState;
+    onRename: (id: string, newName: string) => void;
+    onDelete: (id: string) => void;
+    onClose: () => void;
+}
+
+function ContextMenu({ menu, onRename, onDelete, onClose }: ContextMenuProps) {
+    const ref = useRef<HTMLDivElement>(null);
+
+    // Position clamped to viewport
+    const [pos, setPos] = useState({ x: menu.x ?? 0, y: menu.y ?? 0 });
+
+    useEffect(() => {
+        if (!ref.current) return;
+        const { width, height } = ref.current.getBoundingClientRect();
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        setPos({
+            x: Math.min(menu.x ?? 0, vw - width - 8),
+            y: Math.min(menu.y ?? 0, vh - height - 8),
+        });
+    }, [menu.x, menu.y]);
+
+    useEffect(() => {
+        const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [onClose]);
+
+    return (
+        <>
+            {/* Invisible backdrop */}
+            <div className="fixed inset-0 z-40" onMouseDown={onClose} />
+            <div
+                ref={ref}
+                role="menu"
+                className={cn(
+                    "fixed z-50 w-52 rounded-xl border border-border bg-card shadow-lg",
+                    "animate-in fade-in-0 zoom-in-95 duration-100",
+                )}
+                style={{ left: pos.x, top: pos.y }}
+            >
+                <ActionPanelContent
+                    folder={menu.folder}
+                    onRename={onRename}
+                    onDelete={onDelete}
+                    onClose={onClose}
+                />
+            </div>
+        </>
+    );
+}
+
+// ─── Mobile Bottom Sheet ──────────────────────────────────────────────────────
+
+interface BottomSheetProps {
+    menu: MenuState;
+    onRename: (id: string, newName: string) => void;
+    onDelete: (id: string) => void;
+    onClose: () => void;
+}
+
+function BottomSheet({ menu, onRename, onDelete, onClose }: BottomSheetProps) {
+    useEffect(() => {
+        const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [onClose]);
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-end sm:hidden">
+            {/* Backdrop — full screen, covers bottom nav too */}
+            <div
+                className="absolute inset-0 bg-background/60 backdrop-blur-sm animate-in fade-in-0 duration-200"
+                onPointerDown={onClose}
+            />
+            {/* Sheet floats above bottom nav — mb-[76px] matches nav height */}
+            <div className={cn(
+                "relative w-full bg-card border border-border rounded-2xl shadow-xl z-10",
+                "animate-in slide-in-from-bottom duration-300",
+                "mx-2 mb-[76px]",
+            )}>
+                {/* Handle */}
+                <div className="flex justify-center pt-3 pb-1">
+                    <div className="h-1 w-10 rounded-full bg-muted-foreground/30" />
+                </div>
+                {/* Close button */}
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="absolute top-3 right-3 h-7 w-7 flex items-center justify-center rounded-full hover:bg-accent transition-colors"
+                    aria-label="Close"
+                >
+                    <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+                <ActionPanelContent
+                    folder={menu.folder}
+                    onRename={onRename}
+                    onDelete={onDelete}
+                    onClose={onClose}
+                />
+                <div className="pb-2" />
+            </div>
+        </div>
+    );
+}
+
+// ─── Folder Card ──────────────────────────────────────────────────────────────
+
 interface FolderCardProps {
     folder: FolderItem;
     onOpen: (id: string) => void;
+    onContextMenu: (folder: FolderItem, x: number, y: number) => void;
+    onLongPress: (folder: FolderItem) => void;
 }
 
-function FolderCard({ folder, onOpen }: FolderCardProps) {
+function FolderCard({ folder, onOpen, onContextMenu, onLongPress }: FolderCardProps) {
     const [hovered, setHovered] = useState(false);
     const [pressed, setPressed] = useState(false);
+    const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const didLongPress = useRef(false);
 
     const handleOpen = useCallback(() => onOpen(folder.id), [folder.id, onOpen]);
 
-    const handleMouseEnter = useCallback(() => setHovered(true), []);
-    const handleMouseLeave = useCallback(() => { setHovered(false); setPressed(false); }, []);
-    const handleMouseDown = useCallback(() => setPressed(true), []);
-    const handleMouseUp = useCallback(() => setPressed(false), []);
-    const handleTouchStart = useCallback(() => setPressed(true), []);
-    const handleTouchEnd = useCallback(() => setPressed(false), []);
+    const handleContextMenu = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        onContextMenu(folder, e.clientX, e.clientY);
+    }, [folder, onContextMenu]);
+
+    const handleTouchStart = useCallback(() => {
+        setPressed(true);
+        didLongPress.current = false;
+        longPressTimer.current = setTimeout(() => {
+            didLongPress.current = true;
+            onLongPress(folder);
+            // Haptic feedback on supported devices
+            if (navigator.vibrate) navigator.vibrate(30);
+        }, 500);
+    }, [folder, onLongPress]);
+
+    const handleTouchEnd = useCallback(() => {
+        setPressed(false);
+        if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    }, []);
+
+    const handleTouchMove = useCallback(() => {
+        // Cancel long press if finger moves
+        if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    }, []);
+
+    const handleClick = useCallback(() => {
+        if (didLongPress.current) return; // swallow click after long press
+        handleOpen();
+    }, [handleOpen]);
 
     const handleKeyUp = useCallback(
-        (e: React.KeyboardEvent) => {
-            if (e.key === "Enter" || e.key === " ") handleOpen();
-        },
-        [handleOpen]
+        (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") handleOpen(); },
+        [handleOpen],
     );
 
     return (
         <button
             type="button"
             aria-label={`Open folder: ${folder.name}`}
-            onClick={handleOpen}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
+            onClick={handleClick}
+            onContextMenu={handleContextMenu}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => { setHovered(false); setPressed(false); }}
+            onMouseDown={() => setPressed(true)}
+            onMouseUp={() => setPressed(false)}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
+            onTouchMove={handleTouchMove}
             onKeyUp={handleKeyUp}
             className={cn(
-                "group flex flex-col items-center gap-1.5 w-full",
-                "rounded-xl px-2 py-2.5",
-                "transition-all duration-150 ease-out",
+                "flex flex-col items-center gap-1.5 w-full rounded-xl px-1 py-2",
+                "transition-colors duration-150 ease-out",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                hovered && !pressed && "bg-black/[0.04] dark:bg-white/[0.06]",
-                pressed && "bg-black/[0.07] dark:bg-white/[0.09]",
+                hovered && !pressed && "bg-accent/50",
+                pressed && "bg-accent",
             )}
             style={{ WebkitTapHighlightColor: "transparent" }}
         >
-            {/* Icon */}
             <div
                 className="w-full"
                 style={{
                     transform: pressed
                         ? "translateY(0px) scale(0.97)"
                         : hovered
-                            ? "translateY(-2px) scale(1.03)"
+                            ? "translateY(-3px) scale(1.02)"
                             : "translateY(0px) scale(1)",
-                    transition: "transform 0.18s cubic-bezier(0.34,1.56,0.64,1)",
+                    transition: "transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)",
                 }}
             >
-                <FolderIcon
-                    uid={folder.id}
-                    previewUrls={folder.previewUrls}
-                    isHovered={hovered && !pressed}
-                />
+                <FolderIcon previewUrls={folder.previewUrls} />
             </div>
 
-            {/* Label */}
             <div className="w-full text-center px-1 min-w-0">
                 <p
                     className={cn(
-                        "text-[12px] sm:text-[13px] font-medium leading-tight tracking-[-0.01em] truncate",
+                        "text-[11px] sm:text-[12px] md:text-[13px] font-medium leading-tight tracking-tight truncate transition-colors duration-150",
                         hovered ? "text-primary" : "text-foreground",
                     )}
-                    style={{ transition: "color 0.15s ease" }}
                     title={folder.name}
                 >
                     {folder.name}
                 </p>
                 {typeof folder.count === "number" && (
-                    <p className="text-[11px] text-muted-foreground mt-0.5 tabular-nums">
+                    <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5 tabular-nums">
                         {folder.count} {folder.count === 1 ? "item" : "items"}
                     </p>
                 )}
@@ -282,15 +439,57 @@ function FolderCard({ folder, onOpen }: FolderCardProps) {
     );
 }
 
-/* ── Main Grid ───────────────────────────────────────────────────── */
-export function FolderGrid({ folders, onOpen }: Props) {
+// ─── Grid ─────────────────────────────────────────────────────────────────────
+
+export function FolderGrid({ folders, onOpen, onRename, onDelete }: Props) {
+    const [menu, setMenu] = useState<MenuState | null>(null);
+    const isMobile = typeof window !== "undefined" && window.matchMedia("(hover: none)").matches;
+
+    const openContextMenu = useCallback((folder: FolderItem, x: number, y: number) => {
+        setMenu({ folder, x, y });
+    }, []);
+
+    const openLongPress = useCallback((folder: FolderItem) => {
+        setMenu({ folder });
+    }, []);
+
+    const closeMenu = useCallback(() => setMenu(null), []);
+
     if (!folders?.length) return <EmptyState />;
 
     return (
-        <div className="grid gap-1 sm:gap-2 grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8">
-            {folders.map((folder) => (
-                <FolderCard key={folder.id} folder={folder} onOpen={onOpen} />
-            ))}
-        </div>
+        <>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1 sm:gap-2 md:gap-3">
+                {folders.map((folder) => (
+                    <FolderCard
+                        key={folder.id}
+                        folder={folder}
+                        onOpen={onOpen}
+                        onContextMenu={openContextMenu}
+                        onLongPress={openLongPress}
+                    />
+                ))}
+            </div>
+
+            {/* Desktop context menu — shown on right-click */}
+            {menu && menu.x !== undefined && (
+                <ContextMenu
+                    menu={menu}
+                    onRename={onRename}
+                    onDelete={onDelete}
+                    onClose={closeMenu}
+                />
+            )}
+
+            {/* Mobile bottom sheet — shown on long press */}
+            {menu && menu.x === undefined && (
+                <BottomSheet
+                    menu={menu}
+                    onRename={onRename}
+                    onDelete={onDelete}
+                    onClose={closeMenu}
+                />
+            )}
+        </>
     );
 }

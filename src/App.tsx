@@ -16,6 +16,7 @@ import Join from "./pages/Join";
 import Admin from "./pages/Admin";
 import Index from "./pages/Index";
 import AuthCallback from "./pages/AuthCallback";
+import InviteExpired from "./components/Inviteexpired";
 
 // ─── Query Client ─────────────────────────────────────────────────────────────
 
@@ -89,7 +90,7 @@ const App = () => (
             {/* Protected */}
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-
+            <Route path="/invite-expired" element={<InviteExpired />} />
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
