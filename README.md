@@ -1,7 +1,7 @@
 # 💕 OurVault
    
 > A private, couples-only digital vault — store memories, chat securely, and celebrate your relationship milestones together.
- 
+   
 --
 
 ## 📖 Overview
