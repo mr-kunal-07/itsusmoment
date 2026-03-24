@@ -51,9 +51,8 @@ async function validatePartnerCode(code: string): Promise<CodeValidationResult> 
   // treat as a transient error so the user can still proceed rather than
   // being incorrectly sent to /invite-expired
   if (count === 0) {
-    return { ok: false, reason: "committed" };
+    return { ok: false, reason: "error", message: "Invite not found." };
   }
-
   if (!data) {
     // RLS blocked — can't confirm either way, let user attempt submission
     return { ok: false, reason: "error", message: "Unable to verify partner code. Please try again." };
@@ -289,31 +288,30 @@ export default function Auth() {
   // Validation still runs in the background; if committed it redirects.
   // This way the form appears instantly with no loading delay.
   useEffect(() => {
-    const codeFromUrl = searchParams.get("code");
-    if (!codeFromUrl) return;
+    const invite = searchParams.get("invite");
+    if (!invite) return;
 
-    const normalised = normalisePartnerCode(codeFromUrl);
+    const normalised = normalisePartnerCode(invite);
 
-    // Malformed code — redirect immediately (no DB call needed)
+    // ❌ invalid format
     if (!isValidPartnerCode(normalised)) {
       navigate("/invite-expired", { replace: true });
       return;
     }
 
-    // Show form instantly with code pre-filled
+    // ✅ show signup instantly
     setPartnerCode(normalised);
     setMode("signup");
 
-    // Validate in background — only redirect if definitively committed
-    validatePartnerCode(normalised).then((result) => {
+    // ✅ background validation
+    (async () => {
+      const result = await validatePartnerCode(normalised);
+
       if (result.reason === "committed") {
         navigate("/invite-expired", { replace: true });
       }
-      // "error" (RLS/network) → do nothing, let user attempt submission
-      // "valid" → already showing the form, nothing to do
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    })();
+  }, [searchParams, navigate]);
 
   const resetForm = useCallback(() => {
     setPassword(""); setConfirmPassword(""); setDisplayName("");

@@ -13,14 +13,25 @@ export function useOnThisDay() {
       const now = new Date();
       const month = String(now.getMonth() + 1).padStart(2, "0");
       const day = String(now.getDate()).padStart(2, "0");
+
+      // Fetch all media and filter in JavaScript
       const { data, error } = await supabase
         .from("media")
         .select("*")
-        .like("created_at", `%-${month}-${day}%`)
+        .not("created_at", "is", null)
         .order("created_at", { ascending: false });
+
       if (error) throw error;
+
       const currentYear = now.getFullYear();
-      return (data as Media[]).filter(m => new Date(m.created_at).getFullYear() < currentYear);
+
+      // Filter for matching month/day in previous years
+      return (data as Media[]).filter(m => {
+        const date = new Date(m.created_at);
+        return date.getMonth() + 1 === parseInt(month)
+          && date.getDate() === parseInt(day)
+          && date.getFullYear() < currentYear;
+      });
     },
     enabled: !!user,
   });
@@ -35,8 +46,11 @@ export function useMemoriesTimeline() {
       const { data, error } = await supabase
         .from("media")
         .select("*")
+        .not("created_at", "is", null)
         .order("created_at", { ascending: false });
+
       if (error) throw error;
+
       const groups: Record<string, (Media & { taken_at?: string | null })[]> = {};
       (data as (Media & { taken_at?: string | null })[]).forEach(m => {
         const dateStr = m.taken_at ?? m.created_at;
@@ -45,13 +59,15 @@ export function useMemoriesTimeline() {
         if (!groups[key]) groups[key] = [];
         groups[key].push(m);
       });
+
       Object.values(groups).forEach(arr => {
         arr.sort((a, b) => {
           const da = new Date(a.taken_at ?? a.created_at).getTime();
-          const db = new Date(b.taken_at ?? b.created_at).getTime();
+          const db = new Date(b.taken_at ?? b.taken_at).getTime();
           return da - db;
         });
       });
+
       return groups;
     },
     enabled: !!user,
@@ -67,7 +83,9 @@ export function useRelationshipStats() {
       const { data, error } = await supabase
         .from("media")
         .select("id, file_type, file_size, created_at, is_starred, uploaded_by");
+
       if (error) throw error;
+
       const all = data ?? [];
       const total = all.length;
       const images = all.filter(m => m.file_type === "image").length;
@@ -81,6 +99,7 @@ export function useRelationshipStats() {
       const daysTogether = firstDate
         ? Math.floor((Date.now() - firstDate.getTime()) / (1000 * 60 * 60 * 24))
         : 0;
+
       return { total, images, videos, starred, totalSize, firstDate, daysTogether };
     },
     enabled: !!user,

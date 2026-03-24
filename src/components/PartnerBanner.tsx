@@ -1,41 +1,64 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, X, Link2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Heart, Link2 } from "lucide-react";
 import { useMyCouple } from "@/hooks/useCouple";
 
 export function PartnerBanner() {
-  const { data: couple, isLoading } = useMyCouple();
+  const { data: couple, isLoading, isError } = useMyCouple();
   const navigate = useNavigate();
-  const [dismissed, setDismissed] = useState(false);
 
-  if (isLoading || dismissed || couple?.status === "active") return null;
+  // ✅ Safe guards
+  if (isLoading || isError || couple?.status === "active") {
+    return null;
+  }
 
   return (
-    <div className="mx-3 sm:mx-6 mt-3 mb-0 flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-      <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-        <Link2 className="h-4 w-4 text-primary" />
+    <div
+      role="region"
+      aria-label="Connect partner banner"
+      className="
+        mx-3 sm:mx-6 mt-3
+        flex items-center gap-2
+        rounded-lg
+        border border-primary/20
+        bg-primary/5
+        px-3 py-2
+        overflow-hidden
+      "
+    >
+      {/* Icon */}
+      <div className="h-7 w-7 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+        <Link2 className="h-3.5 w-3.5 text-primary" />
       </div>
+
+      {/* Text */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground">Connect with your partner 💕</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Share this vault with your partner — both can upload, edit and manage memories together.
+        <p className="text-xs sm:text-sm font-medium text-foreground truncate">
+          Connect with your partner 💕
+        </p>
+        <p className="hidden md:block text-xs text-muted-foreground truncate">
+          Share memories together
         </p>
       </div>
-      <Button
-        size="sm"
-        className="shrink-0 gap-1.5"
-        onClick={() => navigate("/profile")}
-      >
-        <Heart className="h-3.5 w-3.5" />
-        Connect
-      </Button>
+
+      {/* ✅ Custom Button (No import) */}
       <button
-        onClick={() => setDismissed(true)}
-        className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-        aria-label="Dismiss"
+        onClick={() => navigate("/profile")}
+        aria-label="Connect with partner"
+        className="
+          flex items-center gap-1
+          shrink-0
+          h-7 px-2.5
+          text-xs font-medium
+          rounded-md
+          bg-primary text-primary-foreground
+          hover:bg-primary/90
+          active:scale-95
+          transition-all
+          focus:outline-none focus:ring-2 focus:ring-primary/40
+        "
       >
-        <X className="h-4 w-4" />
+        <Heart className="h-3 w-3" />
+        Connect
       </button>
     </div>
   );

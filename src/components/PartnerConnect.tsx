@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import {
   Heart, Copy, Check, Link2, Loader2, Lock,
-  Share2, UserCheck, QrCode, Sparkles, ArrowRight,
+  Share2, UserCheck, Sparkles, ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -192,7 +192,7 @@ function PendingState({
           <span className="font-mono text-2xl sm:text-3xl font-bold tracking-[.3em] text-foreground">
             {inviteCode}
           </span>
-          <CopyButton value={inviteCode} label="Copy code" className="shrink-0" />
+          <CopyButton value={inviteCode} label="Copy" className="shrink-0" />
         </div>
 
         <div className="grid grid-cols-2 gap-2">
@@ -396,7 +396,7 @@ export function PartnerConnect() {
 
   // Fixed: points to /auth so Auth.tsx picks up ?code= on arrival
   const inviteLink = inviteCode
-    ? `${window.location.origin}/auth?code=${inviteCode}`
+    ? `${window.location.origin}/auth?invite=${inviteCode}`
     : "";
 
   const handleAccept = useCallback(async (code: string) => {
