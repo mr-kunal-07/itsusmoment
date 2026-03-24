@@ -7,75 +7,79 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const json = (data: unknown, status = 200) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!authHeader) return json({ error: "Unauthorized" }, 401);
 
+    // Verify identity with anon key + user token
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: authErr } = await userClient.auth.getUser();
+    if (authErr || !user) return json({ error: "Unauthorized" }, 401);
+
+    // Privileged queries with service role
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Verify caller is admin
-    const { data: { user }, error: authErr } = await adminClient.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authErr || !user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
-    const { data: roleRow } = await adminClient.from("user_roles").select("id").eq("user_id", user.id).eq("role", "admin").maybeSingle();
-    if (!roleRow) return new Response(JSON.stringify({ error: "Forbidden: admin only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { data: roleRow } = await adminClient
+      .from("user_roles").select("id")
+      .eq("user_id", user.id).eq("role", "admin").maybeSingle();
+    if (!roleRow) return json({ error: "Forbidden: admin only" }, 403);
 
     const body = await req.json();
     const { target_user_id, plan, action } = body;
 
-    if (!target_user_id) return new Response(JSON.stringify({ error: "Missing target_user_id" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!target_user_id) return json({ error: "Missing target_user_id" }, 400);
 
     if (action === "update_plan") {
-      if (!plan) return new Response(JSON.stringify({ error: "Missing plan" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (!plan) return json({ error: "Missing plan" }, 400);
 
       const now = new Date();
       const periodEnd = new Date(now);
       periodEnd.setMonth(periodEnd.getMonth() + 1);
 
-      // Get current plan for audit log
       const { data: existingSub } = await adminClient
-        .from("subscriptions")
-        .select("id, plan")
-        .eq("user_id", target_user_id)
-        .maybeSingle();
+        .from("subscriptions").select("id, plan")
+        .eq("user_id", target_user_id).maybeSingle();
 
       const oldPlan = existingSub?.plan ?? null;
 
       let upsertErr;
       if (existingSub) {
-        const { error } = await adminClient
-          .from("subscriptions")
-          .update({
-            plan,
-            status: "active",
-            current_period_start: now.toISOString(),
-            current_period_end: plan === "single" ? null : periodEnd.toISOString(),
-            updated_at: now.toISOString(),
-          })
-          .eq("user_id", target_user_id);
+        const { error } = await adminClient.from("subscriptions").update({
+          plan,
+          status: "active",
+          current_period_start: now.toISOString(),
+          current_period_end: plan === "single" ? null : periodEnd.toISOString(),
+          updated_at: now.toISOString(),
+        }).eq("user_id", target_user_id);
         upsertErr = error;
       } else {
-        const { error } = await adminClient
-          .from("subscriptions")
-          .insert({
-            user_id: target_user_id,
-            plan,
-            status: "active",
-            current_period_start: now.toISOString(),
-            current_period_end: plan === "single" ? null : periodEnd.toISOString(),
-          });
+        const { error } = await adminClient.from("subscriptions").insert({
+          user_id: target_user_id,
+          plan,
+          status: "active",
+          current_period_start: now.toISOString(),
+          current_period_end: plan === "single" ? null : periodEnd.toISOString(),
+        });
         upsertErr = error;
       }
 
       if (upsertErr) throw new Error(upsertErr.message);
 
-      // Write audit log entry
       await adminClient.from("plan_audit_log").insert({
         target_user_id,
         changed_by_user_id: user.id,
@@ -83,46 +87,43 @@ serve(async (req) => {
         new_plan: plan,
       });
 
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return json({ success: true });
     }
 
     if (action === "update_password") {
       const { password } = body;
-      if (!password) return new Response(JSON.stringify({ error: "Missing password" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (!password) return json({ error: "Missing password" }, 400);
       const { error: pwErr } = await adminClient.auth.admin.updateUserById(target_user_id, { password });
       if (pwErr) throw new Error(pwErr.message);
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return json({ success: true });
     }
 
     if (action === "delete_user") {
       const { error: delErr } = await adminClient.auth.admin.deleteUser(target_user_id);
       if (delErr) throw new Error(delErr.message);
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return json({ success: true });
     }
 
     if (action === "toggle_admin") {
       const { add } = body;
       if (add) {
         const { data: existingRole } = await adminClient
-          .from("user_roles")
-          .select("id")
-          .eq("user_id", target_user_id)
-          .eq("role", "admin")
-          .maybeSingle();
+          .from("user_roles").select("id")
+          .eq("user_id", target_user_id).eq("role", "admin").maybeSingle();
         if (!existingRole) {
           await adminClient.from("user_roles").insert({ user_id: target_user_id, role: "admin" });
         }
       } else {
-        await adminClient.from("user_roles").delete().eq("user_id", target_user_id).eq("role", "admin");
+        await adminClient.from("user_roles").delete()
+          .eq("user_id", target_user_id).eq("role", "admin");
       }
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return json({ success: true });
     }
 
-    return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return json({ error: "Unknown action" }, 400);
+
   } catch (err) {
     console.error("admin-manage-user error:", err);
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: err instanceof Error ? err.message : "Unknown" }, 500);
   }
 });

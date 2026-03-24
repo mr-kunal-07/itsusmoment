@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 export interface PlanAuditEntry {
   id: string;
   target_user_id: string;
@@ -31,18 +33,34 @@ export interface AdminUser {
   has_partner: boolean;
 }
 
-const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+// ─── API helper ───────────────────────────────────────────────────────────────
+
+// Derive the functions base URL from the already-required SUPABASE_URL
+// so we never depend on a separate VITE_SUPABASE_PROJECT_ID env var.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const FUNCTIONS_BASE = `${SUPABASE_URL}/functions/v1`;
+
+async function getToken(): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Not authenticated");
+  return session.access_token;
+}
 
 async function callAdminFn(fnName: string, body: object, token: string) {
-  const res = await fetch(`https://${projectId}.supabase.co/functions/v1/${fnName}`, {
+  const res = await fetch(`${FUNCTIONS_BASE}/${fnName}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(body),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "Request failed");
   return data;
 }
+
+// ─── Hooks ────────────────────────────────────────────────────────────────────
 
 export function useIsAdmin() {
   const { user } = useAuth();
@@ -67,9 +85,8 @@ export function useAdminUsers() {
     queryKey: ["admin-users"],
     enabled: !!user,
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-      const result = await callAdminFn("admin-list-users", {}, session.access_token);
+      const token = await getToken();
+      const result = await callAdminFn("admin-list-users", {}, token);
       return result.users as AdminUser[];
     },
     staleTime: 30_000,
@@ -85,9 +102,8 @@ export function useAdminManageUser() {
       plan?: string;
       add?: boolean;
     }) => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-      return callAdminFn("admin-manage-user", params, session.access_token);
+      const token = await getToken();
+      return callAdminFn("admin-manage-user", params, token);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
@@ -102,9 +118,8 @@ export function useAdminAuditLog() {
     queryKey: ["admin-audit-log"],
     enabled: !!user,
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-      const result = await callAdminFn("admin-audit-log", {}, session.access_token);
+      const token = await getToken();
+      const result = await callAdminFn("admin-audit-log", {}, token);
       return result.logs as PlanAuditEntry[];
     },
     staleTime: 30_000,

@@ -7,29 +7,40 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const json = (data: unknown, status = 200) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!authHeader) return json({ error: "Unauthorized" }, 401);
 
+    // Verify identity with anon key + user token
+    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: authErr } = await userClient.auth.getUser();
+    if (authErr || !user) return json({ error: "Unauthorized" }, 401);
+
+    // Privileged queries with service role
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Verify caller is admin
-    const { data: { user }, error: authErr } = await adminClient.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authErr || !user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { data: roleRow } = await adminClient
+      .from("user_roles").select("id")
+      .eq("user_id", user.id).eq("role", "admin").maybeSingle();
+    if (!roleRow) return json({ error: "Forbidden: admin only" }, 403);
 
-    const { data: roleRow } = await adminClient.from("user_roles").select("id").eq("user_id", user.id).eq("role", "admin").maybeSingle();
-    if (!roleRow) return new Response(JSON.stringify({ error: "Forbidden: admin only" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
-    // Fetch all auth users
     const { data: { users: authUsers } } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
 
-    // Fetch profiles, subscriptions, media stats, couples, roles in parallel
     const [profilesRes, subsRes, mediaRes, couplesRes, rolesRes] = await Promise.all([
       adminClient.from("profiles").select("*"),
       adminClient.from("subscriptions").select("*").eq("status", "active"),
@@ -44,7 +55,6 @@ serve(async (req) => {
     const couples = couplesRes.data ?? [];
     const adminUserIds = new Set((rolesRes.data ?? []).map((r: any) => r.user_id));
 
-    // Build a partner map: userId → partnerId
     const partnerMap: Record<string, string> = {};
     for (const c of couples) {
       if (c.user1_id && c.user2_id) {
@@ -53,7 +63,6 @@ serve(async (req) => {
       }
     }
 
-    // Build a paid-plan map: userId → plan (only non-free/single plans)
     const paidPlanMap: Record<string, string> = {};
     for (const s of subscriptions) {
       if (s.plan && s.plan !== "free" && s.plan !== "single") {
@@ -61,17 +70,15 @@ serve(async (req) => {
       }
     }
 
-    // Resolve effective plan: highest of own plan or partner's plan
     const PLAN_RANK: Record<string, number> = { soulmate: 3, dating: 2, single: 1, free: 0 };
+
     function getEffectivePlan(userId: string): string {
       const ownPlan = paidPlanMap[userId] ?? "single";
       const partnerId = partnerMap[userId];
-      const partnerPlan = (partnerId && paidPlanMap[partnerId]) ? paidPlanMap[partnerId] : "single";
-      const best = (PLAN_RANK[ownPlan] ?? 0) >= (PLAN_RANK[partnerPlan] ?? 0) ? ownPlan : partnerPlan;
-      return best;
+      const partnerPlan = partnerId && paidPlanMap[partnerId] ? paidPlanMap[partnerId] : "single";
+      return (PLAN_RANK[ownPlan] ?? 0) >= (PLAN_RANK[partnerPlan] ?? 0) ? ownPlan : partnerPlan;
     }
 
-    // Compute storage per user
     const storageMap: Record<string, number> = {};
     const uploadCountMap: Record<string, number> = {};
     for (const m of mediaItems) {
@@ -103,13 +110,10 @@ serve(async (req) => {
       };
     });
 
-    return new Response(JSON.stringify({ users: userList }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ users: userList });
+
   } catch (err) {
     console.error("admin-list-users error:", err);
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: err instanceof Error ? err.message : "Unknown" }, 500);
   }
 });
