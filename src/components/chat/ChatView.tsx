@@ -320,6 +320,13 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
   const [showDrawing, setShowDrawing] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
 
+  // ✅ ADD THIS: Live clock for "last seen" updates
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 60_000); // Update every 60 seconds
+    return () => clearInterval(interval);
+  }, []);
+
   const selectMode = selectedIds.size > 0;
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -578,7 +585,7 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                 ) : partnerOnline ? (
                   <span style={{ color: "hsl(var(--wa-online))" }}>online</span>
                 ) : partnerLastSeen ? (
-                  <span>last seen {formatDistanceToNow(partnerLastSeen, { addSuffix: true })}</span>
+                  <span key={now}>last seen {formatDistanceToNow(partnerLastSeen, { addSuffix: true })}</span>
                 ) : (
                   <span>offline</span>
                 )}

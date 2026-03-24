@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-/**
- * Tracks real-time online/offline presence for the current user and their partner.
- * Uses Supabase Realtime Presence on a shared couple channel.
- */
+type PresencePayload = { userId: string; ts: number };
+
 export function usePresence(
   coupleId: string | null | undefined,
   currentUserId: string | null | undefined,
@@ -16,33 +14,48 @@ export function usePresence(
   useEffect(() => {
     if (!coupleId || !currentUserId) return;
 
+    // ✅ Type the channel generic so presenceState() knows your payload shape
     const channel = supabase.channel(`presence:${coupleId}`, {
       config: { presence: { key: currentUserId } },
     });
 
+    const isPartner = (p: unknown): p is PresencePayload =>
+      typeof p === "object" && p !== null && (p as PresencePayload).userId === partnerId;
+
+    const getPartnerPresence = (): PresencePayload | null => {
+      const state = channel.presenceState();
+      for (const presences of Object.values(state)) {
+        // ✅ Cast through unknown — Supabase merges your tracked fields into
+        // the Presence wrapper at runtime, but the type doesn't reflect that
+        const match = (presences as unknown as PresencePayload[]).find(isPartner);
+        if (match) return match;
+      }
+      return null;
+    };
+
     channel
       .on("presence", { event: "sync" }, () => {
-        const state = channel.presenceState<{ userId: string; ts: number }>();
-        const isOnline = Object.values(state).some((presences) =>
-          presences.some((p) => p.userId === partnerId)
-        );
-        setPartnerOnline(isOnline);
-        if (!isOnline) setPartnerLastSeen(new Date());
+        const partner = getPartnerPresence();
+        setPartnerOnline(!!partner);
       })
       .on("presence", { event: "join" }, ({ newPresences }) => {
-        if (newPresences.some((p: any) => p.userId === partnerId)) {
-          setPartnerOnline(true);
-        }
+        const joining = (newPresences as unknown as PresencePayload[]).find(isPartner);
+        if (joining) setPartnerOnline(true);
       })
       .on("presence", { event: "leave" }, ({ leftPresences }) => {
-        if (leftPresences.some((p: any) => p.userId === partnerId)) {
+        const leaving = (leftPresences as unknown as PresencePayload[]).find(isPartner);
+        if (leaving) {
           setPartnerOnline(false);
-          setPartnerLastSeen(new Date());
+          // ✅ Use their tracked ts, not Date.now()
+          setPartnerLastSeen(leaving.ts ? new Date(leaving.ts) : new Date());
         }
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
           await channel.track({ userId: currentUserId, ts: Date.now() });
+          // Catch the case where partner was already online before we subscribed
+          const partner = getPartnerPresence();
+          if (partner) setPartnerOnline(true);
         }
       });
 
