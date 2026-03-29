@@ -1,19 +1,22 @@
 import { motion } from "framer-motion";
 
 const stats = [
-  { value: "50K+", label: "Couples" },
-  { value: "2M+", label: "Memories" },
-  { value: "4.9★", label: "Rating" },
-  { value: "100%", label: "Private" },
+  { value: "10K+", label: "couples creating their private space" },
+  { value: "250K+", label: "memories saved together" },
+  { value: "1M+", label: "messages, notes, and little moments shared" },
+  { value: "4.9/5", label: "love from couples who use usMoment" },
 ];
 
 const Stats = () => (
-  <section className="py-8 sm:py-10 bg-[rgba(253,246,227,0.6)] border-y border-[rgba(216,207,194,0.3)]">
+  <section className="border-y border-[rgba(216,207,194,0.3)] bg-[rgba(253,246,227,0.6)] py-8 sm:py-10">
+    <div className="mx-auto max-w-5xl px-4 sm:px-6">
+      <div className="mb-6 text-center">
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#c06a2b]">
+          Loved by couples
+        </p>
+      </div>
 
-    <div className="max-w-5xl mx-auto px-5 sm:px-6">
-
-      <div className="grid grid-cols-4 gap-3 sm:gap-6">
-
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
         {stats.map((s, i) => (
           <motion.div
             key={s.label}
@@ -21,20 +24,16 @@ const Stats = () => (
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.4, delay: i * 0.06 }}
-            className="text-center"
+            className="rounded-2xl border border-[rgba(216,207,194,0.4)] bg-[rgba(255,251,244,0.7)] px-3 py-4 text-center sm:px-4 sm:py-5"
           >
-
-            <div className="text-xl sm:text-2xl md:text-3xl font-['Playfair_Display'] font-bold bg-[linear-gradient(135deg,#c06a2b,#caa27a)] bg-clip-text text-transparent">
+            <div className="bg-[linear-gradient(135deg,#c06a2b,#caa27a)] bg-clip-text font-['Playfair_Display'] text-xl font-bold text-transparent sm:text-3xl">
               {s.value}
             </div>
-
-            <div className="text-[10px] sm:text-xs text-[#5f6f5f] mt-0.5">
+            <p className="mt-2 text-[11px] leading-relaxed text-[#5f6f5f] sm:text-xs">
               {s.label}
-            </div>
-
+            </p>
           </motion.div>
         ))}
-
       </div>
     </div>
   </section>

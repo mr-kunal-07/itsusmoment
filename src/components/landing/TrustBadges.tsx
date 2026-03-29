@@ -1,18 +1,17 @@
 import { motion } from "framer-motion";
-import { Lock, Shield, Smartphone, Ban } from "lucide-react";
+import { CreditCard, Lock, Smartphone, Users } from "lucide-react";
 
 const badges = [
-  { icon: Lock, title: "E2E encrypted", desc: "AES-256-GCM" },
-  { icon: Shield, title: "Zero-knowledge", desc: "We can't read your data" },
-  { icon: Smartphone, title: "PWA ready", desc: "Install on any device" },
-  { icon: Ban, title: "No ads ever", desc: "Your data stays yours" },
+  { icon: Users, title: "Built for couples", desc: "One shared space for two people" },
+  { icon: Lock, title: "Privacy-first", desc: "Private chat and protected access" },
+  { icon: Smartphone, title: "Installable PWA", desc: "Use it like an app on any device" },
+  { icon: CreditCard, title: "Razorpay billing", desc: "Simple payments for India" },
 ];
 
 const TrustBadges = () => (
   <section className="py-8 sm:py-10">
-    <div className="max-w-4xl mx-auto px-5 sm:px-6">
-
-      <div className="grid grid-cols-4 gap-3 sm:gap-5">
+    <div className="mx-auto max-w-4xl px-4 sm:px-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 sm:gap-5">
         {badges.map((b, i) => (
           <motion.div
             key={b.title}
@@ -20,25 +19,17 @@ const TrustBadges = () => (
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.4, delay: i * 0.06 }}
-            className="text-center"
+            className="rounded-2xl border border-[rgba(216,207,194,0.3)] bg-[rgba(253,246,227,0.75)] px-3 py-4 text-center"
           >
-
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-[rgba(192,106,43,0.1)] flex items-center justify-center mx-auto mb-2 text-[#c06a2b]">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[rgba(192,106,43,0.1)] text-[#c06a2b]">
               <b.icon size={16} />
             </div>
 
-            <h4 className="text-[10px] sm:text-xs font-semibold text-[#1f2a1f]">
-              {b.title}
-            </h4>
-
-            <p className="text-[9px] sm:text-[10px] text-[#5f6f5f] hidden sm:block">
-              {b.desc}
-            </p>
-
+            <h4 className="text-xs font-semibold text-[#1f2a1f] sm:text-sm">{b.title}</h4>
+            <p className="mt-1 text-[10px] text-[#5f6f5f] sm:text-[11px]">{b.desc}</p>
           </motion.div>
         ))}
       </div>
-
     </div>
   </section>
 );
