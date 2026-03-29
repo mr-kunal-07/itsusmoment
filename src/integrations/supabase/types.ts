@@ -98,28 +98,49 @@ export type Database = {
       }
       couples: {
         Row: {
+          chat_theme_id: string
           created_at: string
           id: string
           invite_code: string
           status: string
+          streak_count: number
+          streak_longest: number
+          streak_user1_sent: boolean
+          streak_user2_sent: boolean
+          streak_window_complete: boolean
+          streak_window_start: string | null
           updated_at: string
           user1_id: string
           user2_id: string | null
         }
         Insert: {
+          chat_theme_id?: string
           created_at?: string
           id?: string
           invite_code?: string
           status?: string
+          streak_count?: number
+          streak_longest?: number
+          streak_user1_sent?: boolean
+          streak_user2_sent?: boolean
+          streak_window_complete?: boolean
+          streak_window_start?: string | null
           updated_at?: string
           user1_id: string
           user2_id?: string | null
         }
         Update: {
+          chat_theme_id?: string
           created_at?: string
           id?: string
           invite_code?: string
           status?: string
+          streak_count?: number
+          streak_longest?: number
+          streak_user1_sent?: boolean
+          streak_user2_sent?: boolean
+          streak_window_complete?: boolean
+          streak_window_start?: string | null
           updated_at?: string
           user1_id?: string
           user2_id?: string | null
@@ -370,6 +391,7 @@ export type Database = {
           content: string
           couple_id: string
           created_at: string
+          deleted_at: string | null
           id: string
           message_type: string
           read_at: string | null
@@ -381,6 +403,7 @@ export type Database = {
           content: string
           couple_id: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           message_type?: string
           read_at?: string | null
@@ -392,6 +415,7 @@ export type Database = {
           content?: string
           couple_id?: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           message_type?: string
           read_at?: string | null

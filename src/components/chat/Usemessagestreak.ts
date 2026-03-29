@@ -169,11 +169,10 @@ export function useMessageStreak(): UseMessageStreakReturn {
         const iAmUser1 = user.id === row.user1_id;
         const iSent = iAmUser1 ? row.streak_user1_sent : row.streak_user2_sent;
         const partnerSent = iAmUser1 ? row.streak_user2_sent : row.streak_user1_sent;
-        // bothSent is authoritative from the DB — the trigger sets window_complete=true
-        // the moment the 2nd person's message lands, so we don't rely on both flags
-        // being true client-side (avoids a race where the realtime update arrives
-        // before both individual sent-flags are reflected in the cache).
-        const bothSent = row.streak_window_complete;
+        // Consider the window complete when both partners have sent in the window.
+        // We derive this from the per-user flags to avoid coupling the UI to any
+        // specific server-side meaning of `streak_window_complete`.
+        const bothSent = iSent && partnerSent;
 
         // ── Window timing ────────────────────────────────────────────────────────
         let timeLeftMs: number | null = null;
@@ -191,11 +190,11 @@ export function useMessageStreak(): UseMessageStreakReturn {
         // ── Effective current streak ─────────────────────────────────────────────
         // If the window has expired client-side before the DB has caught up
         // (e.g. no new message to trigger the reset), show 0 to avoid stale count.
-        const current = windowExpired && !iSent && !partnerSent ? 0 : row.streak_count;
+        const current = windowExpired && !bothSent ? 0 : row.streak_count;
         const longest = row.streak_longest;
 
         const waitingForPartner = iSent && !partnerSent && !bothSent;
-        const neitherSent = !iSent && !partnerSent && !bothSent;
+        const neitherSent = !iSent && !partnerSent;
 
         // atRisk: window is open, expiring in < 4h, and the pair is NOT yet complete
         const atRisk = !windowExpired

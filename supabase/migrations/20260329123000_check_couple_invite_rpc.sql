@@ -34,3 +34,5 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.check_couple_invite(text) TO anon, authenticated, service_role;
 
+-- Refresh PostgREST schema cache after DDL
+NOTIFY pgrst, 'reload schema';

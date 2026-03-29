@@ -19,6 +19,17 @@ export function usePresence(
       config: { presence: { key: currentUserId } },
     });
 
+    // Keep our tracked `ts` fresh so the partner sees an accurate "last seen"
+    // timestamp when we disconnect.
+    let heartbeatId: ReturnType<typeof setInterval> | null = null;
+    const heartbeat = async () => {
+      try {
+        await channel.track({ userId: currentUserId, ts: Date.now() });
+      } catch {
+        // ignore transient network errors
+      }
+    };
+
     const isPartner = (p: unknown): p is PresencePayload =>
       typeof p === "object" && p !== null && (p as PresencePayload).userId === partnerId;
 
@@ -52,7 +63,8 @@ export function usePresence(
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
-          await channel.track({ userId: currentUserId, ts: Date.now() });
+          await heartbeat();
+          heartbeatId = setInterval(heartbeat, 30_000);
           // Catch the case where partner was already online before we subscribed
           const partner = getPartnerPresence();
           if (partner) setPartnerOnline(true);
@@ -60,6 +72,7 @@ export function usePresence(
       });
 
     return () => {
+      if (heartbeatId) clearInterval(heartbeatId);
       channel.untrack().then(() => supabase.removeChannel(channel));
     };
   }, [coupleId, currentUserId, partnerId]);

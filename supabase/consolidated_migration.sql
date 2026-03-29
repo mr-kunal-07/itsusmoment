@@ -1436,6 +1436,142 @@ ALTER TABLE public.travel_locations
   ADD COLUMN IF NOT EXISTS folder_id uuid REFERENCES public.folders(id) ON DELETE SET NULL;
 
 -- ---------------------------------------------------------------------------
+-- Source: supabase/migrations/20260329124000_messages_soft_delete.sql
+-- ---------------------------------------------------------------------------
+
+-- Messages: soft delete support
+-- Frontend filters on `deleted_at=is.null` and sets `deleted_at` on delete.
+
+ALTER TABLE public.messages
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+
+CREATE INDEX IF NOT EXISTS idx_messages_couple_id_deleted_at_created_at
+  ON public.messages (couple_id, deleted_at, created_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- Source: supabase/migrations/20260329130000_chat_streak.sql
+-- ---------------------------------------------------------------------------
+
+-- Chat streak state lives on `public.couples`.
+-- The UI (`src/components/chat/Usemessagestreak.ts`) expects these fields.
+
+ALTER TABLE public.couples
+  ADD COLUMN IF NOT EXISTS streak_count integer NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS streak_longest integer NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS streak_window_start timestamptz,
+  ADD COLUMN IF NOT EXISTS streak_window_complete boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS streak_user1_sent boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS streak_user2_sent boolean NOT NULL DEFAULT false;
+
+CREATE OR REPLACE FUNCTION public.update_chat_streak_on_message_insert()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  c record;
+  now_ts timestamptz;
+  sender_is_user1 boolean;
+  sender_is_user2 boolean;
+  window_expires timestamptz;
+  user1_sent boolean;
+  user2_sent boolean;
+  new_count integer;
+BEGIN
+  now_ts := COALESCE(NEW.created_at, now());
+
+  SELECT *
+  INTO c
+  FROM public.couples
+  WHERE id = NEW.couple_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN NEW;
+  END IF;
+
+  IF c.status IS DISTINCT FROM 'active' OR c.user2_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  sender_is_user1 := (NEW.sender_id = c.user1_id);
+  sender_is_user2 := (NEW.sender_id = c.user2_id);
+  IF NOT (sender_is_user1 OR sender_is_user2) THEN
+    RETURN NEW;
+  END IF;
+
+  IF c.streak_window_start IS NULL THEN
+    c.streak_window_start := now_ts;
+    c.streak_user1_sent := false;
+    c.streak_user2_sent := false;
+    c.streak_window_complete := false;
+  END IF;
+
+  window_expires := c.streak_window_start + interval '24 hours';
+  IF now_ts > window_expires THEN
+    c.streak_count := 0;
+    c.streak_window_start := now_ts;
+    c.streak_user1_sent := false;
+    c.streak_user2_sent := false;
+    c.streak_window_complete := false;
+  END IF;
+
+  user1_sent := c.streak_user1_sent;
+  user2_sent := c.streak_user2_sent;
+  IF sender_is_user1 THEN user1_sent := true; END IF;
+  IF sender_is_user2 THEN user2_sent := true; END IF;
+
+  IF user1_sent AND user2_sent THEN
+    new_count := COALESCE(c.streak_count, 0) + 1;
+    UPDATE public.couples
+      SET
+        streak_count = new_count,
+        streak_longest = GREATEST(COALESCE(streak_longest, 0), new_count),
+        streak_window_start = now_ts,
+        streak_window_complete = false,
+        streak_user1_sent = false,
+        streak_user2_sent = false,
+        updated_at = now()
+      WHERE id = c.id;
+    RETURN NEW;
+  END IF;
+
+  UPDATE public.couples
+    SET
+      streak_window_start = c.streak_window_start,
+      streak_window_complete = false,
+      streak_user1_sent = user1_sent,
+      streak_user2_sent = user2_sent,
+      updated_at = now()
+    WHERE id = c.id;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_update_chat_streak_on_message_insert ON public.messages;
+CREATE TRIGGER trg_update_chat_streak_on_message_insert
+AFTER INSERT ON public.messages
+FOR EACH ROW
+EXECUTE FUNCTION public.update_chat_streak_on_message_insert();
+
+GRANT EXECUTE ON FUNCTION public.update_chat_streak_on_message_insert() TO service_role;
+
+-- ---------------------------------------------------------------------------
+-- Source: supabase/migrations/20260329133000_chat_theme.sql
+-- ---------------------------------------------------------------------------
+
+-- Chat theme selection for the couple chat UI.
+-- Used by `src/components/chat/Usechattheme.ts`.
+
+ALTER TABLE public.couples
+  ADD COLUMN IF NOT EXISTS chat_theme_id text NOT NULL DEFAULT 'default';
+
+-- Refresh PostgREST schema cache after DDL
+NOTIFY pgrst, 'reload schema';
+
+-- ---------------------------------------------------------------------------
 -- Source: supabase/migrations/20260329123000_check_couple_invite_rpc.sql
 -- ---------------------------------------------------------------------------
 

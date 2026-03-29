@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSwipeNav } from "@/hooks/useSwipeNav";
 import { Search, Upload, Moon, Sun, LayoutGrid, List, ArrowUpDown, FolderPlus } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePlan } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
 import { useMedia, useStarredMedia, useMoveMedia, getPublicUrl } from "@/hooks/useMedia";
 import { useDeleteFolder, useFolders, useRenameFolder } from "@/hooks/useFolders";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/hooks/useTheme";
 import { useProfile, useAllProfiles } from "@/hooks/useProfile";
 import { useOnThisDay } from "@/hooks/useMemories";
@@ -137,6 +139,8 @@ export default function Dashboard() {
   const { tab, folderId: folderParam } = useParams<{ tab?: string; folderId?: string }>();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
+  const isMobile = useIsMobile();
+  const reduceMotion = useReducedMotion();
 
   // Hooks
   const plan = usePlan();
@@ -196,6 +200,7 @@ export default function Dashboard() {
   const isSpecial = useMemo(() => isSpecialView(selectedView), [selectedView]);
   const isChat = selectedView === "chat";
   const isGridView = useMemo(() => !NON_GRID_VIEWS.includes(selectedView as ViewType), [selectedView]);
+  const animateChatNav = isMobile && !reduceMotion;
 
   const folderId = useMemo(() => {
     if (selectedView === "all") return undefined;
@@ -805,6 +810,159 @@ export default function Dashboard() {
         <AppSidebar selectedView={selectedView} onSelectView={gatedNavigate} />
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {animateChatNav ? (
+            <div className="flex-1 min-h-0 relative overflow-hidden">
+              <AnimatePresence initial={false} mode="wait">
+                {isChat ? (
+                  <motion.div
+                    key="chat"
+                    className="absolute inset-0 flex flex-col min-w-0 min-h-0 overflow-hidden bg-background"
+                    initial={{ x: "100%" }}
+                    animate={{ x: 0 }}
+                    exit={{ x: "100%" }}
+                    transition={{ type: "tween", ease: [0.22, 1, 0.36, 1], duration: 0.28 }}
+                  >
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                      <ChatView
+                        onBack={() => setSelectedView("all")}
+                        onUpgrade={() => setSelectedView("billing")}
+                      />
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="main"
+                    className="absolute inset-0 flex flex-col min-w-0 min-h-0 overflow-hidden bg-background"
+                    initial={{ x: "-100%" }}
+                    animate={{ x: 0 }}
+                    exit={{ x: "-100%" }}
+                    transition={{ type: "tween", ease: [0.22, 1, 0.36, 1], duration: 0.28 }}
+                  >
+                    <header
+                      className="sticky top-0 z-10 bg-background/95 backdrop-blur-xl border-b border-border/60 shrink-0"
+                      style={{ height: "52px" }}
+                    >
+                      <div className="flex items-center h-full px-2 sm:px-4 gap-1.5">
+                        <SidebarTrigger className="shrink-0 h-9 w-9" />
+
+                        {isGridView ? (
+                          <div className="relative flex-1 min-w-0 max-w-[200px] sm:max-w-md">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                            <Input
+                              placeholder="Searchâ€¦"
+                              className="pl-8 h-8 text-[13px] bg-muted/60 border-transparent focus:border-border rounded-xl"
+                              value={search}
+                              onChange={(e) => setSearch(e.target.value)}
+                            />
+                          </div>
+                        ) : (
+                          <h1 className="text-[15px] font-semibold text-foreground truncate flex-1 sm:hidden">
+                            {pageTitle}
+                          </h1>
+                        )}
+
+                        {renderFileTypeFilter()}
+
+                        <div className="flex items-center gap-0.5 ml-auto shrink-0">
+                          {renderSortMenu()}
+
+                          {isGridView && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hidden sm:flex"
+                              onClick={() => setViewMode((v) => (v === "grid" ? "list" : "grid"))}
+                              aria-label={`Switch to ${viewMode === "grid" ? "list" : "grid"} view`}
+                            >
+                              {viewMode === "grid" ? (
+                                <List className="h-4 w-4" />
+                              ) : (
+                                <LayoutGrid className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={toggleTheme}
+                            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+                          >
+                            {theme === "dark" ? (
+                              <Sun className="h-[15px] w-[15px]" />
+                            ) : (
+                              <Moon className="h-[15px] w-[15px]" />
+                            )}
+                          </Button>
+
+                          <NotificationsPanel />
+
+                          {(selectedView === "all" || !isSpecial) && (
+                            <Button
+                              onClick={() => setUploadOpen(true)}
+                              size="sm"
+                              className="gap-1.5 h-8 px-3 hidden sm:flex text-xs rounded-xl"
+                            >
+                              <Upload className="h-3.5 w-3.5" />
+                              Upload
+                            </Button>
+                          )}
+
+                          <button
+                            onClick={() => navigate("/profile")}
+                            className="flex items-center gap-1.5 h-8 pl-1 pr-2 rounded-xl hover:bg-accent transition-colors shrink-0"
+                            aria-label="Go to profile"
+                          >
+                            <Avatar className="h-7 w-7 ring-2 ring-border">
+                              {profile?.avatar_url && (
+                                <AvatarImage src={profile.avatar_url} alt="Profile" />
+                              )}
+                              <AvatarFallback className="text-[10px] font-semibold">
+                                {profileInitials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="hidden lg:flex flex-col items-start leading-none">
+                              <span className="text-[11px] font-medium text-foreground truncate max-w-[80px]">
+                                {profile?.display_name ?? user?.email?.split("@")[0] ?? "You"}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground capitalize">
+                                {plan}
+                              </span>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    </header>
+
+                    <PartnerBanner />
+                    <UpgradeBanner
+                      onUpgrade={() => setSelectedView("billing")}
+                      selectedView={selectedView}
+                    />
+
+                    <main
+                      className={cn(
+                        "flex-1 overflow-auto pb-[72px] sm:pb-6",
+                        selectedView !== "settings" &&
+                          selectedView !== "travel-map" &&
+                          "px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6",
+                        dragOverMain && "ring-2 ring-primary ring-inset"
+                      )}
+                      onDragOver={handleMainDragOver}
+                      onDragLeave={handleMainDragLeave}
+                      onDrop={handleMainDrop}
+                      {...swipeHandlers}
+                    >
+                      {renderPageHeader()}
+                      {renderMainContent()}
+                    </main>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <>
           {/* Header */}
           {!isChat && (
             <header
@@ -937,6 +1095,8 @@ export default function Dashboard() {
               {renderPageHeader()}
               {renderMainContent()}
             </main>
+          )}
+            </>
           )}
         </div>
 
