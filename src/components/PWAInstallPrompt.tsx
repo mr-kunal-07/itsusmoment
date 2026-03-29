@@ -7,6 +7,9 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+type NavigatorWithStandalone = Navigator & { standalone?: boolean };
+type WindowWithMSStream = Window & { MSStream?: unknown };
+
 export function PWAInstallPrompt() {
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(() => localStorage.getItem("pwa-dismissed") === "1");
@@ -15,8 +18,8 @@ export function PWAInstallPrompt() {
 
   useEffect(() => {
     // Check if iOS Safari (no beforeinstallprompt support)
-    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !(window as any).MSStream;
-    const standalone = (window.navigator as any).standalone === true;
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !(window as WindowWithMSStream).MSStream;
+    const standalone = (window.navigator as NavigatorWithStandalone).standalone === true;
     setIsIOS(ios && !standalone);
 
     const handler = (e: Event) => {

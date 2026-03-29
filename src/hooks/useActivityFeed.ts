@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { QK } from "@/lib/queryKeys";
+import { Tables } from "@/integrations/supabase/types";
 
 export type ActivityType = "upload" | "note" | "reaction" | "milestone";
 
@@ -25,6 +26,11 @@ export interface ActivityItem {
 }
 
 const MEDIA_FIELDS = "id, title, file_type, file_path";
+type MediaActivityRow = Pick<Tables<"media">, "id" | "title" | "file_type" | "file_path" | "created_at" | "uploaded_by">;
+type JoinedMedia = Pick<Tables<"media">, "id" | "title" | "file_type" | "file_path"> | null;
+type LoveNoteActivityRow = Pick<Tables<"love_notes">, "id" | "content" | "author_id" | "created_at"> & { media: JoinedMedia };
+type MediaReactionActivityRow = Pick<Tables<"media_reactions">, "id" | "emoji" | "user_id" | "created_at"> & { media: JoinedMedia };
+type MilestoneActivityRow = Pick<Tables<"milestones">, "id" | "title" | "type" | "created_by" | "created_at">;
 
 export function useActivityFeed() {
   const { user } = useAuth();
@@ -37,12 +43,12 @@ export function useActivityFeed() {
           .select(`${MEDIA_FIELDS}, uploaded_by, created_at`)
           .order("created_at", { ascending: false })
           .limit(40),
-        (supabase as any)
+        supabase
           .from("love_notes")
           .select(`id, content, author_id, created_at, media:media_id(${MEDIA_FIELDS})`)
           .order("created_at", { ascending: false })
           .limit(40),
-        (supabase as any)
+        supabase
           .from("media_reactions")
           .select(`id, emoji, user_id, created_at, media:media_id(${MEDIA_FIELDS})`)
           .order("created_at", { ascending: false })
@@ -56,14 +62,14 @@ export function useActivityFeed() {
 
       const items: ActivityItem[] = [];
 
-      (mediaRes.data ?? []).forEach((m: any) => {
+      ((mediaRes.data as MediaActivityRow[] | null) ?? []).forEach((m) => {
         items.push({
           id: `upload-${m.id}`, type: "upload", created_at: m.created_at, actor_id: m.uploaded_by,
           media_id: m.id, media_title: m.title, media_file_type: m.file_type, media_file_path: m.file_path,
         });
       });
 
-      (notesRes.data ?? []).forEach((n: any) => {
+      ((notesRes.data as LoveNoteActivityRow[] | null) ?? []).forEach((n) => {
         items.push({
           id: `note-${n.id}`, type: "note", created_at: n.created_at, actor_id: n.author_id,
           media_id: n.media?.id, media_title: n.media?.title, media_file_type: n.media?.file_type,
@@ -71,7 +77,7 @@ export function useActivityFeed() {
         });
       });
 
-      (reactionsRes.data ?? []).forEach((r: any) => {
+      ((reactionsRes.data as MediaReactionActivityRow[] | null) ?? []).forEach((r) => {
         items.push({
           id: `reaction-${r.id}`, type: "reaction", created_at: r.created_at, actor_id: r.user_id,
           media_id: r.media?.id, media_title: r.media?.title, media_file_type: r.media?.file_type,
@@ -79,7 +85,7 @@ export function useActivityFeed() {
         });
       });
 
-      (milestonesRes.data ?? []).forEach((m: any) => {
+      ((milestonesRes.data as MilestoneActivityRow[] | null) ?? []).forEach((m) => {
         items.push({
           id: `milestone-${m.id}`, type: "milestone", created_at: m.created_at, actor_id: m.created_by,
           milestone_title: m.title, milestone_type: m.type,

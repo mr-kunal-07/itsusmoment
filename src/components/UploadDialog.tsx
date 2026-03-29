@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAllProfiles } from "@/hooks/useProfile";
 import { sendNotification } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
+import type { Media } from "@/hooks/useMedia";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -233,7 +234,7 @@ export function UploadDialog({ open, onOpenChange, folderId }: Props) {
           file: entry.file,
           title,
           folderId,
-        });
+        }) as Media;
 
         // Notify partner
         if (user && allUserIds.length > 1) {
@@ -241,7 +242,7 @@ export function UploadDialog({ open, onOpenChange, folderId }: Props) {
             actorId: user.id,
             allUserIds,
             type: "upload",
-            mediaId: (result as any)?.id ?? null,
+            mediaId: result.id ?? null,
             message: `${uploaderName} uploaded "${title}" to the vault 📸`,
           });
         }
@@ -249,10 +250,10 @@ export function UploadDialog({ open, onOpenChange, folderId }: Props) {
         setEntries((prev) =>
           prev.map((e, idx) => (idx === i ? { ...e, status: true } : e))
         );
-      } catch (err: any) {
+      } catch (err: unknown) {
         setEntries((prev) =>
           prev.map((e, idx) =>
-            idx === i ? { ...e, status: err?.message ?? "Upload failed" } : e
+            idx === i ? { ...e, status: err instanceof Error ? err.message : "Upload failed" } : e
           )
         );
       }

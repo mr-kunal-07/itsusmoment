@@ -1,16 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { QK } from "@/lib/queryKeys";
 import { useMyCouple } from "@/hooks/useCouple";
+import { User } from "@supabase/supabase-js";
 
 export type Profile = Tables<"profiles">;
 
 // ─────────────────────────────────────────────────────────────
 // 🔹 Helper: Build profile from auth user
 // ─────────────────────────────────────────────────────────────
-function buildProfileFromUser(user: any) {
+function buildProfileFromUser(user: User): TablesInsert<"profiles"> {
   return {
     user_id: user.id,
     display_name:
@@ -125,7 +126,7 @@ export function useUpdateProfile() {
     }) => {
       if (!user) throw new Error("User not authenticated");
 
-      const payload: any = {
+      const payload: TablesInsert<"profiles"> = {
         user_id: user.id,
       };
 

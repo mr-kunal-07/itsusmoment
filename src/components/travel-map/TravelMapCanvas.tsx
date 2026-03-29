@@ -19,10 +19,6 @@ export interface ReverseGeoResult {
   display: string;
 }
 
-// Each call returns a monotonically-increasing sequence number so the caller
-// can discard results that arrive out of order (rapid clicks).
-let _geoSeq = 0;
-
 async function reverseGeocode(
   lat: number,
   lng: number,
@@ -314,13 +310,14 @@ export const TravelMapCanvas = memo(function TravelMapCanvas({
     });
 
     mapRef.current = map;
+    const markers = markersRef.current;
 
     return () => {
       geoAbortRef.current?.abort();
       map.remove();
       mapRef.current = null;
       userMarkerRef.current = null;
-      markersRef.current.clear();
+      markers.clear();
       polylineRef.current = null;
     };
   }, [handleLocate]);
@@ -403,11 +400,12 @@ export const TravelMapCanvas = memo(function TravelMapCanvas({
     markersRef.current
       .get(focusLocation.id)
       ?.setIcon(makeDivIcon(focusLocation.visited ?? false, "selected"));
+    const markers = markersRef.current;
 
     return () => {
       // Reset to normal on cleanup — this fires before the next focusLocation
       // effect run, so the previously-selected pin always returns to normal.
-      markersRef.current
+      markers
         .get(focusLocation.id)
         ?.setIcon(makeDivIcon(focusLocation.visited ?? false, "normal"));
     };

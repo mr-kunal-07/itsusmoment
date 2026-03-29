@@ -12,6 +12,10 @@ import { cn } from "@/lib/utils";
 
 type Mode = "invite" | "join";
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 function CopyButton({
   value,
   label,
@@ -420,10 +424,10 @@ export function PartnerConnect() {
     try {
       await acceptInvite.mutateAsync(code.trim());
       toast({ title: "🎉 You're connected forever! 💕" });
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({
         title: "Invalid code",
-        description: e?.message ?? "Please check the code and try again.",
+        description: getErrorMessage(e, "Please check the code and try again."),
         variant: "destructive",
       });
     }
@@ -432,8 +436,8 @@ export function PartnerConnect() {
   const handleGenerateCode = useCallback(async () => {
     try {
       await createInvite.mutateAsync();
-    } catch (e: any) {
-      toast({ title: e?.message ?? "Failed to create invite", variant: "destructive" });
+    } catch (e: unknown) {
+      toast({ title: getErrorMessage(e, "Failed to create invite"), variant: "destructive" });
     }
   }, [createInvite, toast]);
 

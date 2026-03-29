@@ -6,6 +6,9 @@ import { format, formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, Image as ImageIcon, Video, Star, HardDrive, CalendarHeart, Clock, Camera, ScanLine } from "lucide-react";
 import { cn, formatSize } from "@/lib/utils";
+import type { Media } from "@/hooks/useMedia";
+
+type TimelineMedia = Media & { taken_at?: string | null };
 
 interface TimelineProps {
   onPreview: (mediaId: string) => void;
@@ -20,9 +23,9 @@ export function MemoriesTimeline({ onPreview }: TimelineProps) {
   // Auto-backfill EXIF dates for photos that don't have taken_at yet
   useEffect(() => {
     if (!groups || hasBackfilled.current || backfill.isPending) return;
-    const allMedia = Object.values(groups).flat();
+    const allMedia = Object.values(groups).flat() as TimelineMedia[];
     const needsBackfill = allMedia.filter(
-      m => !(m as any).taken_at && m.file_type === "image"
+      (m) => !m.taken_at && m.file_type === "image"
     );
     if (needsBackfill.length === 0) return;
     hasBackfilled.current = true;
@@ -108,8 +111,9 @@ export function MemoriesTimeline({ onPreview }: TimelineProps) {
             {/* Photo grid */}
             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1 sm:gap-1.5">
               {media.map((item, itemIdx) => {
-                const photoDate = new Date((item as any).taken_at ?? item.created_at);
-                const hasTakenAt = !!(item as any).taken_at;
+                const timelineItem = item as TimelineMedia;
+                const photoDate = new Date(timelineItem.taken_at ?? timelineItem.created_at);
+                const hasTakenAt = !!timelineItem.taken_at;
                 return (
                   <div
                     key={item.id}

@@ -22,10 +22,12 @@ export function useTyping(coupleId: string | null | undefined, currentUserId: st
       .subscribe();
 
     channelRef.current = channel;
+    const clearTimer = clearTimerRef.current;
+    const throttleTimer = throttleRef.current;
     return () => {
       supabase.removeChannel(channel);
-      if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
-      if (throttleRef.current) clearTimeout(throttleRef.current);
+      if (clearTimer) clearTimeout(clearTimer);
+      if (throttleTimer) clearTimeout(throttleTimer);
     };
   }, [coupleId, currentUserId]);
 

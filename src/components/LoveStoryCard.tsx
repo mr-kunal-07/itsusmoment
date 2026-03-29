@@ -239,6 +239,19 @@ function TimelineItem({ m, pal, last }: { m: Milestone; pal: PaletteData; last: 
 // with inline styles so html-to-image captures them perfectly.
 
 const CARD_WIDTH = 375;
+type FloatingHeart = {
+  top: string;
+  left?: string;
+  right?: string;
+  sz: number;
+  op: number;
+};
+const FLOATING_HEARTS: FloatingHeart[] = [
+  { top: "6%", left: "7%", sz: 13, op: 0.13 },
+  { top: "12%", right: "9%", sz: 18, op: 0.10 },
+  { top: "52%", left: "5%", sz: 11, op: 0.09 },
+  { top: "72%", right: "6%", sz: 15, op: 0.11 },
+];
 
 export const LoveStoryCard = forwardRef<HTMLDivElement, LoveStoryCardProps>(
   function LoveStoryCard(props, ref) {
@@ -317,16 +330,11 @@ function EternalCard({ pal, title, tagline, startDate, days, myProfile, partnerP
   return (
     <div style={{ background: pal.bg, padding: "32px 24px 28px", position: "relative", minHeight: 480 }}>
       {/* Floating hearts */}
-      {[
-        { top: "6%", left: "7%", sz: 13, op: 0.13 },
-        { top: "12%", right: "9%", sz: 18, op: 0.10 },
-        { top: "52%", left: "5%", sz: 11, op: 0.09 },
-        { top: "72%", right: "6%", sz: 15, op: 0.11 },
-      ].map((h, i) => (
+      {FLOATING_HEARTS.map((h, i) => (
         <Heart key={i} fill={pal.accent} color="transparent" style={{
           position: "absolute", top: h.top,
-          left: "left" in h ? (h as any).left : "auto",
-          right: "right" in h ? (h as any).right : "auto",
+          left: h.left ?? "auto",
+          right: h.right ?? "auto",
           width: h.sz, height: h.sz, opacity: h.op,
         }} />
       ))}

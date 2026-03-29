@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Database } from "../../src/integrations/supabase/types.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +13,9 @@ const json = (data: unknown, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+type AuditLogRow = Database["public"]["Tables"]["plan_audit_log"]["Row"];
+type AuditProfileRow = Pick<Database["public"]["Tables"]["profiles"]["Row"], "user_id" | "display_name" | "avatar_url">;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -48,9 +52,10 @@ serve(async (req) => {
     if (logsErr) throw new Error(logsErr.message);
     if (!logs || logs.length === 0) return json({ logs: [] });
 
+    const typedLogs = (logs ?? []) as AuditLogRow[];
     const userIds = [...new Set([
-      ...logs.map((l: any) => l.target_user_id),
-      ...logs.map((l: any) => l.changed_by_user_id),
+      ...typedLogs.map((l) => l.target_user_id),
+      ...typedLogs.map((l) => l.changed_by_user_id),
     ])];
 
     const { data: profiles } = await adminClient
@@ -63,9 +68,10 @@ serve(async (req) => {
       if (u) authUsers[uid] = u.email ?? "";
     }
 
+    const typedProfiles = (profiles ?? []) as AuditProfileRow[];
     const profileMap: Record<string, { display_name: string | null; avatar_url: string | null; email: string }> = {};
     for (const uid of userIds) {
-      const p = (profiles ?? []).find((pr: any) => pr.user_id === uid);
+      const p = typedProfiles.find((pr) => pr.user_id === uid);
       profileMap[uid] = {
         display_name: p?.display_name ?? null,
         avatar_url: p?.avatar_url ?? null,
@@ -73,7 +79,7 @@ serve(async (req) => {
       };
     }
 
-    const enriched = logs.map((l: any) => ({
+    const enriched = typedLogs.map((l) => ({
       ...l,
       target_user: profileMap[l.target_user_id] ?? null,
       changed_by_user: profileMap[l.changed_by_user_id] ?? null,

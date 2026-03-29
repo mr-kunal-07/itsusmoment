@@ -169,15 +169,16 @@ export default function Dashboard() {
   const [callMinimized, setCallMinimized] = useState(false);
   const createFolder = useCreateFolder();
   const renameFolder = useRenameFolder(); // add
-  const deleteFolder = useDeleteFolder()
-  const handleCreateFolder = async () => {
+  const deleteFolder = useDeleteFolder();
+  const handleCreateFolder = useCallback(async () => {
     const name = newFolderName.trim();
     if (!name) return;
+    const parentId = folderParam ?? null;
 
     try {
       await createFolder.mutateAsync({
         name,
-        parentId: folderId ?? null
+        parentId,
       });
 
       setNewFolderName("");
@@ -185,7 +186,7 @@ export default function Dashboard() {
     } catch (err) {
       console.error("Create folder failed:", err);
     }
-  };
+  }, [createFolder, folderParam, newFolderName]);
   const [viewMode, setViewMode] = useState<ViewMode>(() =>
     loadPreference<ViewMode>(STORAGE_KEYS.VIEW_MODE, "grid")
   );
@@ -285,7 +286,7 @@ export default function Dashboard() {
           previewUrls: previewMedia.slice(0, 4).map((m) => getPublicUrl(m.file_path)),
         };
       }),
-    [allMedia, folders, getDescendantIds]
+    [allMedia, getDescendantIds]
   );
 
   // Root-level folders only (no parent_id) — shown in "all" view
@@ -842,6 +843,8 @@ export default function Dashboard() {
     handlePreview,
     viewMode,
     setSelectedView,
+    renameFolder,
+    deleteFolder,
   ]);
 
   return (

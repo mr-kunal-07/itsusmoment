@@ -307,7 +307,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       endAction("signIn", err);
       return { data: null, error: err };
     }
-  }, [startAction, endAction]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [startAction, endAction]);
 
   const signUp = useCallback(async (email: string, password: string, displayName: string): Promise<AuthResult> => {
     if (isInFlight("signUp")) return { data: null, error: null };
@@ -327,7 +327,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       endAction("signUp", err);
       return { data: null, error: err };
     }
-  }, [startAction, endAction]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [startAction, endAction]);
 
   const signOut = useCallback(async (): Promise<void> => {
     if (isInFlight("signOut")) return;
@@ -340,7 +340,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     endAction("signOut", null);
-  }, [startAction, endAction, clearForUser, state.user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [startAction, endAction, clearForUser, state.user?.id]);
 
   const resetPasswordForEmail = useCallback(async (email: string): Promise<AuthResult<null>> => {
     if (isInFlight("resetPassword")) return { data: null, error: null };
@@ -356,7 +356,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       endAction("resetPassword", err);
       return { data: null, error: err };
     }
-  }, [startAction, endAction]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [startAction, endAction]);
 
   const signInWithOAuth = useCallback(async (provider: Provider): Promise<AuthResult<null>> => {
     if (isInFlight("googleOAuth")) return { data: null, error: null };
@@ -377,7 +377,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       endAction("googleOAuth", err);
       return { data: null, error: err };
     }
-  }, [startAction, endAction]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [startAction, endAction]);
 
   const value: AuthContextType = {
     user: state.user,

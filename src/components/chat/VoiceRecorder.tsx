@@ -131,8 +131,12 @@ export const VoiceRecorder = memo(function VoiceRecorder({ onSend, onCancel, dis
 
       const { data } = supabase.storage.from("audio").getPublicUrl(filePath);
       onSend(data.publicUrl, duration);
-    } catch (err: any) {
-      toast({ title: "Failed to send voice message", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({
+        title: "Failed to send voice message",
+        description: err instanceof Error ? err.message : "Upload failed",
+        variant: "destructive",
+      });
       onCancel();
     } finally {
       cleanup();

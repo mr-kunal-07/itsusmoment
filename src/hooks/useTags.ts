@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { QK } from "@/lib/queryKeys";
+import { TablesInsert } from "@/integrations/supabase/types";
 
 export interface Tag {
   id: string;
@@ -78,9 +79,10 @@ export function useCreateTag() {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async ({ name, color }: { name: string; color: string }) => {
-      const { data, error } = await (supabase as any)
+      const payload: TablesInsert<"tags"> = { name: name.trim(), color, created_by: user!.id };
+      const { data, error } = await supabase
         .from("tags")
-        .insert({ name: name.trim(), color, created_by: user!.id })
+        .insert(payload)
         .select()
         .single();
       if (error) throw error;
@@ -110,9 +112,10 @@ export function useAddTagToMedia() {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async ({ mediaId, tagId }: { mediaId: string; tagId: string }) => {
-      const { error } = await (supabase as any)
+      const payload: TablesInsert<"media_tags"> = { media_id: mediaId, tag_id: tagId, created_by: user!.id };
+      const { error } = await supabase
         .from("media_tags")
-        .insert({ media_id: mediaId, tag_id: tagId, created_by: user!.id });
+        .insert(payload);
       if (error && !error.message.includes("duplicate")) throw error;
     },
     onSuccess: (_data, vars) => {

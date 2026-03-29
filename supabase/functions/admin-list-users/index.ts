@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import type { Database } from "../../src/integrations/supabase/types.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +13,8 @@ const json = (data: unknown, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+type UserRoleRow = Pick<Database["public"]["Tables"]["user_roles"]["Row"], "user_id">;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -53,7 +56,7 @@ serve(async (req) => {
     const subscriptions = subsRes.data ?? [];
     const mediaItems = mediaRes.data ?? [];
     const couples = couplesRes.data ?? [];
-    const adminUserIds = new Set((rolesRes.data ?? []).map((r: any) => r.user_id));
+    const adminUserIds = new Set(((rolesRes.data ?? []) as UserRoleRow[]).map((r) => r.user_id));
 
     const partnerMap: Record<string, string> = {};
     for (const c of couples) {
