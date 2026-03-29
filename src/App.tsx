@@ -16,6 +16,7 @@ import Join from "./pages/Join";
 import Admin from "./pages/Admin";
 import Index from "./pages/Index";
 import AuthCallback from "./pages/AuthCallback";
+import PaymentReturn from "./pages/PaymentReturn";
 import InviteExpired from "./components/Inviteexpired";
 
 // ─── Query Client ─────────────────────────────────────────────────────────────
@@ -81,6 +82,7 @@ const App = () => (
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/join" element={<Join />} />
+            <Route path="/payment-return" element={<ProtectedRoute><PaymentReturn /></ProtectedRoute>} />
 
             {/* Dashboard — folder route must come before :tab */}
             <Route path="/dashboard/folder/:folderId" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

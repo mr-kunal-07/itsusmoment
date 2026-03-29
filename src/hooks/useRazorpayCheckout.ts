@@ -17,10 +17,12 @@ interface RazorpayOptions {
   name: string;
   description: string;
   order_id: string;
-  handler: (response: RazorpayResponse) => void;
+  handler?: (response: RazorpayResponse) => void;
   prefill?: { name?: string; email?: string };
   theme?: { color?: string };
   modal?: { ondismiss?: () => void };
+  callback_url?: string;
+  redirect?: boolean;
   config?: {
     display?: {
       blocks?: Record<string, { name: string; instruments: Array<{ method: string }> }>;
@@ -77,6 +79,11 @@ export function useRazorpayCheckout() {
         throw new Error(orderData.error || "Failed to create order");
       }
 
+      const returnTo = `${window.location.origin}/payment-return`;
+      const callbackUrl = new URL(`https://${projectId}.supabase.co/functions/v1/razorpay-payment-return`);
+      callbackUrl.searchParams.set("return_to", returnTo);
+      callbackUrl.searchParams.set("plan", plan);
+
       await new Promise<void>((resolve, reject) => {
         const rzp = new window.Razorpay({
           key: orderData.key_id,
@@ -87,6 +94,8 @@ export function useRazorpayCheckout() {
           order_id: orderData.order_id,
           prefill: { email: user.email },
           theme: { color: "#d4b896" },
+          callback_url: callbackUrl.toString(),
+          redirect: true,
           config: {
             display: {
               blocks: {
@@ -113,44 +122,6 @@ export function useRazorpayCheckout() {
               setLoading(false);
               resolve();
             },
-          },
-          handler: async (response: RazorpayResponse) => {
-            try {
-              const verifyRes = await fetch(
-                `https://${projectId}.supabase.co/functions/v1/razorpay-verify-payment`,
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${session.access_token}`,
-                  },
-                  body: JSON.stringify({
-                    razorpay_order_id: response.razorpay_order_id,
-                    razorpay_payment_id: response.razorpay_payment_id,
-                    razorpay_signature: response.razorpay_signature,
-                    plan,
-                  }),
-                }
-              );
-
-              const verifyData = await verifyRes.json();
-              if (!verifyRes.ok || verifyData.error) {
-                throw new Error(verifyData.error || "Payment verification failed");
-              }
-
-              await queryClient.invalidateQueries({ queryKey: ["subscription"] });
-
-              const planLabel = plan === "soulmate" ? "Soulmate" : "Dating";
-              toast({
-                title: `${planLabel} plan activated`,
-                description: "Your UPI payment was verified and premium access is now live.",
-              });
-              resolve();
-            } catch (err) {
-              reject(err);
-            } finally {
-              setLoading(false);
-            }
           },
         });
         rzp.open();
