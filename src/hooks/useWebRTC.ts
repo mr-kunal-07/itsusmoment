@@ -99,6 +99,9 @@ export function useWebRTC({
   const localStreamRef = useRef<MediaStream | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const channelReadyRef = useRef(false);
+  const channelReadyPromiseRef = useRef<Promise<void> | null>(null);
+  const channelReadyResolveRef = useRef<(() => void) | null>(null);
+  const channelReadyRejectRef = useRef<((error: Error) => void) | null>(null);
   const pendingCandidates = useRef<RTCIceCandidateInit[]>([]);
   const pendingOffer = useRef<RTCSessionDescriptionInit | null>(null);
   const hangUpRef = useRef<() => void>(() => {});
@@ -131,6 +134,13 @@ export function useWebRTC({
 
   const sendSignal = useCallback((payload: SignalPayload) => {
     channelRef.current?.send({ type: "broadcast", event: "signal", payload });
+  }, []);
+
+  const resetChannelReadyPromise = useCallback(() => {
+    channelReadyPromiseRef.current = new Promise<void>((resolve, reject) => {
+      channelReadyResolveRef.current = resolve;
+      channelReadyRejectRef.current = reject;
+    });
   }, []);
 
   const cleanup = useCallback(() => {
@@ -252,12 +262,19 @@ export function useWebRTC({
     if (channelReadyRef.current) return;
 
     const startedAt = Date.now();
-    while (!channelReadyRef.current) {
-      if (Date.now() - startedAt > 5_000) {
-        throw new Error("Call signaling is not ready yet.");
+    while (!channelReadyPromiseRef.current) {
+      if (Date.now() - startedAt > 1_500) {
+        throw new Error("Call connection is still starting. Please try again.");
       }
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
+
+    await Promise.race([
+      channelReadyPromiseRef.current,
+      new Promise<void>((_, reject) =>
+        setTimeout(() => reject(new Error("Call signaling is not ready yet.")), 8_000),
+      ),
+    ]);
   }, []);
 
   const sendCallPush = useCallback(async (type: CallType) => {
@@ -491,6 +508,7 @@ export function useWebRTC({
     if (!enabled || !channelName || !myUserId) return;
 
     channelReadyRef.current = false;
+    resetChannelReadyPromise();
 
     const channel = supabase.channel(channelName, {
       config: { broadcast: { self: false } },
@@ -604,9 +622,18 @@ export function useWebRTC({
     channel.subscribe((status) => {
       if (status === "SUBSCRIBED") {
         channelReadyRef.current = true;
+        channelReadyResolveRef.current?.();
+        channelReadyResolveRef.current = null;
+        channelReadyRejectRef.current = null;
       }
       if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
         channelReadyRef.current = false;
+        channelReadyRejectRef.current?.(new Error(`Call channel status: ${status}`));
+        channelReadyResolveRef.current = null;
+        channelReadyRejectRef.current = null;
+        if (status !== "CLOSED") {
+          resetChannelReadyPromise();
+        }
       }
     });
 
@@ -614,6 +641,10 @@ export function useWebRTC({
 
     return () => {
       channelReadyRef.current = false;
+      channelReadyRejectRef.current?.(new Error("Call channel closed."));
+      channelReadyResolveRef.current = null;
+      channelReadyRejectRef.current = null;
+      channelReadyPromiseRef.current = null;
       cleanup();
       supabase.removeChannel(channel);
       channelRef.current = null;
@@ -627,6 +658,7 @@ export function useWebRTC({
     myUserId,
     partnerUserId,
     rejectCall,
+    resetChannelReadyPromise,
     sendSignal,
     setCallStateSafe,
   ]);
