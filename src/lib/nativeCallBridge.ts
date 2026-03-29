@@ -1,3 +1,5 @@
+import { Capacitor, registerPlugin } from "@capacitor/core";
+
 type NativeCallMode = "voice" | "video";
 
 type NativeCallSessionOptions = {
@@ -12,45 +14,34 @@ type NativeCallControlPlugin = {
   updateCallSession?: (options: NativeCallSessionOptions) => Promise<void> | void;
   endCallSession?: () => Promise<void> | void;
 };
-
-type CapacitorLike = {
-  isNativePlatform?: () => boolean;
-  Plugins?: {
-    NativeCallControl?: NativeCallControlPlugin;
-  };
-};
-
-function getCapacitor(): CapacitorLike | null {
-  if (typeof window === "undefined") return null;
-  return (window as Window & { Capacitor?: CapacitorLike }).Capacitor ?? null;
-}
-
-function getNativeCallPlugin(): NativeCallControlPlugin | null {
-  const capacitor = getCapacitor();
-  if (!capacitor?.isNativePlatform?.()) return null;
-  return capacitor.Plugins?.NativeCallControl ?? null;
-}
+const NativeCallControl = registerPlugin<NativeCallControlPlugin>("NativeCallControl");
 
 export function hasNativeCallControl(): boolean {
-  return !!getNativeCallPlugin();
+  return Capacitor.isNativePlatform();
 }
 
 export async function syncNativeCallSession(options: NativeCallSessionOptions): Promise<void> {
-  const plugin = getNativeCallPlugin();
-  if (!plugin) return;
+  if (!hasNativeCallControl()) return;
 
-  if (plugin.updateCallSession) {
-    await plugin.updateCallSession(options);
-    return;
-  }
-
-  if (plugin.startCallSession) {
-    await plugin.startCallSession(options);
+  try {
+    if (NativeCallControl.updateCallSession) {
+      await NativeCallControl.updateCallSession(options);
+      return;
+    }
+    if (NativeCallControl.startCallSession) {
+      await NativeCallControl.startCallSession(options);
+    }
+  } catch (error) {
+    console.warn("Native call session sync failed:", error);
   }
 }
 
 export async function endNativeCallSession(): Promise<void> {
-  const plugin = getNativeCallPlugin();
-  if (!plugin?.endCallSession) return;
-  await plugin.endCallSession();
+  if (!hasNativeCallControl() || !NativeCallControl.endCallSession) return;
+
+  try {
+    await NativeCallControl.endCallSession();
+  } catch (error) {
+    console.warn("Native call session cleanup failed:", error);
+  }
 }
