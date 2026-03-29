@@ -48,7 +48,7 @@ export default function InviteExpired() {
                         This invite link has already been used.
                     </p>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                        If you're the intended partner, just sign in to your account â€” you'll be connected already.
+                        If you're the intended partner, just sign in to your account and you'll be connected already.
                     </p>
 
                     {/* Divider */}
@@ -93,9 +93,12 @@ export default function InviteExpired() {
                 </div>
 
                 <p className="text-center text-xs text-muted-foreground/60 mt-6 select-none">
-                    Private · Secure · Just for us ❤️
+                    Private. Secure. Just for us.
                 </p>
             </div>
         </div>
     );
 }
+
+
+

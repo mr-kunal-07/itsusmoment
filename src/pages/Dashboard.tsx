@@ -25,6 +25,7 @@ import { NotificationsPanel } from "@/components/NotificationsPanel";
 import { PartnerBanner } from "@/components/PartnerBanner";
 import { UpgradeBanner } from "@/components/UpgradeBanner";
 import { ChatView } from "@/components/chat/ChatView";
+import { CallModal } from "@/components/chat/CallModal";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { BillingView } from "@/components/BillingView";
 import { SettingsView } from "@/components/SettingsView";
@@ -44,6 +45,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { usePresence } from "@/hooks/usePresence";
+import { useWebRTC } from "@/hooks/useWebRTC";
+import { usePushSubscription } from "@/hooks/usePushNotifications";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -134,6 +138,8 @@ function isSpecialView(view: string): view is ViewType {
 }
 
 export default function Dashboard() {
+  usePushSubscription();
+
   const { user } = useAuth();
   const navigate = useNavigate();
   const { tab, folderId: folderParam } = useParams<{ tab?: string; folderId?: string }>();
@@ -160,6 +166,7 @@ export default function Dashboard() {
   const [gateModal, setGateModal] = useState<GateModalState | null>(null);
   const [openAddFolder, setOpenAddFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+  const [callMinimized, setCallMinimized] = useState(false);
   const createFolder = useCreateFolder();
   const renameFolder = useRenameFolder(); // add
   const deleteFolder = useDeleteFolder()
@@ -212,6 +219,23 @@ export default function Dashboard() {
     const name = profile?.display_name ?? user?.email ?? "U";
     return name.slice(0, 2).toUpperCase();
   }, [profile?.display_name, user?.email]);
+
+  const coupleId = couple?.status === "active" ? couple.id : null;
+  const partnerId =
+    couple?.status === "active"
+      ? (couple.user1_id === user?.id ? couple.user2_id : couple.user1_id)
+      : null;
+  const partnerProfile = partnerId ? profiles.find((item) => item.user_id === partnerId) : null;
+  const partnerName = partnerProfile?.display_name ?? "Partner";
+  const partnerInitials = (partnerProfile?.display_name ?? "?").slice(0, 2).toUpperCase();
+  const { partnerOnline } = usePresence(coupleId, user?.id, partnerId);
+  const callSession = useWebRTC({
+    coupleId,
+    myUserId: user?.id ?? null,
+    partnerUserId: partnerId ?? null,
+    partnerOnline,
+  });
+  const { callState, callError, clearCallError } = callSession;
 
   // Data fetching
   // allMedia: all media with no filters — used for folder previews, counts, rootMedia
@@ -513,6 +537,22 @@ export default function Dashboard() {
     return () => window.removeEventListener("move-media", handler);
   }, [moveMedia, toast]);
 
+  useEffect(() => {
+    if (callState === "idle") {
+      setCallMinimized(false);
+    }
+  }, [callState]);
+
+  useEffect(() => {
+    if (!callError) return;
+    toast({
+      title: "Call error",
+      description: callError,
+      variant: "destructive",
+    });
+    clearCallError();
+  }, [callError, clearCallError, toast]);
+
   // Render helpers
   const renderFileTypeFilter = useCallback(() => {
     if (!isGridView) return null;
@@ -644,7 +684,7 @@ export default function Dashboard() {
         {/* On This Day */}
         {selectedView === "on-this-day" && onThisDayMedia.length > 0 && (
           <p className="text-xs sm:text-sm text-muted-foreground">
-            🗓️ {onThisDayMedia.length}{" "}
+            On this day: {onThisDayMedia.length}{" "}
             {onThisDayMedia.length === 1 ? "memory" : "memories"} from previous years
             on this date
           </p>
@@ -826,6 +866,7 @@ export default function Dashboard() {
                       <ChatView
                         onBack={() => setSelectedView("all")}
                         onUpgrade={() => setSelectedView("billing")}
+                        callSession={callSession}
                       />
                     </div>
                   </motion.div>
@@ -849,7 +890,7 @@ export default function Dashboard() {
                           <div className="relative flex-1 min-w-0 max-w-[200px] sm:max-w-md">
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                             <Input
-                              placeholder="Searchâ€¦"
+                              placeholder="Search..."
                               className="pl-8 h-8 text-[13px] bg-muted/60 border-transparent focus:border-border rounded-xl"
                               value={search}
                               onChange={(e) => setSearch(e.target.value)}
@@ -976,7 +1017,7 @@ export default function Dashboard() {
                   <div className="relative flex-1 min-w-0 max-w-[200px] sm:max-w-md">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                     <Input
-                      placeholder="Search…"
+                      placeholder="Search..."
                       className="pl-8 h-8 text-[13px] bg-muted/60 border-transparent focus:border-border rounded-xl"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
@@ -1076,6 +1117,7 @@ export default function Dashboard() {
               <ChatView
                 onBack={() => setSelectedView("all")}
                 onUpgrade={() => setSelectedView("billing")}
+                callSession={callSession}
               />
             </div>
           ) : (
@@ -1125,6 +1167,31 @@ export default function Dashboard() {
           />
         )}
 
+        <CallModal
+          callState={callSession.callState}
+          callType={callSession.callType}
+          incomingCallType={callSession.incomingCallType}
+          partnerName={partnerName}
+          partnerAvatarUrl={partnerProfile?.avatar_url ?? undefined}
+          partnerInitials={partnerInitials}
+          localStream={callSession.localStream}
+          remoteStream={callSession.remoteStream}
+          onAccept={() => void callSession.acceptCall()}
+          onReject={() => callSession.rejectCall()}
+          onHangUp={callSession.hangUp}
+          isMuted={callSession.isMuted}
+          isSpeaker={callSession.isSpeaker}
+          onToggleMute={callSession.toggleMute}
+          onToggleSpeaker={callSession.toggleSpeaker}
+          callDuration={callSession.callDuration}
+          partnerOnline={partnerOnline}
+          onFlipCamera={() => void callSession.flipCamera()}
+          isFrontCamera={callSession.isFrontCamera}
+          minimized={callMinimized}
+          onMinimize={() => setCallMinimized(true)}
+          onRestore={() => setCallMinimized(false)}
+        />
+
         <PWAInstallPrompt />
 
         <UpgradeGateModal
@@ -1141,3 +1208,5 @@ export default function Dashboard() {
     </SidebarProvider>
   );
 }
+
+

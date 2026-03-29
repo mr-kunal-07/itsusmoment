@@ -190,7 +190,17 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) return new Response("Unauthorized", { status: 401, headers: corsHeaders });
 
-    const { title, body, url: clickUrl } = await req.json();
+    const {
+      title,
+      body,
+      url: clickUrl,
+      icon,
+      badge,
+      tag,
+      requireInteraction,
+      renotify,
+      vibrate,
+    } = await req.json();
 
     // Use service role client to read partner subscriptions
     const adminClient = createClient(
@@ -218,9 +228,13 @@ Deno.serve(async (req) => {
     const payload = {
       title: title ?? "usMoment",
       body: body ?? "You have a new notification",
-      icon: "/pwa-icon-192.png",
-      badge: "/pwa-icon-192.png",
+      icon: icon ?? "/pwa-icon-192.png",
+      badge: badge ?? "/pwa-icon-192.png",
       url: clickUrl ?? "/dashboard",
+      tag: tag ?? "usmoment-notification",
+      requireInteraction: requireInteraction ?? false,
+      renotify: renotify ?? false,
+      vibrate: vibrate ?? [200, 100, 200],
     };
 
     await Promise.allSettled(

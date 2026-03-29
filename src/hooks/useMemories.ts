@@ -18,6 +18,7 @@ export function useOnThisDay() {
       const { data, error } = await supabase
         .from("media")
         .select("*")
+        .is("deleted_at", null)
         .not("created_at", "is", null)
         .order("created_at", { ascending: false });
 
@@ -46,6 +47,7 @@ export function useMemoriesTimeline() {
       const { data, error } = await supabase
         .from("media")
         .select("*")
+        .is("deleted_at", null)
         .not("created_at", "is", null)
         .order("created_at", { ascending: false });
 
@@ -82,7 +84,8 @@ export function useRelationshipStats() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("media")
-        .select("id, file_type, file_size, created_at, is_starred, uploaded_by");
+        .select("id, file_type, file_size, created_at, is_starred, uploaded_by")
+        .is("deleted_at", null);
 
       if (error) throw error;
 

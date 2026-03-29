@@ -99,6 +99,12 @@ export const DrawingCanvas = memo(function DrawingCanvas({ onSend, onClose }: Pr
     overlay.height = canvas.height;
     overlay.style.width = canvas.style.width;
     overlay.style.height = canvas.style.height;
+    const overlayCtx = overlay.getContext("2d");
+    if (overlayCtx) {
+      overlayCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      overlayCtx.lineCap = "round";
+      overlayCtx.lineJoin = "round";
+    }
 
     const ctx = canvas.getContext("2d")!;
     ctx.fillStyle = "#ffffff";
@@ -176,7 +182,7 @@ export const DrawingCanvas = memo(function DrawingCanvas({ onSend, onClose }: Pr
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!isDrawing || e.pointerId !== activePointer.current) return;
 
-    const { tool, color, opacity, size } = live.current;
+    const { tool, color, opacity, size, dpr } = live.current;
 
     if (tool === "pen" || tool === "eraser") {
       pendingPos.current = getPos(e);
@@ -206,7 +212,7 @@ export const DrawingCanvas = memo(function DrawingCanvas({ onSend, onClose }: Pr
     const { x: sx, y: sy } = startPos.current;
     const { x: ex, y: ey } = pos;
 
-    octx.clearRect(0, 0, overlay.width, overlay.height);
+    octx.clearRect(0, 0, overlay.width / dpr, overlay.height / dpr);
     octx.globalAlpha = opacity / 100;
     octx.strokeStyle = color;
     octx.lineWidth = size;
@@ -248,9 +254,19 @@ export const DrawingCanvas = memo(function DrawingCanvas({ onSend, onClose }: Pr
     if (!canvas || !overlay || !ctx || !octx) return;
 
     ctx.globalAlpha = opacity / 100;
-    ctx.drawImage(overlay, 0, 0, overlay.width / dpr, overlay.height / dpr);
+    ctx.drawImage(
+      overlay,
+      0,
+      0,
+      overlay.width,
+      overlay.height,
+      0,
+      0,
+      canvas.width / dpr,
+      canvas.height / dpr,
+    );
     ctx.globalAlpha = 1;
-    octx.clearRect(0, 0, overlay.width, overlay.height);
+    octx.clearRect(0, 0, overlay.width / dpr, overlay.height / dpr);
     startPos.current = null;
   }, [isDrawing]);
 

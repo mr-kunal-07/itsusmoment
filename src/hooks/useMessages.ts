@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -50,7 +50,7 @@ export function useMessages() {
   const markReadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const coupleId = couple?.status === "active" ? couple.id : null;
-  const qKey = ["messages", coupleId] as const;
+  const qKey = useMemo(() => ["messages", coupleId] as const, [coupleId]);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const query = useQuery({
@@ -65,8 +65,7 @@ export function useMessages() {
         .from("messages" as never)
         .select("*, reactions:message_reactions(*)")
         .eq("couple_id", coupleId!)
-        // Exclude soft-deleted messages — hard delete would remove the day
-        // from couple_message_days and silently reset the streak to 0
+        // Exclude soft-deleted messages from the active chat list
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(MESSAGE_LIMIT);
@@ -96,7 +95,7 @@ export function useMessages() {
           );
         });
     }, 1_000);
-  }, [coupleId, queryClient, qKey]);
+  }, [queryClient, qKey]);
 
   useEffect(() => {
     if (!coupleId || !user || !query.data?.length) return;
@@ -360,10 +359,8 @@ export function useMessages() {
 
   // ── Delete message ─────────────────────────────────────────────────────────
   // FIX: soft delete — set deleted_at instead of physically removing the row.
-  // Hard delete removes the message from the couple_message_days view which
-  // can wipe a whole day from the streak count if it was the only message
-  // that day, resetting the streak to 0. Soft delete hides it from the UI
-  // and from the view (WHERE deleted_at IS NULL) while preserving the day.
+  // Soft delete hides the message from the UI while keeping the row available
+  // for audit/history purposes.
   const deleteMessage = useMutation({
     mutationFn: async (messageId: string) => {
       const { error } = await supabase

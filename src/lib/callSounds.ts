@@ -18,7 +18,7 @@ function getCtx() {
 function stopActive() {
   if (loopTimer) { clearInterval(loopTimer); loopTimer = null; }
   if (activeNodes) {
-    activeNodes.oscillators.forEach(o => { try { o.stop(); } catch {} });
+    activeNodes.oscillators.forEach(o => { try { o.stop(); } catch { /* oscillator already stopped */ } });
     activeNodes.gain.disconnect();
     activeNodes = null;
   }
@@ -52,7 +52,10 @@ export function playRingtone() {
     // Ring for 1s, silence for 2s (handled by interval)
     setTimeout(() => {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-      setTimeout(() => { try { o1.stop(); o2.stop(); } catch {} gain.disconnect(); }, 150);
+      setTimeout(() => {
+        try { o1.stop(); o2.stop(); } catch { /* oscillators already stopped */ }
+        gain.disconnect();
+      }, 150);
     }, 1000);
   }
 
@@ -81,7 +84,10 @@ export function playDialingTone() {
 
     setTimeout(() => {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-      setTimeout(() => { try { osc.stop(); } catch {} gain.disconnect(); }, 150);
+      setTimeout(() => {
+        try { osc.stop(); } catch { /* oscillator already stopped */ }
+        gain.disconnect();
+      }, 150);
     }, 1000);
   }
 

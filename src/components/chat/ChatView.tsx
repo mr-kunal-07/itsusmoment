@@ -5,6 +5,7 @@ import {
   Palette,
 } from "lucide-react";
 import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMessages, Message } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,19 +14,19 @@ import { useAllProfiles, useProfile } from "@/hooks/useProfile";
 import { useTyping } from "@/hooks/useTyping";
 import { usePresence } from "@/hooks/usePresence";
 import { VoiceRecorder } from "@/components/chat/VoiceRecorder";
-import { CallModal } from "@/components/chat/CallModal";
-import { useWebRTC } from "@/hooks/useWebRTC";
+import { useWebRTC, type WebRTCSession } from "@/hooks/useWebRTC";
 import { cn } from "@/lib/utils";
 import { usePlan, canUseVoiceMessages } from "@/hooks/useSubscription";
 import { UpgradeGateModal } from "@/components/UpgradeGateModal";
 import { EmojiPicker } from "@/components/chat/Emojipicker";
 import { DrawingCanvas } from "@/components/chat/DrawingCanvas";
-import { StreakBadge } from "@/components/chat/Streakbadge";
 import { ChatThemePicker } from "@/components/chat/Chatthemepicker";
 import { useChatTheme } from "@/components/chat/Usechattheme";
 import { getTheme, buildThemeStyle } from "@/components/chat/Chatthemes";
 import { useTheme } from "@/hooks/useTheme";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateMedia } from "@/lib/queryKeys";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -59,6 +60,24 @@ function groupReactions(reactions: Message["reactions"]): [string, number][] {
 
 function formatAudioTime(s: number): string {
   return `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+}
+
+async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
+  const response = await fetch(dataUrl);
+  if (!response.ok) throw new Error("Failed to prepare drawing image");
+  return response.blob();
+}
+
+function getMediaPathFromPublicUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    const marker = "/storage/v1/object/public/media/";
+    const markerIndex = parsed.pathname.indexOf(marker);
+    if (markerIndex === -1) return null;
+    return decodeURIComponent(parsed.pathname.slice(markerIndex + marker.length));
+  } catch {
+    return null;
+  }
 }
 
 // ─── ReadReceipt ──────────────────────────────────────────────────────────────
@@ -289,8 +308,18 @@ const TypingBubble = memo(function TypingBubble({ avatarUrl, initials }: { avata
 
 // ─── ChatView ─────────────────────────────────────────────────────────────────
 
-export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade?: () => void }) {
+export function ChatView({
+  onBack,
+  onUpgrade,
+  callSession,
+}: {
+  onBack?: () => void;
+  onUpgrade?: () => void;
+  callSession?: WebRTCSession;
+}) {
+  const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { toast } = useToast();
   const { data: couple } = useMyCouple();
   const { data: profiles = [] } = useAllProfiles();
   const { data: myProfile } = useProfile();
@@ -319,6 +348,8 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showDrawing, setShowDrawing] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
+  const [previewDrawingUrl, setPreviewDrawingUrl] = useState<string | null>(null);
+  const [savingDrawingIds, setSavingDrawingIds] = useState<Set<string>>(new Set());
 
   // ✅ ADD THIS: Live clock for "last seen" updates
   const [now, setNow] = useState(() => Date.now());
@@ -347,12 +378,32 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
   const { partnerOnline, partnerLastSeen } = usePresence(coupleId, user?.id, partnerId);
 
   // ── WebRTC ─────────────────────────────────────────────────────────────────
+  const localCallSession = useWebRTC({
+    coupleId,
+    myUserId: user?.id ?? null,
+    partnerUserId: partnerId ?? null,
+    partnerOnline,
+    enabled: !callSession,
+  });
+  const activeCallSession = callSession ?? localCallSession;
   const {
     callState, callType, incomingCallType,
     localStream, remoteStream,
     startCall, acceptCall, rejectCall, hangUp,
     isMuted, isSpeaker, toggleMute, toggleSpeaker, flipCamera, isFrontCamera, callDuration,
-  } = useWebRTC({ coupleId, myUserId: user?.id ?? null, partnerUserId: partnerId ?? null, partnerOnline });
+    callError, clearCallError,
+  } = activeCallSession;
+
+  useEffect(() => {
+    if (callSession) return;
+    if (!callError) return;
+    toast({
+      title: "Call error",
+      description: callError,
+      variant: "destructive",
+    });
+    clearCallError();
+  }, [callError, callSession, clearCallError, toast]);
 
   // ── VisualViewport keyboard offset ─────────────────────────────────────────
   useEffect(() => {
@@ -400,7 +451,8 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }, []);
@@ -447,6 +499,103 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
     }
   }, [replyTo, sendMessage]);
 
+  const handleDrawingUploadSend = useCallback(async (dataUrl: string) => {
+    setShowDrawing(false);
+    const replyId = replyTo?.id ?? null;
+    try {
+      if (!user) throw new Error("Not authenticated");
+
+      const drawingBlob = await dataUrlToBlob(dataUrl);
+      const filePath = `${user.id}/drawings/${crypto.randomUUID()}.png`;
+      const { error: uploadError } = await supabase.storage
+        .from("media")
+        .upload(filePath, drawingBlob, {
+          contentType: "image/png",
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("media").getPublicUrl(filePath);
+      await sendMessage.mutateAsync({
+        content: "Drawing",
+        replyToId: replyId,
+        messageType: "drawing",
+        audioUrl: data.publicUrl,
+      });
+    } catch (err) {
+      console.error("[handleDrawingUploadSend] failed:", err);
+      toast({
+        title: "Failed to send drawing",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
+    setReplyTo(null);
+  }, [replyTo, sendMessage, toast, user]);
+
+  const handleSaveDrawingToMemories = useCallback(async (msg: Message, drawingUrl: string) => {
+    if (!user) {
+      toast({ title: "Sign in required", description: "Please sign in again and try saving the drawing.", variant: "destructive" });
+      return;
+    }
+
+    setSavingDrawingIds((previous) => new Set(previous).add(msg.id));
+
+    try {
+      const drawingResponse = await fetch(drawingUrl);
+      if (!drawingResponse.ok) throw new Error("Could not load the drawing image.");
+      const drawingBlob = await drawingResponse.blob();
+
+      let filePath = getMediaPathFromPublicUrl(drawingUrl);
+      if (!filePath) {
+        filePath = `${user.id}/drawings/${crypto.randomUUID()}.png`;
+        const { error: uploadError } = await supabase.storage.from("media").upload(filePath, drawingBlob, {
+          contentType: drawingBlob.type || "image/png",
+          upsert: false,
+        });
+        if (uploadError) throw uploadError;
+      }
+
+      const fileName = filePath.split("/").pop() ?? `${msg.id}.png`;
+      const title = `Chat Drawing ${format(new Date(msg.created_at), "MMM d, yyyy h:mm a")}`;
+
+      const { error } = await supabase.from("media").insert({
+        title,
+        description: "Saved from chat drawing",
+        file_name: fileName,
+        file_path: filePath,
+        file_size: drawingBlob.size,
+        file_type: "image",
+        mime_type: drawingBlob.type || "image/png",
+        folder_id: null,
+        uploaded_by: user.id,
+        taken_at: msg.created_at,
+      } as never);
+
+      if (error) throw error;
+
+      invalidateMedia(queryClient);
+      toast({
+        title: "Saved to memories",
+        description: "This drawing now appears in your shared vault.",
+      });
+    } catch (error) {
+      console.error("[handleSaveDrawingToMemories] failed:", error);
+      toast({
+        title: "Failed to save drawing",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingDrawingIds((previous) => {
+        const next = new Set(previous);
+        next.delete(msg.id);
+        return next;
+      });
+    }
+  }, [queryClient, toast, user]);
+
   // Drawing reuses the audioUrl column — messageType="drawing" tells the renderer
   const handleDrawingSend = useCallback(async (dataUrl: string) => {
     setShowDrawing(false);
@@ -492,7 +641,6 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
       const m = msgMap[msgId];
       if (m) { setReplyTo(m); inputRef.current?.focus(); }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectMode, msgMap]);
 
   // ── No couple guard ────────────────────────────────────────────────────────
@@ -577,11 +725,10 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
               <div className="flex items-center gap-1.5">
                 <p className="text-sm font-semibold leading-none truncate" style={{ color: "hsl(var(--wa-text))" }}>{partnerName}</p>
                 <Lock className="h-2.5 w-2.5 shrink-0" style={{ color: "hsl(var(--wa-meta))" }} aria-hidden />
-                <StreakBadge metaColor="hsl(var(--wa-meta))" />
               </div>
               <p className="text-[10px] truncate mt-0.5" style={{ color: "hsl(var(--wa-meta))" }} aria-live="polite">
                 {partnerTyping ? (
-                  <span style={{ color: "hsl(var(--wa-online))" }}>typing…</span>
+                  <span style={{ color: "hsl(var(--wa-online))" }}>typing...</span>
                 ) : partnerOnline ? (
                   <span style={{ color: "hsl(var(--wa-online))" }}>online</span>
                 ) : partnerLastSeen ? (
@@ -593,10 +740,10 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
-              <button type="button" onClick={() => startCall("voice")} className="p-2 rounded-full active:scale-95" style={{ color: "hsl(var(--wa-text) / 0.7)" }} title="Voice call" aria-label="Voice call">
+              <button type="button" onClick={() => void startCall("voice")} disabled={callState !== "idle"} className="p-2 rounded-full active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" style={{ color: "hsl(var(--wa-text) / 0.7)" }} title="Voice call" aria-label="Voice call">
                 <Phone className="h-4 w-4" />
               </button>
-              <button type="button" onClick={() => startCall("video")} className="p-2 rounded-full active:scale-95" style={{ color: "hsl(var(--wa-text) / 0.7)" }} title="Video call" aria-label="Video call">
+              <button type="button" onClick={() => void startCall("video")} disabled={callState !== "idle"} className="p-2 rounded-full active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" style={{ color: "hsl(var(--wa-text) / 0.7)" }} title="Video call" aria-label="Video call">
                 <Video className="h-4 w-4" />
               </button>
               <div className="relative">
@@ -625,16 +772,6 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
         )}
 
         {/* ── Call Modal ── */}
-        <CallModal
-          callState={callState} callType={callType} incomingCallType={incomingCallType}
-          partnerName={partnerName} partnerAvatarUrl={partnerProfile?.avatar_url ?? undefined}
-          partnerInitials={partnerInitials} localStream={localStream} remoteStream={remoteStream}
-          onAccept={acceptCall} onReject={rejectCall} onHangUp={hangUp}
-          isMuted={isMuted} isSpeaker={isSpeaker}
-          onToggleMute={toggleMute} onToggleSpeaker={toggleSpeaker}
-          callDuration={callDuration} partnerOnline={partnerOnline}
-          onFlipCamera={flipCamera} isFrontCamera={isFrontCamera}
-        />
 
         {/* ── Messages ── */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-2" style={{ background: "hsl(var(--wa-bg))" }}>
@@ -645,9 +782,9 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
           ) : messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 gap-2 text-center">
               <div className="px-4 py-2 rounded-lg text-xs" style={{ background: "hsl(var(--wa-system-bubble))", color: "hsl(var(--wa-meta))" }}>
-                🔒 Messages are private between you two
+                Messages are private between you two
               </div>
-              <div className="mt-6 text-4xl" aria-hidden>💌</div>
+              <div className="mt-6 text-sm font-medium uppercase tracking-[0.3em]" style={{ color: "hsl(var(--wa-meta))" }} aria-hidden>just us</div>
               <p className="text-sm font-medium" style={{ color: "hsl(var(--wa-text))" }}>Send your first message</p>
             </div>
           ) : (
@@ -733,7 +870,7 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                                     {repliedMsg.sender_id === user?.id ? "You" : partnerName}
                                   </span>
                                   <span className="truncate block" style={{ color: "hsl(var(--wa-text) / 0.7)" }}>
-                                    {repliedMsg.content.slice(0, 60)}{repliedMsg.content.length > 60 ? "…" : ""}
+                                    {repliedMsg.content.slice(0, 60)}{repliedMsg.content.length > 60 ? "..." : ""}
                                   </span>
                                 </div>
                               )}
@@ -755,20 +892,42 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                                     isMe={isMe} time={format(new Date(msg.created_at), "h:mm a")} msg={msg}
                                   />
                                 ) : isDrawing && audioUrl ? (
-                                  <div className="relative">
-                                    <img
-                                      src={audioUrl} alt="Drawing"
-                                      className="rounded-lg max-w-[240px] max-h-[300px] object-contain"
-                                      style={{ background: "#fff" }}
-                                      loading="lazy"
-                                    />
-                                    <span
-                                      className="absolute bottom-1.5 right-2.5 flex items-center gap-0.5 text-[10px] select-none leading-none whitespace-nowrap px-1.5 py-0.5 rounded-full"
-                                      style={{ color: "hsl(var(--wa-meta))", background: "hsl(var(--wa-bubble-out) / 0.8)" }}
+                                  <div className="relative space-y-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setPreviewDrawingUrl(audioUrl)}
+                                      className="block overflow-hidden rounded-lg"
+                                      aria-label="Open drawing preview"
                                     >
-                                      {format(new Date(msg.created_at), "h:mm a")}
-                                      <ReadReceipt msg={msg} isMe={isMe} />
-                                    </span>
+                                      <img
+                                        src={audioUrl}
+                                        alt="Drawing"
+                                        className="max-h-[320px] max-w-[260px] rounded-lg object-contain transition-transform hover:scale-[1.01]"
+                                        style={{ background: "#fff" }}
+                                        loading="lazy"
+                                      />
+                                    </button>
+                                    <div className="flex items-center justify-between gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleSaveDrawingToMemories(msg, audioUrl)}
+                                        disabled={savingDrawingIds.has(msg.id)}
+                                        className="rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors disabled:opacity-60"
+                                        style={{
+                                          background: "hsl(var(--wa-system-bubble))",
+                                          color: "hsl(var(--wa-online))",
+                                        }}
+                                      >
+                                        {savingDrawingIds.has(msg.id) ? "Saving..." : "Save to memories"}
+                                      </button>
+                                      <span
+                                        className="flex items-center gap-0.5 text-[10px] select-none leading-none whitespace-nowrap"
+                                        style={{ color: "hsl(var(--wa-meta))" }}
+                                      >
+                                        {format(new Date(msg.created_at), "h:mm a")}
+                                        <ReadReceipt msg={msg} isMe={isMe} />
+                                      </span>
+                                    </div>
                                   </div>
                                 ) : (
                                   <>
@@ -924,7 +1083,7 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                 {replyTo.sender_id === user?.id ? "You" : partnerName}
               </p>
               <p className="text-xs truncate" style={{ color: "hsl(var(--wa-text) / 0.7)" }}>
-                {replyTo.content.slice(0, 80)}{replyTo.content.length > 80 ? "…" : ""}
+                {replyTo.content.slice(0, 80)}{replyTo.content.length > 80 ? "..." : ""}
               </p>
             </div>
             <button
@@ -995,7 +1154,7 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
                   value={text}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
-                  placeholder={replyTo ? "Write a reply…" : "Message…"}
+                  placeholder={replyTo ? "Write a reply..." : "Message..."}
                   rows={1}
                   className="flex-1 bg-transparent border-0 outline-none resize-none text-sm leading-relaxed py-1 max-h-32 overflow-y-auto placeholder:text-muted-foreground"
                   style={{ color: "hsl(var(--wa-text))", minHeight: "24px" }}
@@ -1047,7 +1206,31 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
         </div>
 
         {/* ── Drawing Canvas ── */}
-        {showDrawing && <DrawingCanvas onSend={handleDrawingSend} onClose={() => setShowDrawing(false)} />}
+        {showDrawing && <DrawingCanvas onSend={handleDrawingUploadSend} onClose={() => setShowDrawing(false)} />}
+        {previewDrawingUrl && (
+          <div
+            className="fixed inset-0 z-[120] flex items-center justify-center bg-black/80 p-4"
+            onClick={() => setPreviewDrawingUrl(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Drawing preview"
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewDrawingUrl(null)}
+              className="absolute right-4 top-4 rounded-full bg-black/40 p-2 text-white"
+              aria-label="Close drawing preview"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <img
+              src={previewDrawingUrl}
+              alt="Drawing preview"
+              className="max-h-[90vh] max-w-[92vw] rounded-2xl bg-white object-contain shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            />
+          </div>
+        )}
 
         {/* ── Upgrade Gate ── */}
         <UpgradeGateModal
@@ -1061,3 +1244,7 @@ export function ChatView({ onBack, onUpgrade }: { onBack?: () => void; onUpgrade
     </SwipeBackWrapper>
   );
 }
+
+
+
+

@@ -17,6 +17,10 @@ export interface UseChatThemeReturn {
     isSaving: boolean;
 }
 
+interface CoupleThemeRow {
+    chat_theme_id?: string | null;
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 /**
@@ -42,9 +46,9 @@ export function useChatTheme(): UseChatThemeReturn {
         queryFn: async () => {
             const { data, error } = await supabase
                 .from("couples" as never)
-                .select("chat_theme_id")
+                .select("*")
                 .eq("id", coupleId!)
-                .single() as unknown as { data: { chat_theme_id: string | null } | null; error: unknown };
+                .single() as unknown as { data: CoupleThemeRow | null; error: unknown };
 
             if (error || !data) return null;
             return data.chat_theme_id ?? "default";
@@ -68,7 +72,8 @@ export function useChatTheme(): UseChatThemeReturn {
                     filter: `id=eq.${coupleId}`,
                 },
                 (payload) => {
-                    const newThemeId = (payload.new as any)?.chat_theme_id as string | null;
+                    const updatedRow = payload.new as CoupleThemeRow | null;
+                    const newThemeId = updatedRow?.chat_theme_id;
                     if (newThemeId !== undefined) {
                         // Write the new value directly into the cache — avoids a round-trip
                         queryClient.setQueryData(["chat-theme", coupleId], newThemeId ?? "default");

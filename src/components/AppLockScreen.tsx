@@ -1,6 +1,12 @@
-import { useState, useEffect } from "react";
-import { Fingerprint, Delete, Lock, Eye, EyeOff, KeyRound, ArrowLeft, Loader2 } from "lucide-react";
-import { PIN_KEY, LOCK_KEY, LockMethod } from "@/hooks/useAppLock";
+import { useCallback, useEffect, useState } from "react";
+import { ArrowLeft, Delete, Fingerprint, Loader2, Lock, LogOut } from "lucide-react";
+import {
+  clearAppLock,
+  getBiometricCredentialId,
+  hasConfiguredPin,
+  type LockMethod,
+  verifyPin,
+} from "@/hooks/useAppLock";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -8,7 +14,7 @@ const KEYS = [
   ["1", "2", "3"],
   ["4", "5", "6"],
   ["7", "8", "9"],
-  ["", "0", "⌫"],
+  ["", "0", "backspace"],
 ];
 
 type Screen = "lock" | "forgot-pin";
@@ -22,302 +28,245 @@ export function AppLockScreen({ lockMethod, onUnlock }: Props) {
   const [pin, setPin] = useState("");
   const [shake, setShake] = useState(false);
   const [biometricError, setBiometricError] = useState<string | null>(null);
-
-  // Forgot PIN state
   const [screen, setScreen] = useState<Screen>("lock");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [recoveryLoading, setRecoveryLoading] = useState(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
 
-  // Try biometric automatically on mount
-  useEffect(() => {
-    if (lockMethod === "biometric") {
-      handleBiometric();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleBiometric = async () => {
+  const handleBiometric = useCallback(async () => {
     setBiometricError(null);
+
     try {
       if (!("PublicKeyCredential" in window)) {
-        setBiometricError("Biometrics not supported on this device");
+        setBiometricError("Biometrics not supported on this device.");
         return;
       }
 
       const challenge = new Uint8Array(32);
       crypto.getRandomValues(challenge);
 
-      // Load the stored credential ID so the platform authenticator knows which key to use
-      const credIdBase64 = localStorage.getItem("ourvault_biometric_cred_id");
+      const credIdBase64 = getBiometricCredentialId();
       const allowCredentials: PublicKeyCredentialDescriptor[] = credIdBase64
-        ? [{
-            type: "public-key",
-            id: Uint8Array.from(atob(credIdBase64), c => c.charCodeAt(0)),
-            transports: ["internal"] as AuthenticatorTransport[],
-          }]
+        ? [
+            {
+              type: "public-key",
+              id: Uint8Array.from(atob(credIdBase64), (char) => char.charCodeAt(0)),
+              transports: ["internal"] as AuthenticatorTransport[],
+            },
+          ]
         : [];
 
       await navigator.credentials.get({
         publicKey: {
           challenge,
-          timeout: 60000,
+          timeout: 60_000,
           userVerification: "required",
           rpId: window.location.hostname,
           allowCredentials,
         },
       });
+
       onUnlock();
     } catch {
-      // User cancelled or credential not found — fall back to PIN if available
-      const storedPin = localStorage.getItem(PIN_KEY);
-      if (storedPin) {
-        setBiometricError("Biometrics failed — enter your PIN");
-        localStorage.setItem(LOCK_KEY, "pin");
+      if (hasConfiguredPin()) {
+        setBiometricError("Biometric check failed. Enter your PIN.");
       } else {
-        setBiometricError("Biometrics not available. Please set up PIN in Settings.");
+        setBiometricError("Biometric unlock is not available on this device.");
       }
     }
-  };
+  }, [onUnlock]);
 
-  const handleKey = (k: string) => {
-    if (k === "⌫") {
-      setPin(p => p.slice(0, -1));
+  useEffect(() => {
+    if (lockMethod === "biometric") {
+      void handleBiometric();
+    }
+  }, [handleBiometric, lockMethod]);
+
+  const handleKey = async (key: string) => {
+    if (key === "backspace") {
+      setPin((value) => value.slice(0, -1));
       return;
     }
-    if (!k) return;
-    const next = pin + k;
+
+    if (!key) return;
+
+    const next = pin + key;
     setPin(next);
 
-    const stored = localStorage.getItem(PIN_KEY);
-    if (next.length >= (stored?.length ?? 4)) {
-      if (next === stored) {
-        setTimeout(() => onUnlock(), 120);
-      } else {
-        if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
-        setShake(true);
-        setTimeout(() => { setShake(false); setPin(""); }, 600);
-      }
-    }
-  };
+    if (next.length < 4) return;
 
-  const handleForgotPin = async () => {
-    if (!password.trim()) {
-      setRecoveryError("Please enter your account password");
+    const isValid = await verifyPin(next);
+    if (isValid) {
+      setTimeout(() => onUnlock(), 120);
       return;
     }
+
+    if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
+    setShake(true);
+    setTimeout(() => {
+      setShake(false);
+      setPin("");
+    }, 600);
+  };
+
+  const handleResetLock = async () => {
     setRecoveryLoading(true);
     setRecoveryError(null);
+
     try {
-      // Get the current user's email
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) {
-        setRecoveryError("Could not find your account. Please try again.");
-        setRecoveryLoading(false);
-        return;
-      }
-
-      // Re-authenticate with their account password
-      const { error } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password,
-      });
-
-      if (error) {
-        setRecoveryError("Incorrect password. Please try again.");
-        setRecoveryLoading(false);
-        return;
-      }
-
-      // Password verified — clear PIN and lock, then unlock
-      localStorage.removeItem(PIN_KEY);
-      localStorage.removeItem(LOCK_KEY);
-      localStorage.removeItem("ourvault_biometric_cred_id");
-      onUnlock();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      clearAppLock();
     } catch {
-      setRecoveryError("Something went wrong. Please try again.");
+      setRecoveryError("Could not sign out. Please try again.");
     } finally {
       setRecoveryLoading(false);
     }
   };
 
-  const currentMethod = localStorage.getItem(LOCK_KEY) as LockMethod;
-  const showPinPad = currentMethod === "pin" || (currentMethod === "biometric" && biometricError && !!localStorage.getItem(PIN_KEY));
+  const showPinPad =
+    lockMethod === "pin" || (lockMethod === "biometric" && !!biometricError && hasConfiguredPin());
 
-  // ─── Forgot PIN screen ──────────────────────────────────────────────────────
   if (screen === "forgot-pin") {
     return (
       <div
         className="fixed inset-0 z-[9999] flex flex-col items-center justify-center select-none px-6"
         style={{ background: "hsl(var(--background))" }}
       >
-        {/* Back button */}
         <button
-          onClick={() => { setScreen("lock"); setPassword(""); setRecoveryError(null); }}
-          className="absolute top-6 left-6 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          onClick={() => {
+            setScreen("lock");
+            setRecoveryError(null);
+          }}
+          className="absolute left-6 top-6 flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
         </button>
 
-        <div className="flex flex-col items-center mb-8 gap-3">
-          <div className="h-14 w-14 rounded-2xl bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
-            <KeyRound className="h-7 w-7 text-primary" />
+        <div className="mb-8 flex flex-col items-center gap-3">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-primary/20 bg-primary/10">
+            <LogOut className="h-7 w-7 text-primary" />
           </div>
-          <h2 className="text-xl font-bold font-heading text-foreground">Forgot PIN?</h2>
-          <p className="text-sm text-muted-foreground text-center max-w-xs">
-            Enter your account password to verify your identity. Your PIN and lock settings will be cleared so you can set them up again.
+          <h2 className="font-heading text-xl font-bold text-foreground">Reset Device Lock?</h2>
+          <p className="max-w-xs text-center text-sm text-muted-foreground">
+            To reset the PIN or biometric lock on this device, sign out and sign in again. This
+            clears only the local app-lock settings.
           </p>
         </div>
 
         <div className="w-full max-w-xs space-y-4">
-          {/* Password input */}
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Account password"
-              value={password}
-              onChange={e => { setPassword(e.target.value); setRecoveryError(null); }}
-              onKeyDown={e => e.key === "Enter" && handleForgotPin()}
-              className={cn(
-                "w-full h-12 rounded-xl px-4 pr-11 text-sm border bg-card text-foreground placeholder:text-muted-foreground",
-                "focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all",
-                recoveryError ? "border-destructive focus:ring-destructive/50" : "border-border"
-              )}
-              autoFocus
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(v => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
+          {recoveryError && <p className="text-center text-xs text-destructive">{recoveryError}</p>}
 
-          {/* Error message */}
-          {recoveryError && (
-            <p className="text-xs text-destructive text-center">{recoveryError}</p>
-          )}
-
-          {/* Verify button */}
           <button
-            onClick={handleForgotPin}
-            disabled={recoveryLoading || !password.trim()}
+            onClick={() => void handleResetLock()}
+            disabled={recoveryLoading}
             className={cn(
-              "w-full h-12 rounded-xl font-semibold text-sm transition-all active:scale-[0.98]",
-              "bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed",
-              "flex items-center justify-center gap-2"
+              "flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all active:scale-[0.98]",
+              "bg-primary text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50",
             )}
           >
             {recoveryLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Verifying…
+                Signing out...
               </>
             ) : (
-              "Verify & Reset Lock"
+              "Sign Out & Reset Lock"
             )}
           </button>
 
-          <p className="text-[11px] text-muted-foreground/60 text-center">
-            After verification, your PIN and biometric lock will be removed. You can set them up again in Settings.
+          <p className="text-center text-[11px] text-muted-foreground/60">
+            You will need to sign in again before accessing the vault.
           </p>
         </div>
       </div>
     );
   }
 
-  // ─── Main lock screen ───────────────────────────────────────────────────────
   return (
     <div
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center select-none"
+      className="fixed inset-0 z-[9999] flex select-none flex-col items-center justify-center"
       style={{ background: "hsl(var(--background))" }}
     >
-      {/* Logo */}
-      <div className="flex flex-col items-center mb-10 gap-3">
-        <div className="h-16 w-16 rounded-2xl overflow-hidden shadow-lg ring-2 ring-border">
+      <div className="mb-10 flex flex-col items-center gap-3">
+        <div className="h-16 w-16 overflow-hidden rounded-2xl shadow-lg ring-2 ring-border">
           <img src="/pwa-icon-192.png" alt="OurVault" className="h-full w-full object-cover" />
         </div>
-        <h1 className="text-xl font-bold font-heading gradient-text">OurVault</h1>
+        <h1 className="font-heading text-xl font-bold gradient-text">OurVault</h1>
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <Lock className="h-3.5 w-3.5" />
           <span>App is locked</span>
         </div>
       </div>
 
-      {/* Biometric button */}
-      {currentMethod === "biometric" && (
-        <div className="flex flex-col items-center gap-3 mb-8">
+      {lockMethod === "biometric" && (
+        <div className="mb-8 flex flex-col items-center gap-3">
           <button
-            onClick={handleBiometric}
+            onClick={() => void handleBiometric()}
             className={cn(
-              "h-20 w-20 rounded-full flex items-center justify-center transition-all active:scale-95",
-              "bg-primary/10 border-2 border-primary/30 hover:bg-primary/20"
+              "flex h-20 w-20 items-center justify-center rounded-full border-2 border-primary/30 bg-primary/10 transition-all active:scale-95 hover:bg-primary/20",
             )}
           >
             <Fingerprint className="h-10 w-10 text-primary" />
           </button>
-          <span className="text-sm text-muted-foreground">
-            {biometricError ?? "Touch to unlock"}
-          </span>
+          <span className="text-sm text-muted-foreground">{biometricError ?? "Touch to unlock"}</span>
         </div>
       )}
 
-      {/* PIN pad */}
       {showPinPad && (
         <>
-          {/* Dots */}
-          <div className={cn("flex gap-3 mb-8 transition-all", shake && "animate-bounce")}>
-            {Array.from({ length: Math.max(4, (localStorage.getItem(PIN_KEY)?.length ?? 4)) }).map((_, i) => (
+          <div className={cn("mb-8 flex gap-3 transition-all", shake && "animate-bounce")}>
+            {Array.from({ length: Math.max(4, pin.length || 4) }).map((_, index) => (
               <div
-                key={i}
+                key={index}
                 className={cn(
                   "h-4 w-4 rounded-full border-2 transition-all duration-150",
-                  i < pin.length
-                    ? "border-primary bg-primary scale-110"
-                    : "border-muted-foreground/40 bg-transparent"
+                  index < pin.length
+                    ? "scale-110 border-primary bg-primary"
+                    : "border-muted-foreground/40 bg-transparent",
                 )}
               />
             ))}
           </div>
 
-          {/* Numpad */}
-          <div className="grid grid-cols-3 gap-3 w-64">
-            {KEYS.flat().map((k, idx) => (
+          <div className="grid w-64 grid-cols-3 gap-3">
+            {KEYS.flat().map((key, index) => (
               <button
-                key={idx}
-                onClick={() => handleKey(k)}
-                disabled={!k}
+                key={index}
+                onClick={() => void handleKey(key)}
+                disabled={!key}
                 className={cn(
                   "h-16 rounded-2xl text-xl font-semibold transition-all active:scale-95",
-                  k === "⌫"
+                  key === "backspace"
                     ? "text-muted-foreground hover:bg-muted/60"
-                    : k
-                    ? "bg-card border border-border hover:bg-accent text-foreground shadow-sm"
-                    : "invisible"
+                    : key
+                      ? "border border-border bg-card text-foreground shadow-sm hover:bg-accent"
+                      : "invisible",
                 )}
               >
-                {k === "⌫" ? <Delete className="h-5 w-5 mx-auto" /> : k}
+                {key === "backspace" ? <Delete className="mx-auto h-5 w-5" /> : key}
               </button>
             ))}
           </div>
 
-          {/* Forgot PIN link */}
           <button
             onClick={() => setScreen("forgot-pin")}
-            className="mt-6 text-xs text-muted-foreground hover:text-primary transition-colors underline underline-offset-2"
+            className="mt-6 text-xs text-muted-foreground underline underline-offset-2 transition-colors hover:text-primary"
           >
             Forgot PIN?
           </button>
         </>
       )}
 
-      {/* If biometric only, no PIN fallback */}
-      {currentMethod === "biometric" && !biometricError && !localStorage.getItem(PIN_KEY) && (
-        <p className="mt-6 text-xs text-muted-foreground/60 text-center px-8">
-          Use your fingerprint or face to unlock
+      {lockMethod === "biometric" && !biometricError && !hasConfiguredPin() && (
+        <p className="mt-6 px-8 text-center text-xs text-muted-foreground/60">
+          Use your fingerprint or face to unlock.
+        </p>
+      )}
+
+      {lockMethod === "biometric" && !getBiometricCredentialId() && (
+        <p className="mt-3 px-8 text-center text-xs text-muted-foreground/60">
+          No saved biometric credential was found for this device.
         </p>
       )}
     </div>
