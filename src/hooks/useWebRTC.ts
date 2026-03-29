@@ -237,6 +237,10 @@ export function useWebRTC({
       video: type === "video" ? { facingMode: "user" } : false,
     });
 
+    stream.getAudioTracks().forEach((track) => {
+      track.contentHint = "speech";
+    });
+
     facingModeRef.current = "user";
     setIsFrontCamera(true);
     localStreamRef.current = stream;

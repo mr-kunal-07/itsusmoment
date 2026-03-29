@@ -14,9 +14,16 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { type CallState, type CallType } from "@/hooks/useWebRTC";
 import { playDialingTone, playRingtone, stopCallSound } from "@/lib/callSounds";
+import { endNativeCallSession, syncNativeCallSession } from "@/lib/nativeCallBridge";
 
 type HTMLMediaElementWithSinkId = HTMLAudioElement & {
   setSinkId?: (sinkId: string) => Promise<void>;
+};
+
+type NavigatorWithAudioSession = Navigator & {
+  audioSession?: {
+    type?: string;
+  };
 };
 
 interface Props {
@@ -165,12 +172,12 @@ export const CallModal = memo(function CallModal({
   useEffect(() => {
     void attachStream(remoteVideoRef.current, remoteStream, false);
     void attachStream(miniRemoteVideoRef.current, remoteStream, false);
-  }, [attachStream, minimized, remoteStream]);
+  }, [attachStream, hasRemoteVideo, minimized, remoteStream]);
 
   useEffect(() => {
     void attachStream(localVideoRef.current, localStream, true);
     void attachStream(miniLocalVideoRef.current, localStream, true);
-  }, [attachStream, localStream, minimized]);
+  }, [attachStream, hasLocalVideo, hasRemoteVideo, localStream, minimized]);
 
   useEffect(() => {
     if (!minimized) return;
@@ -182,6 +189,42 @@ export const CallModal = memo(function CallModal({
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [clampMiniPosition, minimized]);
+
+  useEffect(() => {
+    const navigatorWithAudioSession = navigator as NavigatorWithAudioSession;
+    const audioSession = navigatorWithAudioSession.audioSession;
+    if (!audioSession || callState === "idle") return;
+
+    const previousType = audioSession.type;
+
+    try {
+      audioSession.type = isSpeaker ? "playback" : "play-and-record";
+    } catch {
+      // browser does not allow changing audio session mode here
+    }
+
+    return () => {
+      try {
+        audioSession.type = previousType ?? "auto";
+      } catch {
+        // ignore unsupported cleanup
+      }
+    };
+  }, [callState, isSpeaker]);
+
+  useEffect(() => {
+    if (callState === "idle") {
+      void endNativeCallSession();
+      return;
+    }
+
+    void syncNativeCallSession({
+      mode: isVideo ? "video" : "voice",
+      useSpeaker: isVideo ? true : isSpeaker,
+      enableProximityMonitoring: !isVideo && !isSpeaker,
+      keepScreenAwake: isVideo || !isSpeaker,
+    });
+  }, [callState, isSpeaker, isVideo]);
 
   useEffect(() => {
     const audioEl = remoteAudioRef.current;
@@ -331,7 +374,7 @@ export const CallModal = memo(function CallModal({
         className="fixed z-[110] overflow-hidden rounded-3xl border border-border bg-black shadow-2xl"
         style={{ left: miniPosition.x, top: miniPosition.y }}
       >
-        <audio ref={remoteAudioRef} autoPlay aria-hidden />
+        <audio ref={remoteAudioRef} autoPlay playsInline aria-hidden />
 
         <div className="relative h-48 w-32 bg-black sm:h-52 sm:w-36">
           {hasRemoteVideo ? (
@@ -436,7 +479,7 @@ export const CallModal = memo(function CallModal({
       aria-modal="true"
       aria-label={`${isVideo ? "Video" : "Voice"} call with ${partnerName}`}
     >
-      <audio ref={remoteAudioRef} autoPlay aria-hidden />
+      <audio ref={remoteAudioRef} autoPlay playsInline aria-hidden />
 
       {isVideo && hasRemoteVideo && (
         <video
