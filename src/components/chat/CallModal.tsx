@@ -14,7 +14,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { type CallState, type CallType } from "@/hooks/useWebRTC";
 import { playDialingTone, playRingtone, stopCallSound } from "@/lib/callSounds";
-import { endNativeCallSession, syncNativeCallSession } from "@/lib/nativeCallBridge";
 
 type HTMLMediaElementWithSinkId = HTMLAudioElement & {
   setSinkId?: (sinkId: string) => Promise<void>;
@@ -213,20 +212,6 @@ export const CallModal = memo(function CallModal({
   }, [callState, isSpeaker]);
 
   useEffect(() => {
-    if (callState === "idle") {
-      void endNativeCallSession();
-      return;
-    }
-
-    void syncNativeCallSession({
-      mode: isVideo ? "video" : "voice",
-      useSpeaker: isVideo ? true : isSpeaker,
-      enableProximityMonitoring: !isVideo && !isSpeaker,
-      keepScreenAwake: isVideo || !isSpeaker,
-    });
-  }, [callState, isSpeaker, isVideo]);
-
-  useEffect(() => {
     const audioEl = remoteAudioRef.current;
     if (!audioEl || !remoteStream) return;
 
@@ -371,7 +356,7 @@ export const CallModal = memo(function CallModal({
   if (minimized && isVideo) {
     return (
       <div
-        className="fixed z-[110] overflow-hidden rounded-3xl border border-border bg-black shadow-2xl"
+        className="fixed z-[110] overflow-hidden rounded-md border border-white/10 bg-black/90 shadow-2xl backdrop-blur-md"
         style={{ left: miniPosition.x, top: miniPosition.y }}
       >
         <audio ref={remoteAudioRef} autoPlay playsInline aria-hidden />
@@ -409,7 +394,7 @@ export const CallModal = memo(function CallModal({
           )}
 
           {hasLocalVideo && hasRemoteVideo && (
-            <div className="absolute bottom-12 right-2 overflow-hidden rounded-xl border border-white/20 bg-black shadow-lg">
+            <div className="absolute bottom-12 right-2 overflow-hidden rounded-md border border-white/15 bg-black shadow-lg">
               <video
                 ref={miniLocalVideoRef}
                 autoPlay
@@ -426,7 +411,7 @@ export const CallModal = memo(function CallModal({
           )}
 
           <div
-            className="absolute inset-x-0 top-0 flex cursor-move items-center justify-between bg-gradient-to-b from-black/70 to-transparent px-2 py-2"
+            className="absolute inset-x-0 top-0 flex cursor-move items-center justify-between bg-gradient-to-b from-black/75 via-black/20 to-transparent px-2 py-2"
             onMouseDown={(event) => startDragging(event.clientX, event.clientY)}
             onTouchStart={(event) => {
               const touch = event.touches[0];
@@ -442,18 +427,18 @@ export const CallModal = memo(function CallModal({
               type="button"
               onClick={onRestore}
               aria-label="Restore call"
-              className="rounded-full bg-black/45 p-1.5 text-white backdrop-blur"
+              className="rounded-md bg-black/45 p-1.5 text-white backdrop-blur"
             >
               <Maximize2 className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/80 to-transparent px-2 py-2">
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/85 via-black/40 to-transparent px-2 py-2">
             <button
               type="button"
               onClick={onToggleSpeaker}
               aria-label={isSpeaker ? "Use phone speaker" : "Use loudspeaker"}
-              className="rounded-full bg-black/45 p-2 text-white backdrop-blur"
+              className="rounded-md bg-black/45 p-2 text-white backdrop-blur"
             >
               {isSpeaker ? <Volume2 className="h-4 w-4" /> : <Volume1 className="h-4 w-4" />}
             </button>
@@ -461,7 +446,7 @@ export const CallModal = memo(function CallModal({
               type="button"
               onClick={onHangUp}
               aria-label="End call"
-              className="rounded-full bg-red-600 p-2 text-white"
+              className="rounded-md bg-red-600 p-2 text-white"
             >
               <PhoneOff className="h-4 w-4" />
             </button>
@@ -508,13 +493,13 @@ export const CallModal = memo(function CallModal({
         />
       )}
 
-      <div className="relative z-10 flex h-full flex-col items-center justify-between px-4 py-10 sm:px-6 sm:py-16">
-        <div className="absolute left-4 top-4 right-4 flex items-center justify-end gap-2">
+      <div className="relative z-10 flex h-full flex-col items-center justify-between px-4 py-8 sm:px-6 sm:py-12">
+        <div className="absolute left-4 right-4 top-4 flex items-center justify-end gap-2">
           {canMinimize && (
             <button
               type="button"
               onClick={onMinimize}
-              className="rounded-full bg-black/30 p-2 text-white backdrop-blur"
+              className="rounded-md bg-black/30 p-2 text-white backdrop-blur"
               aria-label="Minimize call"
             >
               <Minimize2 className="h-4 w-4" />
@@ -541,7 +526,7 @@ export const CallModal = memo(function CallModal({
             )}
           </div>
 
-          <div>
+          <div className="rounded-2xl bg-black/20 px-4 py-3 backdrop-blur-sm">
             <p className="max-w-[80vw] truncate font-heading text-2xl font-bold text-white">{partnerName}</p>
             <p className="mt-1 text-sm text-white/70" aria-live="polite">
               {statusText}
@@ -562,12 +547,13 @@ export const CallModal = memo(function CallModal({
             playsInline
             muted
             aria-hidden
-            className="absolute right-4 top-14 h-32 w-24 rounded-2xl border-2 border-border object-cover shadow-2xl sm:top-16 sm:h-40 sm:w-28"
+            className="absolute right-4 top-14 h-32 w-24 rounded-md border border-white/20 object-cover shadow-2xl sm:top-16 sm:h-40 sm:w-28"
             style={{ transform: isFrontCamera ? "scaleX(-1)" : "none" }}
           />
         )}
 
-        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+        <div className="rounded-3xl bg-black/25 px-4 py-3 backdrop-blur-md">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
           {isRinging ? (
             <>
               <CallButton onClick={onReject} label="Decline" bg="hsl(var(--destructive))" size="lg">
@@ -620,6 +606,7 @@ export const CallModal = memo(function CallModal({
               )}
             </>
           )}
+          </div>
         </div>
       </div>
     </div>
