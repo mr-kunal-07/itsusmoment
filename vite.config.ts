@@ -40,7 +40,6 @@ export default defineConfig(({ mode }) => ({
             "@radix-ui/react-switch",
           ],
           // Charts (recharts) — loaded only on admin/analytics views
-          "vendor-charts": ["recharts"],
           // Map (leaflet) — loaded only on travel map view
           "vendor-map": ["leaflet"],
           // Animation

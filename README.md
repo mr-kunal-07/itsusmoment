@@ -134,7 +134,7 @@ Payments processed via **Razorpay** (India).
 
 ### ⚙️ Settings
 - Edit **display name** and upload **avatar** (stored in Supabase Storage)
-- Toggle **dark / light theme** (persisted via `next-themes`)
+- Toggle **dark / light theme** (persisted in localStorage)
 - Configure or remove **App Lock** (PIN / Biometric)
 - View current plan and navigate to Billing
 - **PWA install** button (shown when browser install prompt available)
@@ -181,14 +181,13 @@ Payments processed via **Razorpay** (India).
 ### UI & Media
 | Technology | Purpose |
 |---|---|
-| Recharts | Charts (admin stats, Days Together ring) |
+| Native UI components | Admin stats and progress summaries |
 | date-fns | Date formatting and arithmetic |
 | exifr | EXIF metadata extraction from photos |
 | embla-carousel | Carousel (slideshow) |
 | Vaul | Mobile drawer component |
 | Lucide React | Icon library |
 | Sonner | Toast notifications |
-| next-themes | Dark/light theme management |
 
 ### Backend (Supabase)
 | Service | Usage |
