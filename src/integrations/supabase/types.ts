@@ -749,6 +749,7 @@ export type Database = {
     }
     Functions: {
       accept_couple_invite: { Args: { _invite_code: string }; Returns: Json }
+      check_couple_invite: { Args: { _invite_code: string }; Returns: Json }
       get_partner_id: { Args: { _user_id: string }; Returns: string }
       get_user_plan: { Args: { _user_id: string }; Returns: string }
       has_role: {

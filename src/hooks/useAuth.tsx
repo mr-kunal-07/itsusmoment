@@ -3,6 +3,7 @@ import {
   useState, useCallback, useReducer,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   type User,
   type Session,
@@ -12,6 +13,7 @@ import {
 } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { QK } from "@/lib/queryKeys";
 
 // ─── Logger ───────────────────────────────────────────────────────────────────
 
@@ -158,6 +160,7 @@ function authReducer(state: AuthState, action: ReducerAction): AuthState {
 // ─── Post-Auth Actions ────────────────────────────────────────────────────────
 
 function usePostAuthActions() {
+  const qc = useQueryClient();
   const done = useRef(new Set<string>());
 
   const run = useCallback(async (session: Session): Promise<void> => {
@@ -176,6 +179,10 @@ function usePostAuthActions() {
               .throwOnError();
           });
           ephemeralStorage.remove(PARTNER_CODE_KEY);
+          qc.invalidateQueries({ queryKey: QK.myCouple() });
+          qc.invalidateQueries({ queryKey: QK.profilesAll() });
+          qc.invalidateQueries({ queryKey: QK.mediaAll() });
+          qc.invalidateQueries({ queryKey: QK.folders() });
           authLog.info("Partner invite accepted", { userId });
         } catch (err) {
           authLog.error("accept_couple_invite failed", { err });
@@ -195,7 +202,7 @@ function usePostAuthActions() {
         window.location.replace(safePath);
       }
     }
-  }, []);
+  }, [qc]);
 
   const clearForUser = useCallback((userId: string) => {
     done.current.delete(userId);

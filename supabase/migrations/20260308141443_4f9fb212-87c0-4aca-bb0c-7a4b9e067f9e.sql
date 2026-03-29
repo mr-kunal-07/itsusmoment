@@ -39,3 +39,4 @@ AS $function$
       ) AS partner_plan
   ) plans;
 $function$
+;

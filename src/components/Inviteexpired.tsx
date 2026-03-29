@@ -45,10 +45,10 @@ export default function InviteExpired() {
                         This spot's already taken
                     </h2>
                     <p className="text-sm text-muted-foreground mb-1 leading-relaxed">
-                        The partner who shared this link has already connected with someone.
+                        This invite link has already been used.
                     </p>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                        If you think this is a mistake, ask them to send you a fresh invite.
+                        If you're the intended partner, just sign in to your account â€” you'll be connected already.
                     </p>
 
                     {/* Divider */}
@@ -62,19 +62,34 @@ export default function InviteExpired() {
                     <p className="text-sm text-muted-foreground mb-4">
                         Want to start your own couple space?
                     </p>
-                    <button
-                        type="button"
-                        onClick={() => navigate("/auth")}
-                        className={cn(
-                            "w-full flex items-center justify-center gap-2 h-11 rounded-lg",
-                            "bg-primary text-primary-foreground text-sm font-medium",
-                            "hover:bg-primary/90 active:scale-[0.98] transition-all",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                        )}
-                    >
-                        Create a new account
-                        <ArrowRight className="h-4 w-4" aria-hidden />
-                    </button>
+                    <div className="space-y-2">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/auth", { state: { mode: "signin" } })}
+                            className={cn(
+                                "w-full flex items-center justify-center gap-2 h-11 rounded-lg",
+                                "bg-primary text-primary-foreground text-sm font-medium",
+                                "hover:bg-primary/90 active:scale-[0.98] transition-all",
+                                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                            )}
+                        >
+                            Sign in
+                            <ArrowRight className="h-4 w-4" aria-hidden />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => navigate("/auth", { state: { mode: "signup" } })}
+                            className={cn(
+                                "w-full flex items-center justify-center gap-2 h-11 rounded-lg",
+                                "border border-border bg-background text-foreground text-sm font-medium",
+                                "hover:bg-accent/50 active:scale-[0.98] transition-all",
+                                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                            )}
+                        >
+                            Create a new account
+                            <ArrowRight className="h-4 w-4" aria-hidden />
+                        </button>
+                    </div>
                 </div>
 
                 <p className="text-center text-xs text-muted-foreground/60 mt-6 select-none">

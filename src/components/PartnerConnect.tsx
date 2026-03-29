@@ -312,15 +312,31 @@ function JoinTab({
 }) {
   const [code, setCode] = useState("");
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    const match = val.match(/[?&]code=([A-Z0-9]{6,8})/i);
-    if (match) {
-      setCode(match[1].toUpperCase());
-    } else {
-      setCode(val.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8));
+  const extractInviteCode = useCallback((input: string): string => {
+    const raw = input.trim();
+    if (!raw) return "";
+
+    // Try parsing as a URL first (works for full invite links).
+    try {
+      const url = new URL(raw);
+      const qp = url.searchParams.get("invite") ?? url.searchParams.get("code");
+      if (qp) return qp.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+    } catch {
+      // ignore
     }
+
+    // Match query-string style fragments if user pasted a partial URL.
+    const m = raw.match(/[?&](invite|code)=([A-Z0-9]{6,8})/i);
+    if (m) return m[2].toUpperCase();
+
+    // Fallback: find the last 6–8 char alnum chunk (avoids grabbing "HTTPSWWW").
+    const chunks = raw.toUpperCase().match(/[A-Z0-9]{6,8}/g) ?? [];
+    return (chunks[chunks.length - 1] ?? "").slice(0, 8);
   }, []);
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setCode(extractInviteCode(e.target.value));
+  }, [extractInviteCode]);
 
   return (
     <div className="space-y-3">

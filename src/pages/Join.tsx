@@ -1,15 +1,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import {
+  useAuth,
+  ephemeralStorage,
+  JOIN_REDIRECT_KEY,
+  normalisePartnerCode,
+  isValidPartnerCode,
+  PARTNER_CODE_KEY,
+} from "@/hooks/useAuth";
 import { useMyCouple, useAcceptInvite } from "@/hooks/useCouple";
 import { Heart, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function JoinPage() {
   const [searchParams] = useSearchParams();
-  const code = searchParams.get("code")?.toUpperCase() ?? "";
+  const codeFromQuery = searchParams.get("code")?.toUpperCase() ?? "";
+  const storedCode = normalisePartnerCode(ephemeralStorage.get(PARTNER_CODE_KEY) ?? "");
+  const code = codeFromQuery || (isValidPartnerCode(storedCode) ? storedCode : "");
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, bootstrapping } = useAuth();
   const { data: couple, isLoading: coupleLoading } = useMyCouple();
   const acceptInvite = useAcceptInvite();
   const [status, setStatus] = useState<"idle" | "joining" | "done" | "error">("idle");
@@ -17,10 +26,11 @@ export default function JoinPage() {
 
   // Auto-attempt join once auth + couple state is ready
   useEffect(() => {
-    if (loading || coupleLoading) return;
+    if (bootstrapping || coupleLoading) return;
     if (!user) {
-      // Save the join URL so after login we can redirect back
-      sessionStorage.setItem("join_redirect", window.location.href);
+      if (code) ephemeralStorage.set(PARTNER_CODE_KEY, code);
+      // After login, return to /join (invite code is carried via PARTNER_CODE_KEY)
+      ephemeralStorage.set(JOIN_REDIRECT_KEY, "/join");
       navigate("/auth", { replace: true });
       return;
     }
@@ -35,9 +45,9 @@ export default function JoinPage() {
       .then(() => setStatus("done"))
       .catch((e: Error) => { setStatus("error"); setErrorMsg(e.message); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, loading, couple, coupleLoading, code]);
+  }, [user, bootstrapping, couple, coupleLoading, code]);
 
-  if (loading || coupleLoading || status === "joining") {
+  if (bootstrapping || coupleLoading || status === "joining") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

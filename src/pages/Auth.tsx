@@ -1,5 +1,5 @@
 import { useState, useCallback, useId, useEffect } from "react";
-import { Navigate, useSearchParams, useNavigate } from "react-router-dom";
+import { Navigate, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import {
   useAuth,
   PARTNER_CODE_KEY,
@@ -22,7 +22,7 @@ type Mode = "signin" | "signup" | "forgot";
 
 type CodeValidationResult = {
   ok: boolean;
-  reason: "valid" | "committed" | "error";
+  reason: "valid" | "committed" | "missing" | "error";
   message?: string;
 };
 
@@ -64,6 +64,23 @@ async function validatePartnerCode(code: string): Promise<CodeValidationResult> 
   }
 
   return { ok: true, reason: "valid" };
+}
+
+async function validatePartnerCodeRpc(code: string): Promise<CodeValidationResult> {
+  const { data, error } = await supabase.rpc("check_couple_invite", { _invite_code: code });
+
+  if (error) {
+    return { ok: false, reason: "error", message: "Unable to verify partner code. Please try again." };
+  }
+
+  const result = data as { ok?: boolean; reason?: string } | null;
+  const reason = result?.reason ?? "error";
+
+  if (reason === "valid") return { ok: true, reason: "valid" };
+  if (reason === "committed") return { ok: false, reason: "committed" };
+  if (reason === "missing") return { ok: false, reason: "missing", message: "Invite not found." };
+
+  return { ok: false, reason: "error", message: "Unable to verify partner code. Please try again." };
 }
 
 function GoogleIcon() {
@@ -264,8 +281,15 @@ export default function Auth() {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [mode, setMode] = useState<Mode>("signin");
+  const initialMode = (() => {
+    const state = (location.state ?? {}) as { mode?: Mode };
+    if (state.mode === "signup" || state.mode === "forgot" || state.mode === "signin") return state.mode;
+    return "signin";
+  })();
+
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -305,9 +329,9 @@ export default function Auth() {
 
     // ✅ background validation
     (async () => {
-      const result = await validatePartnerCode(normalised);
+      const result = await validatePartnerCodeRpc(normalised);
 
-      if (result.reason === "committed") {
+      if (result.reason === "committed" || result.reason === "missing") {
         navigate("/invite-expired", { replace: true });
       }
     })();
@@ -333,17 +357,21 @@ export default function Auth() {
   const runCodePreflight = useCallback(async (): Promise<boolean> => {
     if (!partnerCode || !isValidPartnerCode(partnerCode)) return true;
 
-    const result = await validatePartnerCode(partnerCode);
+    const result = await validatePartnerCodeRpc(partnerCode);
 
-    if (result.ok) {
-      return true;
-    } else if (result.reason === "committed") {
+    if (result.reason === "committed") {
       navigate("/invite-expired", { replace: true });
       return false;
-    } else {
-      setErrors(prev => ({ ...prev, partnerCode: result.message ?? "Unable to verify partner code." }));
+    }
+
+    if (result.reason === "missing") {
+      setErrors(prev => ({ ...prev, partnerCode: result.message ?? "Invite not found." }));
       return false;
     }
+
+    // Important: don't block signup/OAuth if we can't validate due to RLS/network.
+    // The partner link is applied after auth via `accept_couple_invite`.
+    return true;
   }, [partnerCode, navigate]);
 
   const handleGoogleSignIn = useCallback(async () => {

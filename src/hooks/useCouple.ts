@@ -22,10 +22,13 @@ export function useMyCouple() {
     queryKey: QK.myCouple(),
     staleTime: 5 * 60_000, // couple data changes rarely
     queryFn: async () => {
+      if (!user) return null;
       const { data, error } = await supabase
         .from("couples")
         .select("*")
         .or(`user1_id.eq.${user!.id},user2_id.eq.${user!.id}`)
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data as Couple | null;
@@ -73,13 +76,22 @@ export function useCreateInvite() {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async () => {
-      // Check not already in a couple
-      const { data: existing } = await supabase
+      if (!user) throw new Error("User not authenticated");
+
+      // If a couple already exists, reuse the pending invite instead of erroring.
+      const { data: existing, error: existingError } = await supabase
         .from("couples")
-        .select("id")
+        .select("*")
         .or(`user1_id.eq.${user!.id},user2_id.eq.${user!.id}`)
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
-      if (existing) throw new Error("You already have a couple link");
+      if (existingError) throw existingError;
+      if (existing) {
+        const couple = existing as Couple;
+        if (couple.status === "pending" && couple.user1_id === user.id) return couple;
+        throw new Error("You already have a couple link");
+      }
 
       const { data, error } = await supabase
         .from("couples")
