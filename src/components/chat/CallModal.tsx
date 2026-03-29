@@ -14,7 +14,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { type CallState, type CallType } from "@/hooks/useWebRTC";
 import { playDialingTone, playRingtone, stopCallSound } from "@/lib/callSounds";
-import { endNativeCallSession, hasNativeCallControl, syncNativeCallSession } from "@/lib/nativeCallBridge";
 
 type HTMLMediaElementWithSinkId = HTMLAudioElement & {
   setSinkId?: (sinkId: string) => Promise<void>;
@@ -211,22 +210,6 @@ export const CallModal = memo(function CallModal({
       }
     };
   }, [callState, isSpeaker]);
-
-  useEffect(() => {
-    if (!hasNativeCallControl()) return;
-
-    if (callState === "idle") {
-      void endNativeCallSession();
-      return;
-    }
-
-    void syncNativeCallSession({
-      mode: isVideo ? "video" : "voice",
-      useSpeaker: isVideo ? true : isSpeaker,
-      enableProximityMonitoring: !isVideo && !isSpeaker,
-      keepScreenAwake: isVideo || !isSpeaker,
-    });
-  }, [callState, isSpeaker, isVideo]);
 
   useEffect(() => {
     const audioEl = remoteAudioRef.current;
