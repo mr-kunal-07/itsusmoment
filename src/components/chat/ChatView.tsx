@@ -459,6 +459,20 @@ export function ChatView({
 
   const clearSelect = useCallback(() => setSelectedIds(new Set()), []);
 
+  const selectAllMessages = useCallback(() => {
+    setSelectedIds(new Set(messages.map(message => message.id)));
+  }, [messages]);
+
+  const allMessagesSelected = messages.length > 0 && selectedIds.size === messages.length;
+
+  const toggleSelectAll = useCallback(() => {
+    if (allMessagesSelected) {
+      clearSelect();
+      return;
+    }
+    selectAllMessages();
+  }, [allMessagesSelected, clearSelect, selectAllMessages]);
+
   // FIX: parallel deletes instead of sequential await loop
   const handleDeleteSelected = useCallback(async () => {
     await Promise.all([...selectedIds].map(id => deleteMessage.mutateAsync(id)));
@@ -685,6 +699,18 @@ export function ChatView({
             </span>
             <button
               type="button"
+              onClick={toggleSelectAll}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
+              style={{
+                background: allMessagesSelected ? "hsl(var(--wa-online) / 0.14)" : "hsl(var(--wa-text) / 0.08)",
+                color: allMessagesSelected ? "hsl(var(--wa-online))" : "hsl(var(--wa-text))",
+              }}
+            >
+              <CheckSquare className="h-3.5 w-3.5" />
+              {allMessagesSelected ? "Unselect all" : "Select all"}
+            </button>
+            <button
+              type="button"
               onClick={handleDeleteSelected}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
               style={{ background: "hsl(var(--destructive) / 0.12)", color: "hsl(var(--destructive))" }}
@@ -724,7 +750,6 @@ export function ChatView({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <p className="text-sm font-semibold leading-none truncate" style={{ color: "hsl(var(--wa-text))" }}>{partnerName}</p>
-                <Lock className="h-2.5 w-2.5 shrink-0" style={{ color: "hsl(var(--wa-meta))" }} aria-hidden />
               </div>
               <p className="text-[10px] truncate mt-0.5" style={{ color: "hsl(var(--wa-meta))" }} aria-live="polite">
                 {partnerTyping ? (
@@ -790,8 +815,12 @@ export function ChatView({
               <div className="px-4 py-2 rounded-lg text-xs" style={{ background: "hsl(var(--wa-system-bubble))", color: "hsl(var(--wa-meta))" }}>
                 Messages are private between you two
               </div>
-              <div className="mt-6 text-sm font-medium uppercase tracking-[0.3em]" style={{ color: "hsl(var(--wa-meta))" }} aria-hidden>just us</div>
-              <p className="text-sm font-medium" style={{ color: "hsl(var(--wa-text))" }}>Send your first message</p>
+              <div className="mt-6 text-sm font-medium uppercase tracking-[0.3em]" style={{ color: "hsl(var(--wa-meta))" }} aria-hidden>
+                just us
+              </div>
+              <p className="text-sm font-medium" style={{ color: "hsl(var(--wa-text))" }}>
+                Send your first message
+              </p>
             </div>
           ) : (
             <div className="space-y-1 pb-2">
@@ -1064,10 +1093,6 @@ export function ChatView({
                   </div>
                 </div>
               ))}
-
-              {partnerTyping && (
-                <TypingBubble avatarUrl={partnerProfile?.avatar_url ?? undefined} initials={partnerInitials} />
-              )}
 
               <div ref={bottomRef} />
             </div>

@@ -43,7 +43,7 @@ interface Props {
   onToggleSpeaker: () => void;
   callDuration: number;
   partnerOnline?: boolean;
-  onFlipCamera?: () => void;
+  onBackCamera?: () => void;
   isFrontCamera?: boolean;
   minimized?: boolean;
   onMinimize?: () => void;
@@ -105,7 +105,7 @@ export const CallModal = memo(function CallModal({
   onToggleSpeaker,
   callDuration,
   partnerOnline,
-  onFlipCamera,
+  onBackCamera,
   isFrontCamera = true,
   minimized = false,
   onMinimize,
@@ -118,6 +118,7 @@ export const CallModal = memo(function CallModal({
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const dragRef = useRef(false);
   const [miniPosition, setMiniPosition] = useState<{ x: number; y: number }>(() => {
@@ -135,6 +136,14 @@ export const CallModal = memo(function CallModal({
   const canMinimize = !!onMinimize && isVideo && !isRinging;
   const hasRemoteVideo = !!remoteStream?.getVideoTracks().some((track) => track.readyState === "live");
   const hasLocalVideo = !!localStream?.getVideoTracks().some((track) => track.readyState === "live");
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 768px)");
+    const handleChange = () => setIsMobileViewport(mediaQuery.matches);
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
 
   const attachStream = useCallback(async (
     element: HTMLVideoElement | null,
@@ -221,7 +230,7 @@ export const CallModal = memo(function CallModal({
       sourceNodeRef.current?.disconnect();
       sourceNodeRef.current = null;
       if (audioCtxRef.current) {
-        await audioCtxRef.current.close().catch(() => {});
+        await audioCtxRef.current.close().catch(() => { });
         audioCtxRef.current = null;
       }
 
@@ -288,7 +297,7 @@ export const CallModal = memo(function CallModal({
     return () => {
       sourceNodeRef.current?.disconnect();
       sourceNodeRef.current = null;
-      audioCtxRef.current?.close().catch(() => {});
+      audioCtxRef.current?.close().catch(() => { });
       audioCtxRef.current = null;
     };
   }, [isSpeaker, remoteStream]);
@@ -356,8 +365,14 @@ export const CallModal = memo(function CallModal({
   if (minimized && isVideo) {
     return (
       <div
-        className="fixed z-[110] overflow-hidden rounded-md border border-white/10 bg-black/90 shadow-2xl backdrop-blur-md"
+        className="fixed z-[110] cursor-move overflow-hidden rounded-md border border-white/10 bg-black/90 shadow-2xl backdrop-blur-md"
         style={{ left: miniPosition.x, top: miniPosition.y }}
+        onMouseDown={(event) => startDragging(event.clientX, event.clientY)}
+        onTouchStart={(event) => {
+          const touch = event.touches[0];
+          if (!touch) return;
+          startDragging(touch.clientX, touch.clientY);
+        }}
       >
         <audio ref={remoteAudioRef} autoPlay playsInline aria-hidden />
 
@@ -393,58 +408,46 @@ export const CallModal = memo(function CallModal({
             </div>
           )}
 
-          {hasLocalVideo && hasRemoteVideo && (
-            <div className="absolute bottom-12 right-2 overflow-hidden rounded-md border border-white/15 bg-black shadow-lg">
-              <video
-                ref={miniLocalVideoRef}
-                autoPlay
-                playsInline
-                muted
-                aria-hidden
-                className="h-20 w-14 object-cover"
-                style={{ transform: isFrontCamera ? "scaleX(-1)" : "none" }}
-              />
-              <div className="absolute inset-x-0 bottom-0 bg-black/60 px-1 py-0.5 text-center text-[10px] text-white">
-                You
-              </div>
-            </div>
-          )}
-
           <div
-            className="absolute inset-x-0 top-0 flex cursor-move items-center justify-between bg-gradient-to-b from-black/75 via-black/20 to-transparent px-2 py-2"
-            onMouseDown={(event) => startDragging(event.clientX, event.clientY)}
-            onTouchStart={(event) => {
-              const touch = event.touches[0];
-              if (!touch) return;
-              startDragging(touch.clientX, touch.clientY);
-            }}
+            className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 bg-gradient-to-b from-black/75 via-black/20 to-transparent px-2 py-2"
           >
-            <div className="min-w-0">
-              <p className="truncate text-xs font-medium text-white">{partnerName}</p>
+            <div className="min-w-0 flex-1 pr-1">
               <p className="truncate text-[11px] text-white/70">{statusText}</p>
             </div>
-            <button
-              type="button"
-              onClick={onRestore}
-              aria-label="Restore call"
-              className="rounded-md bg-black/45 p-1.5 text-white backdrop-blur"
-            >
-              <Maximize2 className="h-4 w-4" />
-            </button>
+            {hasLocalVideo && hasRemoteVideo && (
+              <div className="relative shrink-0 overflow-hidden rounded-md border border-white/15 bg-black shadow-lg">
+                <video
+                  ref={miniLocalVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  aria-hidden
+                  className="h-20 w-14 object-cover"
+                  style={{ transform: isFrontCamera ? "scaleX(-1)" : "none" }}
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-black/60 px-1 py-0.5 text-center text-[10px] text-white">
+                  You
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/85 via-black/40 to-transparent px-2 py-2">
             <button
               type="button"
-              onClick={onToggleSpeaker}
-              aria-label={isSpeaker ? "Use phone speaker" : "Use loudspeaker"}
+              onClick={onRestore}
+              onMouseDown={(event) => event.stopPropagation()}
+              onTouchStart={(event) => event.stopPropagation()}
+              aria-label="Restore call"
               className="rounded-md bg-black/45 p-2 text-white backdrop-blur"
             >
-              {isSpeaker ? <Volume2 className="h-4 w-4" /> : <Volume1 className="h-4 w-4" />}
+              <Maximize2 className="h-4 w-4" />
             </button>
             <button
               type="button"
               onClick={onHangUp}
+              onMouseDown={(event) => event.stopPropagation()}
+              onTouchStart={(event) => event.stopPropagation()}
               aria-label="End call"
               className="rounded-md bg-red-600 p-2 text-white"
             >
@@ -494,7 +497,17 @@ export const CallModal = memo(function CallModal({
       )}
 
       <div className="relative z-10 flex h-full flex-col items-center justify-between px-4 py-8 sm:px-6 sm:py-12">
-        <div className="absolute left-4 right-4 top-4 flex items-center justify-end gap-2">
+        <div className="absolute left-4 right-4 top-4 flex items-start justify-between gap-3">
+          {isVideo ? (
+            <div className="min-w-0 rounded-2xl bg-black/20 px-4 py-3 backdrop-blur-sm">
+              <p className="max-w-[65vw] truncate font-heading text-xl font-bold text-white sm:text-2xl">{partnerName}</p>
+              <p className="mt-1 text-sm text-white/70" aria-live="polite">
+                {statusText}
+              </p>
+            </div>
+          ) : (
+            <div />
+          )}
           {canMinimize && (
             <button
               type="button"
@@ -508,36 +521,40 @@ export const CallModal = memo(function CallModal({
         </div>
 
         <div className="flex flex-col items-center gap-4 text-center">
-          <div className={`relative ${isRinging ? "animate-pulse" : ""}`}>
-            <Avatar className="h-24 w-24 ring-4 ring-border">
-              <AvatarImage src={partnerAvatarUrl} />
-              <AvatarFallback className="text-2xl font-bold">{partnerInitials}</AvatarFallback>
-            </Avatar>
+          {!isVideo && (
+            <>
+              <div className={`relative ${isRinging ? "animate-pulse" : ""}`}>
+                <Avatar className="h-24 w-24 ring-4 ring-border">
+                  <AvatarImage src={partnerAvatarUrl} />
+                  <AvatarFallback className="text-2xl font-bold">{partnerInitials}</AvatarFallback>
+                </Avatar>
 
-            {partnerOnline !== undefined && (
-              <span
-                className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2"
-                style={{
-                  borderColor: "hsl(0 0% 7%)",
-                  background: partnerOnline ? "hsl(142 71% 45%)" : "hsl(0 0% 50%)",
-                }}
-                aria-label={partnerOnline ? "Online" : "Offline"}
-              />
-            )}
-          </div>
-
-          <div className="rounded-2xl bg-black/20 px-4 py-3 backdrop-blur-sm">
-            <p className="max-w-[80vw] truncate font-heading text-2xl font-bold text-white">{partnerName}</p>
-            <p className="mt-1 text-sm text-white/70" aria-live="polite">
-              {statusText}
-            </p>
-            {isConnected && (
-              <div className="mt-2 flex items-center justify-center gap-1.5">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" aria-hidden />
-                <span className="text-xs font-medium text-green-400">Connected</span>
+                {partnerOnline !== undefined && (
+                  <span
+                    className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2"
+                    style={{
+                      borderColor: "hsl(0 0% 7%)",
+                      background: partnerOnline ? "hsl(142 71% 45%)" : "hsl(0 0% 50%)",
+                    }}
+                    aria-label={partnerOnline ? "Online" : "Offline"}
+                  />
+                )}
               </div>
-            )}
-          </div>
+
+              <div className="rounded-2xl bg-black/20 px-4 py-3 backdrop-blur-sm">
+                <p className="max-w-[80vw] truncate font-heading text-2xl font-bold text-white">{partnerName}</p>
+                <p className="mt-1 text-sm text-white/70" aria-live="polite">
+                  {statusText}
+                </p>
+                {isConnected && (
+                  <div className="mt-2 flex items-center justify-center gap-1.5">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" aria-hidden />
+                    <span className="text-xs font-medium text-green-400">Connected</span>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {isVideo && hasLocalVideo && hasRemoteVideo && (
@@ -554,58 +571,58 @@ export const CallModal = memo(function CallModal({
 
         <div className="rounded-3xl bg-black/25 px-4 py-3 backdrop-blur-md">
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
-          {isRinging ? (
-            <>
-              <CallButton onClick={onReject} label="Decline" bg="hsl(var(--destructive))" size="lg">
-                <PhoneOff className="h-7 w-7 text-white" />
-              </CallButton>
-              <CallButton onClick={onAccept} label="Accept" bg="hsl(var(--wa-online))" size="lg">
-                {incomingCallType === "video" ? (
-                  <Video className="h-7 w-7 text-white" />
-                ) : (
-                  <Phone className="h-7 w-7 text-white" />
-                )}
-              </CallButton>
-            </>
-          ) : (
-            <>
-              <CallButton
-                onClick={onToggleMute}
-                label={isMuted ? "Unmute" : "Mute"}
-                bg={isMuted ? "hsl(0 0% 95%)" : "hsl(0 0% 20%)"}
-                size="sm"
-              >
-                {isMuted ? (
-                  <MicOff className="h-6 w-6" style={{ color: "hsl(0 0% 10%)" }} />
-                ) : (
-                  <Mic className="h-6 w-6 text-white" />
-                )}
-              </CallButton>
-
-              <CallButton
-                onClick={onToggleSpeaker}
-                label={isSpeaker ? "Speaker" : "Phone"}
-                bg={isSpeaker ? "hsl(0 0% 95%)" : "hsl(0 0% 20%)"}
-                size="sm"
-              >
-                {isSpeaker ? (
-                  <Volume2 className="h-6 w-6" style={{ color: "hsl(0 0% 10%)" }} />
-                ) : (
-                  <Volume1 className="h-6 w-6 text-white" />
-                )}
-              </CallButton>
-
-              <CallButton onClick={onHangUp} label="End" bg="hsl(var(--destructive))" size="lg">
-                <PhoneOff className="h-7 w-7 text-white" />
-              </CallButton>
-
-              {isVideo && onFlipCamera && (
-                <CallButton onClick={onFlipCamera} label="Flip" bg="hsl(0 0% 20%)" size="sm">
-                  <SwitchCamera className="h-6 w-6 text-white" />
+            {isRinging ? (
+              <>
+                <CallButton onClick={onReject} label="Decline" bg="hsl(var(--destructive))" size="lg">
+                  <PhoneOff className="h-7 w-7 text-white" />
                 </CallButton>
-              )}
-            </>
-          )}
+                <CallButton onClick={onAccept} label="Accept" bg="hsl(var(--wa-online))" size="lg">
+                  {incomingCallType === "video" ? (
+                    <Video className="h-7 w-7 text-white" />
+                  ) : (
+                    <Phone className="h-7 w-7 text-white" />
+                  )}
+                </CallButton>
+              </>
+            ) : (
+              <>
+                <CallButton
+                  onClick={onToggleMute}
+                  label={isMuted ? "Unmute" : "Mute"}
+                  bg={isMuted ? "hsl(0 0% 95%)" : "hsl(0 0% 20%)"}
+                  size="sm"
+                >
+                  {isMuted ? (
+                    <MicOff className="h-6 w-6" style={{ color: "hsl(0 0% 10%)" }} />
+                  ) : (
+                    <Mic className="h-6 w-6 text-white" />
+                  )}
+                </CallButton>
+
+                <CallButton
+                  onClick={onToggleSpeaker}
+                  label={isSpeaker ? "Speaker" : "Phone"}
+                  bg={isSpeaker ? "hsl(0 0% 95%)" : "hsl(0 0% 20%)"}
+                  size="sm"
+                >
+                  {isSpeaker ? (
+                    <Volume2 className="h-6 w-6" style={{ color: "hsl(0 0% 10%)" }} />
+                  ) : (
+                    <Volume1 className="h-6 w-6 text-white" />
+                  )}
+                </CallButton>
+
+                <CallButton onClick={onHangUp} label="End" bg="hsl(var(--destructive))" size="lg">
+                  <PhoneOff className="h-7 w-7 text-white" />
+                </CallButton>
+
+                {isVideo && isMobileViewport && onBackCamera && (
+                  <CallButton onClick={onBackCamera} label="Back camera" bg="hsl(0 0% 20%)" size="sm">
+                    <SwitchCamera className="h-6 w-6 text-white" />
+                  </CallButton>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

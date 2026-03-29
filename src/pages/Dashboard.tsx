@@ -1188,7 +1188,7 @@ export default function Dashboard() {
           onToggleSpeaker={callSession.toggleSpeaker}
           callDuration={callSession.callDuration}
           partnerOnline={partnerOnline}
-          onFlipCamera={() => void callSession.flipCamera()}
+          onBackCamera={() => void callSession.flipCamera()}
           isFrontCamera={callSession.isFrontCamera}
           minimized={callMinimized}
           onMinimize={() => setCallMinimized(true)}
