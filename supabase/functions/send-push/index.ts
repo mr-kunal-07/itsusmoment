@@ -180,14 +180,27 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return new Response("Unauthorized", { status: 401, headers: corsHeaders });
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const accessToken = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!accessToken) return new Response("Unauthorized", { status: 401, headers: corsHeaders });
 
-    const { data: { user }, error: authErr } = await supabase.auth.getUser();
-    if (authErr || !user) return new Response("Unauthorized", { status: 401, headers: corsHeaders });
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error("send-push auth config missing", {
+        hasSupabaseUrl: Boolean(supabaseUrl),
+        hasServiceRoleKey: Boolean(serviceRoleKey),
+      });
+      return new Response("Server configuration error", { status: 500, headers: corsHeaders });
+    }
+
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    const { data: { user }, error: authErr } = await adminClient.auth.getUser(accessToken);
+    if (authErr || !user) {
+      console.error("send-push auth failed", {
+        message: authErr?.message ?? "No user returned",
+      });
+      return new Response("Unauthorized", { status: 401, headers: corsHeaders });
+    }
 
     const {
       title,
@@ -202,11 +215,6 @@ Deno.serve(async (req) => {
     } = await req.json();
 
     // Use service role client to read partner subscriptions
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
     // Get partner id
     const { data: partnerRow } = await adminClient.rpc("get_partner_id", { _user_id: user.id });
     const partnerId = partnerRow as string | null;

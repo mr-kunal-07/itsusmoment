@@ -18,7 +18,7 @@ import { useWebRTC, type WebRTCSession } from "@/hooks/useWebRTC";
 import { cn } from "@/lib/utils";
 import { usePlan, canUseVoiceMessages } from "@/hooks/useSubscription";
 import { UpgradeGateModal } from "@/components/UpgradeGateModal";
-import { EmojiPicker } from "@/components/chat/Emojipicker";
+import { EmojiPicker, preloadEmojiPicker } from "@/components/chat/Emojipicker";
 import { DrawingCanvas } from "@/components/chat/DrawingCanvas";
 import { ChatThemePicker } from "@/components/chat/Chatthemepicker";
 import { useChatTheme } from "@/components/chat/Usechattheme";
@@ -422,6 +422,30 @@ export function ChatView({
     isInitialScroll.current = false;
   }, [messages.length]);
 
+  useEffect(() => {
+    if (kbOffset <= 0) return;
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [kbOffset]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const preload = () => preloadEmojiPicker();
+    const browserWindow = window as Window &
+      typeof globalThis & {
+        requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+        cancelIdleCallback?: (handle: number) => void;
+      };
+
+    if (browserWindow.requestIdleCallback && browserWindow.cancelIdleCallback) {
+      const idleId = browserWindow.requestIdleCallback(preload, { timeout: 1200 });
+      return () => browserWindow.cancelIdleCallback?.(idleId);
+    }
+
+    const timeoutId = globalThis.setTimeout(preload, 500);
+    return () => globalThis.clearTimeout(timeoutId);
+  }, []);
+
   // Mark-as-read is handled inside useMessages with a 1s debounce.
   // No duplicate effect needed here.
 
@@ -677,7 +701,7 @@ export function ChatView({
   return (
     <SwipeBackWrapper onBack={onBack}>
       <div
-        className="flex h-full min-h-0 flex-col overflow-hidden"
+        className="flex h-full min-h-0 w-full max-w-full flex-col overflow-hidden"
         style={{
           ...themeStyle,
           background: "hsl(var(--wa-bg))",
@@ -688,8 +712,12 @@ export function ChatView({
         {/* ── Header ── */}
         {selectMode ? (
           <div
-            className="flex items-center gap-2 px-3 py-2 shrink-0 z-10"
-            style={{ background: "hsl(var(--wa-header))", borderBottom: "1px solid hsl(var(--border))" }}
+            className="flex items-center gap-2 px-2.5 py-2 shrink-0 z-10 sm:px-3"
+            style={{
+              background: "hsl(var(--wa-header))",
+              borderBottom: "1px solid hsl(var(--border))",
+              paddingTop: "calc(0.5rem + env(safe-area-inset-top, 0px))",
+            }}
           >
             <button type="button" onClick={clearSelect} className="p-1 rounded-full shrink-0" style={{ color: "hsl(var(--wa-text))" }} aria-label="Clear selection">
               <X className="h-4 w-4" />
@@ -721,8 +749,12 @@ export function ChatView({
           </div>
         ) : (
           <div
-            className="flex items-center gap-2 px-3 py-2 shrink-0 z-10"
-            style={{ background: "hsl(var(--wa-header))", borderBottom: "1px solid hsl(var(--border))" }}
+            className="flex items-center gap-2 px-2.5 py-2 shrink-0 z-10 sm:px-3"
+            style={{
+              background: "hsl(var(--wa-header))",
+              borderBottom: "1px solid hsl(var(--border))",
+              paddingTop: "calc(0.5rem + env(safe-area-inset-top, 0px))",
+            }}
           >
             {onBack && (
               <button type="button" onClick={onBack} className="sm:hidden p-1 rounded-full shrink-0" style={{ color: "hsl(var(--wa-text))" }} aria-label="Back">
@@ -800,7 +832,7 @@ export function ChatView({
 
         {/* ── Messages ── */}
         <div
-          className="flex-1 overflow-y-auto overscroll-contain px-3 py-2"
+          className="flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-2 py-2 sm:px-3"
           style={{
             background: "hsl(var(--wa-bg))",
             paddingBottom: kbOffset > 0 ? "0.5rem" : undefined,
@@ -815,12 +847,6 @@ export function ChatView({
               <div className="px-4 py-2 rounded-lg text-xs" style={{ background: "hsl(var(--wa-system-bubble))", color: "hsl(var(--wa-meta))" }}>
                 Messages are private between you two
               </div>
-              <div className="mt-6 text-sm font-medium uppercase tracking-[0.3em]" style={{ color: "hsl(var(--wa-meta))" }} aria-hidden>
-                just us
-              </div>
-              <p className="text-sm font-medium" style={{ color: "hsl(var(--wa-text))" }}>
-                Send your first message
-              </p>
             </div>
           ) : (
             <div className="space-y-1 pb-2">
@@ -856,8 +882,8 @@ export function ChatView({
                         <SwipeableMessage key={msg.id} onSwipeReply={handleSwipeReply} isMe={isMe}>
                           <div
                             className={cn(
-                              "flex items-end gap-1.5 group relative transition-colors",
-                              isMe ? "justify-end pl-12 sm:pl-20" : "justify-start pr-12 sm:pr-20",
+                              "flex items-end gap-1 group relative max-w-full transition-colors sm:gap-1.5",
+                              isMe ? "justify-end pl-8 sm:pl-20" : "justify-start pr-8 sm:pr-20",
                               selectedIds.has(msg.id) && "bg-primary/10 rounded-lg"
                             )}
                             onMouseEnter={() => setHoveredId(msg.id)}
@@ -890,7 +916,7 @@ export function ChatView({
                               </div>
                             )}
 
-                            <div className={cn("flex flex-col max-w-[85%] sm:max-w-[70%]", isMe ? "items-end" : "items-start")}>
+                            <div className={cn("flex flex-col max-w-[min(88vw,24rem)] sm:max-w-[70%]", isMe ? "items-end" : "items-start")}>
                               {/* Reply preview */}
                               {repliedMsg && (
                                 <div
@@ -937,7 +963,7 @@ export function ChatView({
                                       <img
                                         src={audioUrl}
                                         alt="Drawing"
-                                        className="max-h-[320px] max-w-[260px] rounded-lg object-contain transition-transform hover:scale-[1.01]"
+                                        className="max-h-[280px] max-w-[min(68vw,260px)] rounded-lg object-contain transition-transform hover:scale-[1.01] sm:max-h-[320px]"
                                         style={{ background: "#fff" }}
                                         loading="lazy"
                                       />
@@ -1131,10 +1157,10 @@ export function ChatView({
 
         {/* ── Input Bar ── */}
         <div
-          className="flex shrink-0 items-end gap-2 border-t border-border px-2.5 pt-2 pb-3 sm:px-3 sm:gap-2.5"
+          className="flex shrink-0 items-end gap-2 border-t border-border px-2 pt-2 pb-2 sm:px-3 sm:gap-2.5 sm:pb-3"
           style={{
             background: "hsl(var(--wa-bg))",
-            paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
+            paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom, 0px))",
           }}
         >
           {voiceMode ? (
@@ -1148,13 +1174,16 @@ export function ChatView({
           ) : (
             <>
               <div
-                className="flex min-w-0 flex-1 items-end gap-1.5 rounded-3xl border border-border px-2.5 py-2 focus-within:ring-2 focus-within:ring-green-500/20 sm:gap-2 sm:px-3"
+                className="flex min-w-0 flex-1 items-end gap-1 rounded-3xl border border-border px-2 py-2 focus-within:ring-2 focus-within:ring-green-500/20 sm:gap-2 sm:px-3"
                 style={{ background: "hsl(var(--wa-input-bg))" }}
               >
                 {/* Emoji button */}
                 <div className="relative shrink-0">
                   <button
                     onClick={() => setShowEmojiPicker(p => !p)}
+                    onMouseEnter={preloadEmojiPicker}
+                    onTouchStart={preloadEmojiPicker}
+                    onFocus={preloadEmojiPicker}
                     className="shrink-0 p-1"
                     style={{
                       color: showEmojiPicker
@@ -1187,7 +1216,7 @@ export function ChatView({
                   onKeyDown={handleKeyDown}
                   placeholder={replyTo ? "Write a reply..." : "Message..."}
                   rows={1}
-                  className="min-w-0 flex-1 bg-transparent border-0 outline-none resize-none py-1 text-sm leading-relaxed max-h-32 overflow-y-auto placeholder:text-muted-foreground"
+                  className="min-w-0 flex-1 bg-transparent border-0 outline-none resize-none py-1 text-[16px] leading-relaxed max-h-32 overflow-y-auto placeholder:text-muted-foreground sm:text-sm"
                   style={{ color: "hsl(var(--wa-text))", minHeight: "24px" }}
                   autoComplete="off"
                   enterKeyHint="send"

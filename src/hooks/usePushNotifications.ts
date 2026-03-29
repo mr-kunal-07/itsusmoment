@@ -31,6 +31,21 @@ async function getVapidPublicKey(accessToken: string): Promise<string | null> {
   return data.publicKey ?? null;
 }
 
+export async function sendPushRequest(
+  accessToken: string,
+  payload: Record<string, unknown>,
+): Promise<Response> {
+  return fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-push`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
 async function saveSubscription(userId: string, subscription: PushSubscription): Promise<void> {
   const json = subscription.toJSON();
   const p256dh = json.keys?.p256dh;
@@ -144,9 +159,20 @@ export function pushSupportState(): {
 
 export async function pushToPartner(title: string, body: string, url = "/dashboard"): Promise<void> {
   try {
-    await supabase.functions.invoke("send-push", {
-      body: { title, body, url },
-    });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      console.warn("pushToPartner skipped: no active session");
+      return;
+    }
+
+    const response = await sendPushRequest(session.access_token, { title, body, url });
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      console.warn("pushToPartner request failed:", response.status, errorText);
+    }
   } catch (error) {
     console.warn("pushToPartner failed:", error);
   }

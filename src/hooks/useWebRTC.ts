@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { sendPushRequest } from "@/hooks/usePushNotifications";
 
 export type CallType = "voice" | "video";
 export type CallState = "idle" | "calling" | "ringing" | "connected" | "ended";
@@ -49,6 +50,16 @@ const ICE_SERVERS: RTCIceServer[] = [
   { urls: "stun:stun1.l.google.com:19302" },
   { urls: "stun:stun2.l.google.com:19302" },
 ];
+
+function isMatchingFacingDevice(label: string, facing: "user" | "environment"): boolean {
+  const normalized = label.toLowerCase();
+
+  if (facing === "environment") {
+    return /(back|rear|environment|world)/.test(normalized);
+  }
+
+  return /(front|user|facetime|selfie)/.test(normalized);
+}
 
 function getCallErrorMessage(error: unknown, action: "start" | "accept" | "media"): string {
   if (!(error instanceof Error)) {
@@ -233,6 +244,86 @@ export function useWebRTC({
     return pc;
   }, [myUserId, sendSignal, setCallStateSafe, startDurationTimer, stopDisconnectTimer]);
 
+  const acquireVideoTrackForFacing = useCallback(
+    async (
+      facing: "user" | "environment",
+      currentTrack?: MediaStreamTrack,
+    ): Promise<MediaStreamTrack> => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error("Calling is not supported in this browser.");
+      }
+
+      const videoDevices = navigator.mediaDevices.enumerateDevices
+        ? (await navigator.mediaDevices.enumerateDevices()).filter(
+            (device) => device.kind === "videoinput",
+          )
+        : [];
+
+      const currentDeviceId = currentTrack?.getSettings().deviceId;
+      const preferredDevice = videoDevices.find(
+        (device) =>
+          device.deviceId !== currentDeviceId && isMatchingFacingDevice(device.label, facing),
+      );
+
+      const attemptConstraints: MediaTrackConstraints[] = [];
+
+      if (preferredDevice?.deviceId) {
+        attemptConstraints.push({
+          deviceId: { exact: preferredDevice.deviceId },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        });
+      }
+
+      attemptConstraints.push(
+        {
+          facingMode: { exact: facing },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        {
+          facingMode: facing,
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      );
+
+      if (videoDevices.length > 1) {
+        const alternateDevice = videoDevices.find((device) => device.deviceId !== currentDeviceId);
+        if (alternateDevice?.deviceId) {
+          attemptConstraints.push({
+            deviceId: { exact: alternateDevice.deviceId },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          });
+        }
+      }
+
+      attemptConstraints.push(true);
+
+      let lastError: unknown = null;
+
+      for (const constraints of attemptConstraints) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: constraints,
+            audio: false,
+          });
+          const track = stream.getVideoTracks()[0];
+          if (track) {
+            return track;
+          }
+          stream.getTracks().forEach((candidate) => candidate.stop());
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      throw lastError instanceof Error ? lastError : new Error("Could not access the camera.");
+    },
+    [],
+  );
+
   const acquireMedia = useCallback(async (type: CallType) => {
     if (!navigator.mediaDevices?.getUserMedia) {
       throw new Error("Calling is not supported in this browser.");
@@ -283,19 +374,22 @@ export function useWebRTC({
         data: { session },
       } = await supabase.auth.getSession();
 
-      if (!session) return;
+      if (!session?.access_token) return;
 
-      await supabase.functions.invoke("send-push", {
-        body: {
-          title: type === "video" ? "Incoming Video Call" : "Incoming Voice Call",
-          body: type === "video" ? "Incoming video call" : "Incoming voice call",
-          url: "/dashboard?tab=chat",
-          tag: "usmoment-incoming-call",
-          requireInteraction: true,
-          renotify: true,
-          vibrate: [300, 150, 300, 150, 500],
-        },
+      const response = await sendPushRequest(session.access_token, {
+        title: type === "video" ? "Incoming Video Call" : "Incoming Voice Call",
+        body: type === "video" ? "Incoming video call" : "Incoming voice call",
+        url: "/dashboard?tab=chat",
+        tag: "usmoment-incoming-call",
+        requireInteraction: true,
+        renotify: true,
+        vibrate: [300, 150, 300, 150, 500],
       });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "");
+        console.warn("Failed to send call push:", response.status, errorText);
+      }
     } catch (error) {
       console.warn("Failed to send call push:", error);
     }
@@ -445,60 +539,29 @@ export function useWebRTC({
     let newVideoTrack: MediaStreamTrack | null = null;
 
     try {
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: newFacing } },
-        audio: false,
-      });
-
-      newVideoTrack = newStream.getVideoTracks()[0];
+      newVideoTrack = await acquireVideoTrackForFacing(newFacing, oldVideoTrack);
 
       const sender = pcRef.current?.getSenders().find((candidate) => candidate.track?.kind === "video");
       if (sender) {
         await sender.replaceTrack(newVideoTrack);
       }
 
-      stream.removeTrack(oldVideoTrack);
+      const audioTracks = stream.getAudioTracks();
       oldVideoTrack.stop();
-      stream.addTrack(newVideoTrack);
 
-      const updatedStream = new MediaStream(stream.getTracks());
+      const updatedStream = new MediaStream([...audioTracks, newVideoTrack]);
       localStreamRef.current = updatedStream;
       setLocalStream(updatedStream);
       facingModeRef.current = newFacing;
       setIsFrontCamera(newFacing === "user");
     } catch (error) {
       console.warn("Camera flip failed:", error);
-
-      try {
-        const fallback = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: newFacing },
-          audio: false,
-        });
-
-        newVideoTrack = fallback.getVideoTracks()[0];
-        const sender = pcRef.current?.getSenders().find((candidate) => candidate.track?.kind === "video");
-        if (sender) {
-          await sender.replaceTrack(newVideoTrack);
-        }
-
-        stream.removeTrack(oldVideoTrack);
-        oldVideoTrack.stop();
-        stream.addTrack(newVideoTrack);
-
-        const updatedStream = new MediaStream(stream.getTracks());
-        localStreamRef.current = updatedStream;
-        setLocalStream(updatedStream);
-        facingModeRef.current = newFacing;
-        setIsFrontCamera(newFacing === "user");
-      } catch (fallbackError) {
-        console.warn("Camera flip fallback also failed:", fallbackError);
-        newVideoTrack?.stop();
-        setCallError("Could not switch cameras on this device.");
-      }
+      newVideoTrack?.stop();
+      setCallError("Could not switch cameras on this device.");
     } finally {
       isFlippingRef.current = false;
     }
-  }, []);
+  }, [acquireVideoTrackForFacing]);
 
   const clearCallError = useCallback(() => {
     setCallError(null);
