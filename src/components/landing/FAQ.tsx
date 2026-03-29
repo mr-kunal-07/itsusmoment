@@ -3,8 +3,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 const faqs = [
   {
-    q: "What exactly is usMoment?",
-    a: "usMoment is a private shared app for couples to keep memories, chat, milestones, and travel moments in one place.",
+    q: "What exactly is usMoments?",
+    a: "usMoments is a private shared app for couples to keep memories, chat, milestones, and travel moments in one place.",
   },
   {
     q: "Do both partners need separate subscriptions?",
@@ -20,7 +20,7 @@ const faqs = [
   },
   {
     q: "Can I use it on mobile?",
-    a: "Yes. usMoment works in the browser and can also be installed as a PWA on mobile and desktop.",
+    a: "Yes. usMoments works in the browser and can also be installed as a PWA on mobile and desktop.",
   },
   {
     q: "What happens if I delete a photo or video?",

@@ -3,10 +3,10 @@ const Footer = () => (
     <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6">
       <div className="flex items-center gap-2">
         <div className="flex h-9 w-9 items-center justify-center overflow-hidden">
-          <img src="/logo.png" alt="usMoment logo" width={36} height={36} className="h-full w-full object-cover" />
+          <img src="/logo.png" alt="usMoments logo" width={36} height={36} className="h-full w-full object-cover" />
         </div>
         <span className="font-['Playfair_Display'] text-sm font-bold text-[#1f2a1f]">
-          usMoment
+          usMoments
         </span>
       </div>
 
@@ -26,7 +26,7 @@ const Footer = () => (
       </div>
 
       <p className="text-center text-[10px] text-[#5f6f5f]">
-        © {new Date().getFullYear()} usMoment
+        © {new Date().getFullYear()} usMoments
       </p>
     </div>
   </footer>

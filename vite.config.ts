@@ -112,8 +112,8 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       manifest: {
-        name: "usMoment",
-        short_name: "usMoment",
+        name: "usMoments",
+        short_name: "usMoments",
         description: "A private shared space for couples — memories, love notes & more.",
         theme_color: "#171717",
         background_color: "#171717",

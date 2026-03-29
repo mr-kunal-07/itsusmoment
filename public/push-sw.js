@@ -5,11 +5,11 @@ self.addEventListener("push", (event) => {
   try {
     payload = event.data.json();
   } catch {
-    payload = { title: "usMoment", body: event.data.text() };
+    payload = { title: "usMoments", body: event.data.text() };
   }
 
   const {
-    title = "usMoment",
+    title = "usMoments",
     body = "You have a new notification",
     icon = "/pwa-icon-192.png",
     badge = "/pwa-icon-192.png",

@@ -29,11 +29,11 @@ const Navbar = () => {
         <div className="flex h-16 items-center justify-between gap-3">
           <a href="/" className="flex min-w-0 items-center gap-2.5" onClick={() => setOpen(false)}>
             <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden">
-              <img src="/logo.png" alt="usMoment logo" width={40} height={40} className="h-full w-full object-cover" />
+              <img src="/logo.png" alt="usMoments logo" width={40} height={40} className="h-full w-full object-cover" />
             </div>
 
             <div className="min-w-0 leading-none">
-              <span className="block truncate text-base font-semibold text-[#1f2a1f]">usMoment</span>
+              <span className="block truncate text-base font-semibold text-[#1f2a1f]">usMoments</span>
               <span className="hidden text-[10px] uppercase tracking-[0.2em] text-[#5f6f5f] sm:block">
                 Private for two
               </span>

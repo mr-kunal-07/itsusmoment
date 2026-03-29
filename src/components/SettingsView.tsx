@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  Bell,
   Camera,
   Crown,
   Download,
@@ -41,6 +42,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { enablePushNotifications, pushSupportState } from "@/hooks/usePushNotifications";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -78,6 +80,8 @@ export function SettingsView({ onNavigateBilling }: Props) {
 
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [pushPermission, setPushPermission] = useState<NotificationPermission | "unsupported">(() => pushSupportState().permission);
+  const [isEnablingPush, setIsEnablingPush] = useState(false);
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !(window as Window & { MSStream?: unknown }).MSStream;
 
   useEffect(() => {
@@ -138,6 +142,27 @@ export function SettingsView({ onNavigateBilling }: Props) {
     }
   };
 
+  const handleEnablePush = async () => {
+    setIsEnablingPush(true);
+    try {
+      const result = await enablePushNotifications();
+      const { permission } = pushSupportState();
+      setPushPermission(permission);
+
+      if (result === "granted") {
+        toast({ title: "Notifications enabled", description: "Push notifications are now active on this device." });
+      } else if (result === "denied") {
+        toast({ title: "Notifications blocked", description: "Browser notification permission is denied for this app.", variant: "destructive" });
+      } else if (result === "unsupported") {
+        toast({ title: "Not supported", description: "Push notifications are not supported on this device/browser.", variant: "destructive" });
+      } else {
+        toast({ title: "Open the installed app first", description: "Install usMoments to your home screen before enabling push notifications." });
+      }
+    } finally {
+      setIsEnablingPush(false);
+    }
+  };
+
   const handleInstall = async () => {
     if (!installPrompt) return;
 
@@ -192,7 +217,7 @@ export function SettingsView({ onNavigateBilling }: Props) {
       const credential = (await navigator.credentials.create({
         publicKey: {
           challenge: crypto.getRandomValues(new Uint8Array(32)),
-          rp: { name: "OurVault", id: window.location.hostname },
+          rp: { name: "usMomentss", id: window.location.hostname },
           user: {
             id: new TextEncoder().encode(user?.id ?? "user"),
             name: user?.email ?? "user",
@@ -465,7 +490,7 @@ export function SettingsView({ onNavigateBilling }: Props) {
           <CardTitle className="flex items-center gap-2 text-base">
             <Smartphone className="h-4 w-4 text-primary" /> Install App
           </CardTitle>
-          <CardDescription className="text-xs">Add OurVault to your home screen</CardDescription>
+          <CardDescription className="text-xs">Add usMoments to your home screen</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {isInstalled ? (
@@ -480,7 +505,7 @@ export function SettingsView({ onNavigateBilling }: Props) {
             <div className="space-y-2">
               <Button onClick={() => void handleInstall()} size="sm" className="w-full gap-2">
                 <Download className="h-3.5 w-3.5" />
-                Install OurVault
+                Install usMoments
               </Button>
               <p className="text-center text-xs text-muted-foreground">Add to home screen for quick access</p>
             </div>
@@ -493,6 +518,44 @@ export function SettingsView({ onNavigateBilling }: Props) {
             </div>
           ) : (
             <p className="text-xs text-muted-foreground">Open in Chrome or Edge to install this app</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Bell className="h-4 w-4 text-primary" /> Push Notifications
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Turn on notifications after installing usMoments on your phone.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {pushPermission === "granted" ? (
+            <div className="flex items-center gap-3 rounded-lg border border-primary/15 bg-primary/8 px-3 py-2.5">
+              <Bell className="h-4 w-4 shrink-0 text-primary" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Notifications enabled</p>
+                <p className="text-xs text-muted-foreground">This device can receive push alerts.</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <Button
+                onClick={() => void handleEnablePush()}
+                variant="outline"
+                size="sm"
+                className="w-full gap-2"
+                disabled={isEnablingPush}
+              >
+                <Bell className="h-3.5 w-3.5" />
+                {isEnablingPush ? "Enabling..." : "Enable notifications"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                We only ask when you tap this button, which works better on mobile than prompting automatically.
+              </p>
+            </>
           )}
         </CardContent>
       </Card>
@@ -514,7 +577,7 @@ export function SettingsView({ onNavigateBilling }: Props) {
             }}
           >
             <LogOut className="mr-2 h-3.5 w-3.5" />
-            Sign out of OurVault
+            Sign out of usMoments
           </Button>
           <p className="text-center text-xs text-muted-foreground">
             You'll need to sign in again to access your vault

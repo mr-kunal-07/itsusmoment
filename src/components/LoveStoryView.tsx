@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-const STORAGE_PREFIX = "ourvault_love_story_";
+const STORAGE_PREFIX = "usMoments_love_story_";
 
 export const ALL_TEMPLATES: TemplateId[] = [
   "eternal", "polaroid", "bold", "cinema", "bloom", "neon", "wabi", "journal",
@@ -311,7 +311,7 @@ export function LoveStoryView() {
     try {
       const dataUrl = await toPng(cardRef.current, { cacheBust: true, pixelRatio: 3, style: { borderRadius: "28px" } });
       if (mode === "png") {
-        triggerDownload(dataUrl, `ourvault-love-story-${activeTemplate}.png`);
+        triggerDownload(dataUrl, `usMoments-love-story-${activeTemplate}.png`);
         toast({ title: "💾 Downloaded!" });
         return;
       }

@@ -5,9 +5,9 @@ export const LOCK_KEY = "usmoment_lock_method";
 export const BIOMETRIC_CRED_ID_KEY = "usmoment_biometric_cred_id";
 export const APP_LOCK_EVENT = "usmoment-app-lock-changed";
 
-const LEGACY_PIN_KEY = "ourvault_pin";
-const LEGACY_LOCK_KEY = "ourvault_lock_method";
-const LEGACY_BIOMETRIC_CRED_ID_KEY = "ourvault_biometric_cred_id";
+const LEGACY_PIN_KEY = "usMoments_pin";
+const LEGACY_LOCK_KEY = "usMoments_lock_method";
+const LEGACY_BIOMETRIC_CRED_ID_KEY = "usMoments_biometric_cred_id";
 
 // How many ms of background before re-locking (15 seconds)
 const LOCK_TIMEOUT_MS = 15_000;

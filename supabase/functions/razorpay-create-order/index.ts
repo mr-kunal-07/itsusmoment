@@ -46,8 +46,8 @@ serve(async (req) => {
 
     // Plan pricing in paise (1 INR = 100 paise)
     const planPricing: Record<string, { amount: number; currency: string; description: string }> = {
-      dating: { amount: 100, currency: "INR", description: "OurVault Dating — ₹29/month" },
-      soulmate: { amount: 9900, currency: "INR", description: "OurVault Soulmate — ₹99/month" },
+      dating: { amount: 100, currency: "INR", description: "usMoments Dating — ₹29/month" },
+      soulmate: { amount: 9900, currency: "INR", description: "usMoments Soulmate — ₹99/month" },
     };
 
     const pricing = planPricing[plan] ?? planPricing["dating"];

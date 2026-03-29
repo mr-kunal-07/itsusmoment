@@ -47,12 +47,12 @@ export function AppLockScreen({ lockMethod, onUnlock }: Props) {
       const credIdBase64 = getBiometricCredentialId();
       const allowCredentials: PublicKeyCredentialDescriptor[] = credIdBase64
         ? [
-            {
-              type: "public-key",
-              id: Uint8Array.from(atob(credIdBase64), (char) => char.charCodeAt(0)),
-              transports: ["internal"] as AuthenticatorTransport[],
-            },
-          ]
+          {
+            type: "public-key",
+            id: Uint8Array.from(atob(credIdBase64), (char) => char.charCodeAt(0)),
+            transports: ["internal"] as AuthenticatorTransport[],
+          },
+        ]
         : [];
 
       await navigator.credentials.get({
@@ -190,9 +190,9 @@ export function AppLockScreen({ lockMethod, onUnlock }: Props) {
     >
       <div className="mb-10 flex flex-col items-center gap-3">
         <div className="h-16 w-16 overflow-hidden rounded-2xl shadow-lg ring-2 ring-border">
-          <img src="/pwa-icon-192.png" alt="OurVault" className="h-full w-full object-cover" />
+          <img src="/pwa-icon-192.png" alt="usMoments" className="h-full w-full object-cover" />
         </div>
-        <h1 className="font-heading text-xl font-bold gradient-text">OurVault</h1>
+        <h1 className="font-heading text-xl font-bold gradient-text">usMoments</h1>
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <Lock className="h-3.5 w-3.5" />
           <span>App is locked</span>

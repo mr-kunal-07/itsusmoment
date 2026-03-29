@@ -376,7 +376,7 @@ function EternalCard({ pal, title, tagline, startDate, days, myProfile, partnerP
       )}
 
       {/* Footer */}
-      <div style={{ marginTop: 20, textAlign: "center", fontSize: 10, color: pal.subtext, opacity: 0.7 }}>OurVault ✦ ourvault.app</div>
+      <div style={{ marginTop: 20, textAlign: "center", fontSize: 10, color: pal.subtext, opacity: 0.7 }}>usMoments ✦ usMoments.app</div>
     </div>
   );
 }
@@ -444,7 +444,7 @@ function PolaroidCard({ pal, title, tagline, startDate, days, myProfile, partner
         </div>
       )}
 
-      <div style={{ marginTop: 18, textAlign: "center", fontSize: 10, color: pal.subtext, opacity: 0.6 }}>OurVault ✦ ourvault.app</div>
+      <div style={{ marginTop: 18, textAlign: "center", fontSize: 10, color: pal.subtext, opacity: 0.6 }}>usMoments ✦ usMoments.app</div>
     </div>
   );
 }
@@ -464,7 +464,7 @@ function BoldCard({ pal, title, tagline, startDate, days, myProfile, partnerProf
 
       <div style={{ marginBottom: 24, position: "relative" }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: pal.accent, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8 }}>
-          ✦ OurVault
+          ✦ usMoments
         </div>
         <h2 style={{ fontSize: 28, fontWeight: 900, color: pal.text, lineHeight: 1.1, margin: "0 0 6px", fontFamily: "Georgia,serif" }}>{title}</h2>
         <p style={{ fontSize: 13, color: pal.subtext, fontStyle: "italic", margin: 0 }}>{tagline}</p>
@@ -504,7 +504,7 @@ function BoldCard({ pal, title, tagline, startDate, days, myProfile, partnerProf
         </div>
       )}
 
-      <div style={{ marginTop: 20, fontSize: 10, color: pal.subtext, opacity: 0.6 }}>OurVault ✦ ourvault.app</div>
+      <div style={{ marginTop: 20, fontSize: 10, color: pal.subtext, opacity: 0.6 }}>usMoments ✦ usMoments.app</div>
     </div>
   );
 }
@@ -525,7 +525,7 @@ function CinemaCard({ pal, title, tagline, startDate, days, myProfile, partnerPr
       <div style={{ padding: "24px 22px 20px", position: "relative" }}>
         {/* Studio tag */}
         <div style={{ fontSize: 9, fontWeight: 700, color: `rgba(${pal.accentRgb},0.7)`, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: 10 }}>
-          ★ OurVault Original
+          ★ usMoments Original
         </div>
 
         {/* Couple avatars */}
@@ -641,7 +641,7 @@ function BloomCard({ pal, title, tagline, startDate, days, myProfile, partnerPro
         </div>
       )}
 
-      <div style={{ marginTop: 16, textAlign: "center", fontSize: 9, color: pal.subtext, opacity: 0.6 }}>OurVault ✦ ourvault.app</div>
+      <div style={{ marginTop: 16, textAlign: "center", fontSize: 9, color: pal.subtext, opacity: 0.6 }}>usMoments ✦ usMoments.app</div>
     </div>
   );
 }
@@ -657,7 +657,7 @@ function NeonCard({ pal, title, tagline, startDate, days, myProfile, partnerProf
 
       {/* Tag */}
       <div style={{ fontSize: 9, fontWeight: 700, color: pal.accent, textTransform: "uppercase", letterSpacing: "0.2em", marginBottom: 14, textShadow: `0 0 10px rgba(${pal.accentRgb},0.8)` }}>
-        ⚡ OurVault
+        ⚡ usMoments
       </div>
 
       {/* Couple */}
@@ -708,7 +708,7 @@ function NeonCard({ pal, title, tagline, startDate, days, myProfile, partnerProf
         </div>
       )}
 
-      <div style={{ marginTop: 18, fontSize: 9, color: pal.subtext, opacity: 0.5 }}>OurVault ✦ ourvault.app</div>
+      <div style={{ marginTop: 18, fontSize: 9, color: pal.subtext, opacity: 0.5 }}>usMoments ✦ usMoments.app</div>
     </div>
   );
 }
@@ -768,7 +768,7 @@ function WabiCard({ pal, title, tagline, startDate, days, myProfile, partnerProf
 
       {/* Bottom brush */}
       <div style={{ height: 2, background: `rgba(${pal.accentRgb},0.2)`, borderRadius: 2, marginTop: 24, width: "60%", marginLeft: "auto" }} />
-      <div style={{ marginTop: 8, textAlign: "right", fontSize: 9, color: pal.subtext, opacity: 0.5 }}>OurVault ✦</div>
+      <div style={{ marginTop: 8, textAlign: "right", fontSize: 9, color: pal.subtext, opacity: 0.5 }}>usMoments ✦</div>
     </div>
   );
 }
@@ -837,7 +837,7 @@ function JournalCard({ pal, title, tagline, startDate, days, myProfile, partnerP
           </div>
         )}
 
-        <div style={{ marginTop: 20, fontSize: 10, color: pal.subtext, opacity: 0.5, fontStyle: "italic" }}>— OurVault ✦ ourvault.app</div>
+        <div style={{ marginTop: 20, fontSize: 10, color: pal.subtext, opacity: 0.5, fontStyle: "italic" }}>— usMoments ✦ usMoments.app</div>
       </div>
     </div>
   );

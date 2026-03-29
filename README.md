@@ -1,4 +1,4 @@
-  # 💕 OurVault
+  # 💕 usMoments
    
 > A private, couples-only digital vault — store memories, chat securely, and celebrate your relationship milestones together.
    
@@ -6,7 +6,7 @@
 
 ## 📖 Overview
  
-OurVault is a full-stack couples-only web application that acts as a private shared space for two partners. It combines a secure media vault, end-to-end encrypted real-time chat, relationship timeline, anniversary tracking, a shared bucket list, and a premium subscription system — all within a beautiful, installable Progressive Web App.
+usMoments is a full-stack couples-only web application that acts as a private shared space for two partners. It combines a secure media vault, end-to-end encrypted real-time chat, relationship timeline, anniversary tracking, a shared bucket list, and a premium subscription system — all within a beautiful, installable Progressive Web App.
  
 --
  
@@ -268,7 +268,7 @@ All tables live in the `public` schema with Row-Level Security enabled.
 - Service-role-only access for subscription management
 
 ### App Lock
-- PIN stored as plaintext in `localStorage` under `ourvault_pin` (device-local, never synced)
+- PIN stored as plaintext in `localStorage` under `usMoments_pin` (device-local, never synced)
 - Biometric credential stored via WebAuthn browser API
 - Lock triggers on `visibilitychange` after ≥ 15 seconds in background
 - Lock triggers immediately when a new method is set in Settings
@@ -285,7 +285,7 @@ All tables live in the `public` schema with Row-Level Security enabled.
 ```sh
 # 1. Clone the repo
 git clone <YOUR_GIT_URL>
-cd ourvault
+cd usMoments
 
 # 2. Install dependencies
 npm install
@@ -357,4 +357,4 @@ supabase/
 
 ## 📄 License
 
-MIT © OurVault
+MIT © usMoments

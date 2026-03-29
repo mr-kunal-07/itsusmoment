@@ -4,7 +4,7 @@ const stats = [
   { value: "10K+", label: "couples creating their private space" },
   { value: "250K+", label: "memories saved together" },
   { value: "1M+", label: "messages, notes, and little moments shared" },
-  { value: "4.9/5", label: "love from couples who use usMoment" },
+  { value: "4.9/5", label: "love from couples who use usMoments" },
 ];
 
 const Stats = () => (

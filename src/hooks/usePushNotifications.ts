@@ -52,55 +52,94 @@ async function saveSubscription(userId: string, subscription: PushSubscription):
   });
 }
 
+function canUsePush(): boolean {
+  if (typeof window === "undefined") return false;
+  return ("serviceWorker" in navigator) && ("PushManager" in window) && ("Notification" in window);
+}
+
+async function subscribeCurrentUser(requestPermission: boolean): Promise<"granted" | "denied" | "unsupported" | "skipped"> {
+  if (!canUsePush()) return "unsupported";
+  if (!isStandalonePwa()) return "skipped";
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.user) return "skipped";
+
+  const registration = await navigator.serviceWorker.ready;
+
+  let permission = Notification.permission;
+  if (permission === "default" && requestPermission) {
+    permission = await Notification.requestPermission();
+  }
+
+  if (permission !== "granted") {
+    return permission === "denied" ? "denied" : "skipped";
+  }
+
+  let subscription = await registration.pushManager.getSubscription();
+  if (!subscription) {
+    const publicKey = await getVapidPublicKey(session.access_token);
+    if (!publicKey) return "skipped";
+
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: base64UrlToUint8Array(publicKey),
+    });
+  }
+
+  if (!subscription) return "skipped";
+  await saveSubscription(session.user.id, subscription);
+  return "granted";
+}
+
 export function usePushSubscription(): void {
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return;
+    if (!canUsePush()) return;
     if (!isStandalonePwa()) return;
+    if (Notification.permission !== "granted") return;
 
     let cancelled = false;
 
-    const subscribe = async () => {
+    void (async () => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!session?.user || cancelled) return;
-
-        const registration = await navigator.serviceWorker.ready;
         if (cancelled) return;
-
-        let permission = Notification.permission;
-        if (permission === "default") {
-          permission = await Notification.requestPermission();
-        }
-        if (permission !== "granted" || cancelled) return;
-
-        let subscription = await registration.pushManager.getSubscription();
-        if (!subscription) {
-          const publicKey = await getVapidPublicKey(session.access_token);
-          if (!publicKey || cancelled) return;
-
-          subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: base64UrlToUint8Array(publicKey),
-          });
-        }
-
-        if (!subscription || cancelled) return;
-        await saveSubscription(session.user.id, subscription);
+        await subscribeCurrentUser(false);
       } catch (error) {
         console.warn("Push subscription setup failed:", error);
       }
-    };
-
-    void subscribe();
+    })();
 
     return () => {
       cancelled = true;
     };
   }, []);
+}
+
+export async function enablePushNotifications(): Promise<"granted" | "denied" | "unsupported" | "skipped"> {
+  try {
+    return await subscribeCurrentUser(true);
+  } catch (error) {
+    console.warn("enablePushNotifications failed:", error);
+    return "skipped";
+  }
+}
+
+export function pushSupportState(): {
+  supported: boolean;
+  standalone: boolean;
+  permission: NotificationPermission | "unsupported";
+} {
+  if (!canUsePush()) {
+    return { supported: false, standalone: false, permission: "unsupported" };
+  }
+
+  return {
+    supported: true,
+    standalone: isStandalonePwa(),
+    permission: Notification.permission,
+  };
 }
 
 export async function pushToPartner(title: string, body: string, url = "/dashboard"): Promise<void> {

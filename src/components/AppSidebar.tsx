@@ -309,11 +309,11 @@ export function AppSidebar({ selectedView, onSelectView }: Props) {
         {/* App branding */}
         <div className="flex items-center gap-2">
           <div className="relative h-7 w-7 rounded-lg overflow-hidden shrink-0 ring-1 ring-black/5 dark:ring-white/10">
-            <img src="/pwa-icon-192.png" alt="OurVault" className="h-full w-full object-cover" />
+            <img src="/pwa-icon-192.png" alt="usMomentss" className="h-full w-full object-cover" />
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-sm font-bold font-heading tracking-tight gradient-text leading-none">
-              usMoment
+              usMoments
             </h2>
             <p className="text-[9px] text-muted-foreground/70 mt-0.5">Shared memories</p>
           </div>

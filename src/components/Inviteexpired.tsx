@@ -23,7 +23,7 @@ export default function InviteExpired() {
                         <img src="/logo.png" alt="" width={40} height={40} aria-hidden />
                     </div>
                     <h1 className="text-2xl font-semibold">
-                        <span className="gradient-text">usMoment</span>
+                        <span className="gradient-text">usMoments</span>
                     </h1>
                 </div>
 
