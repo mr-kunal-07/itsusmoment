@@ -536,28 +536,43 @@ export function useWebRTC({
     }
 
     const newFacing = facingModeRef.current === "user" ? "environment" : "user";
-    let newVideoTrack: MediaStreamTrack | null = null;
+    const audioTracks = stream.getAudioTracks();
 
-    try {
-      newVideoTrack = await acquireVideoTrackForFacing(newFacing, oldVideoTrack);
-
+    const applyVideoTrack = async (nextTrack: MediaStreamTrack, nextFacing: "user" | "environment") => {
       const sender = pcRef.current?.getSenders().find((candidate) => candidate.track?.kind === "video");
       if (sender) {
-        await sender.replaceTrack(newVideoTrack);
+        await sender.replaceTrack(nextTrack);
       }
 
-      const audioTracks = stream.getAudioTracks();
-      oldVideoTrack.stop();
-
-      const updatedStream = new MediaStream([...audioTracks, newVideoTrack]);
+      const updatedStream = new MediaStream([...audioTracks, nextTrack]);
       localStreamRef.current = updatedStream;
       setLocalStream(updatedStream);
-      facingModeRef.current = newFacing;
-      setIsFrontCamera(newFacing === "user");
+      facingModeRef.current = nextFacing;
+      setIsFrontCamera(nextFacing === "user");
+    };
+
+    try {
+      const nextTrack = await acquireVideoTrackForFacing(newFacing, oldVideoTrack);
+      await applyVideoTrack(nextTrack, newFacing);
+      oldVideoTrack.stop();
     } catch (error) {
-      console.warn("Camera flip failed:", error);
-      newVideoTrack?.stop();
-      setCallError("Could not switch cameras on this device.");
+      console.warn("Camera flip failed with active track, retrying after release:", error);
+
+      try {
+        oldVideoTrack.stop();
+        const nextTrack = await acquireVideoTrackForFacing(newFacing);
+        await applyVideoTrack(nextTrack, newFacing);
+      } catch (retryError) {
+        console.warn("Camera flip retry failed:", retryError);
+
+        try {
+          const restoredTrack = await acquireVideoTrackForFacing(facingModeRef.current);
+          await applyVideoTrack(restoredTrack, facingModeRef.current);
+        } catch (restoreError) {
+          console.warn("Camera restore failed:", restoreError);
+          setCallError("Could not switch cameras on this device.");
+        }
+      }
     } finally {
       isFlippingRef.current = false;
     }
