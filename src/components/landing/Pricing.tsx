@@ -143,7 +143,7 @@ const Pricing = () => (
       </div>
 
       <p className="mt-6 text-center text-[11px] text-[#5f6f5f] sm:text-xs">
-        Pay securely with Razorpay. Cancel anytime.
+        Pay securely with UPI. Google Pay and PhonePe open on supported devices, with QR fallback for other UPI apps.
       </p>
     </div>
   </section>

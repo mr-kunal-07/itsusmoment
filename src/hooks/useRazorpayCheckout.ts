@@ -21,6 +21,14 @@ interface RazorpayOptions {
   prefill?: { name?: string; email?: string };
   theme?: { color?: string };
   modal?: { ondismiss?: () => void };
+  config?: {
+    display?: {
+      blocks?: Record<string, { name: string; instruments: Array<{ method: string }> }>;
+      hide?: Array<{ method: string }>;
+      sequence?: string[];
+      preferences?: { show_default_blocks?: boolean };
+    };
+  };
 }
 
 interface RazorpayInstance {
@@ -79,6 +87,27 @@ export function useRazorpayCheckout() {
           order_id: orderData.order_id,
           prefill: { email: user.email },
           theme: { color: "#d4b896" },
+          config: {
+            display: {
+              blocks: {
+                upi: {
+                  name: "Pay via UPI",
+                  instruments: [{ method: "upi" }],
+                },
+              },
+              hide: [
+                { method: "card" },
+                { method: "netbanking" },
+                { method: "wallet" },
+                { method: "emi" },
+                { method: "paylater" },
+              ],
+              sequence: ["block.upi"],
+              preferences: {
+                show_default_blocks: false,
+              },
+            },
+          },
           modal: {
             ondismiss: () => {
               setLoading(false);
@@ -113,8 +142,8 @@ export function useRazorpayCheckout() {
 
               const planLabel = plan === "soulmate" ? "Soulmate" : "Dating";
               toast({
-                title: `💕 ${planLabel} plan activated!`,
-                description: "Your subscription is now live. Enjoy all the features!",
+                title: `${planLabel} plan activated`,
+                description: "Your UPI payment was verified and premium access is now live.",
               });
               resolve();
             } catch (err) {

@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
@@ -45,7 +46,7 @@ serve(async (req) => {
 
     // Plan pricing in paise (1 INR = 100 paise)
     const planPricing: Record<string, { amount: number; currency: string; description: string }> = {
-      dating:   { amount: 2900,  currency: "INR", description: "OurVault Dating — ₹29/month" },
+      dating: { amount: 100, currency: "INR", description: "OurVault Dating — ₹29/month" },
       soulmate: { amount: 9900, currency: "INR", description: "OurVault Soulmate — ₹99/month" },
     };
 

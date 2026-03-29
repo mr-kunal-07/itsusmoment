@@ -1,11 +1,11 @@
 import { motion } from "framer-motion";
-import { CreditCard, Lock, Smartphone, Users } from "lucide-react";
+import { Lock, QrCode, Smartphone, Users } from "lucide-react";
 
 const badges = [
   { icon: Users, title: "Built for couples", desc: "One shared space for two people" },
   { icon: Lock, title: "Privacy-first", desc: "Private chat and protected access" },
   { icon: Smartphone, title: "Installable PWA", desc: "Use it like an app on any device" },
-  { icon: CreditCard, title: "Razorpay billing", desc: "Simple payments for India" },
+  { icon: QrCode, title: "UPI payments", desc: "Google Pay, PhonePe, Paytm and QR support" },
 ];
 
 const TrustBadges = () => (

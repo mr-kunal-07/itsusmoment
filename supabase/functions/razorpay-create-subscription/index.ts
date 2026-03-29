@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const PLAN_CONFIG = {
     dating: {
-        amount: 2900, // ₹29 in paise
+        amount: 100, // ₹29 in paise
         description: "Dating Plan - Monthly",
         plan_id: Deno.env.get("RAZORPAY_DATING_PLAN_ID") ?? "",
     },

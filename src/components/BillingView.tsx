@@ -10,7 +10,6 @@ import { useRazorpayCheckout, BillingPlan } from "@/hooks/useRazorpayCheckout";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
-/* ── Types ───────────────────────────────────────────────────────── */
 interface FeatureRow {
   icon: React.ElementType;
   text: string;
@@ -20,7 +19,6 @@ interface FeatureRow {
   soulmate: boolean | string;
 }
 
-/* ── Constants ───────────────────────────────────────────────────── */
 const PLAN_ORDER: Plan[] = ["single", "dating", "soulmate"];
 
 const FEATURES: FeatureRow[] = [
@@ -42,8 +40,8 @@ const PLAN_META: Record<Plan, {
   badge: string | null;
 }> = {
   single: { label: "Single", tagline: "Explore the platform.", price: null, period: "forever free", badge: null },
-  dating: { label: "Dating", tagline: "Unlock more experiences together.", price: "₹29", period: "/ month", badge: "Best value" },
-  soulmate: { label: "Soulmate", tagline: "Everything for the perfect connection.", price: "₹99", period: "/ month", badge: "Most popular" },
+  dating: { label: "Dating", tagline: "Unlock more experiences together.", price: "Rs29", period: "/ month", badge: "Best value" },
+  soulmate: { label: "Soulmate", tagline: "Everything for the perfect connection.", price: "Rs99", period: "/ month", badge: "Most popular" },
 };
 
 const PLAN_ICON_CONFIG: Record<Plan, {
@@ -57,11 +55,10 @@ const PLAN_ICON_CONFIG: Record<Plan, {
   dating: { Icon: HeartHandshake, bg: "bg-primary/10", ring: "ring-1 ring-primary/20", iconColor: "text-primary" },
   soulmate: {
     Icon: Gem, bg: "bg-primary/15", ring: "ring-1 ring-primary/40", iconColor: "text-primary",
-    glow: "shadow-[0_0_18px_hsl(var(--primary)/0.35)]"
+    glow: "shadow-[0_0_18px_hsl(var(--primary)/0.35)]",
   },
 };
 
-/* ── Sub-components ──────────────────────────────────────────────── */
 function PlanIcon({ planId, active }: { planId: Plan; active: boolean }) {
   const { Icon, bg, ring, iconColor, glow } = PLAN_ICON_CONFIG[planId];
   return (
@@ -110,7 +107,6 @@ function FeatureListItem({ row, planId }: { row: FeatureRow; planId: Plan }) {
   );
 }
 
-/* ── Mobile dot indicators ───────────────────────────────────────── */
 function MobilePlanDots({
   scrollRef,
   planCount,
@@ -154,7 +150,6 @@ function MobilePlanDots({
   );
 }
 
-/* ── Plan Card ───────────────────────────────────────────────────── */
 function PlanCard({
   planId,
   currentPlan,
@@ -183,7 +178,6 @@ function PlanCard({
         : isCurrent ? "border-primary/30"
           : "border-border",
     )}>
-      {/* Badge */}
       {meta.badge && (
         <div className="absolute -top-3.5 inset-x-0 flex justify-center">
           <Badge className="bg-primary text-primary-foreground text-[11px] font-semibold px-3 py-1 rounded-full shadow-md">
@@ -192,7 +186,6 @@ function PlanCard({
         </div>
       )}
 
-      {/* Header */}
       <div className="mb-5">
         <div className="flex items-center gap-3 mb-3">
           <PlanIcon planId={planId} active={isCurrent} />
@@ -218,17 +211,15 @@ function PlanCard({
         </div>
       </div>
 
-      {/* Features */}
       <ul className="space-y-2.5 flex-1 mb-6">
         {FEATURES.map((row) => (
           <FeatureListItem key={row.text} row={row} planId={planId} />
         ))}
       </ul>
 
-      {/* CTA */}
       {isCurrent ? (
         <Button variant="outline" className="w-full rounded-xl" disabled>
-          ✓ Current plan
+          Current plan
         </Button>
       ) : isDowngrade ? (
         <Button variant="ghost" className="w-full rounded-xl text-muted-foreground text-xs" disabled>
@@ -246,26 +237,21 @@ function PlanCard({
             {isLoading ? (
               <span className="flex items-center gap-2">
                 <span className="h-3.5 w-3.5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
-                Processing…
+                Processing...
               </span>
             ) : (
               <>
                 {isHighlight ? <Crown className="h-4 w-4" /> : <Heart className="h-4 w-4" />}
-                {planId === "soulmate" ? `Become Soulmates · ${meta.price}` : `Get Dating · ${meta.price}`}
+                {`Pay with UPI · ${meta.price}`}
               </>
             )}
           </Button>
-          <p className="text-[10px] text-center text-muted-foreground mt-2 flex items-center justify-center gap-1">
-            <ShieldCheck className="h-3 w-3" />
-            Secure · Cancel anytime · Covers both partners
-          </p>
         </>
       ) : null}
     </div>
   );
 }
 
-/* ── Main View ───────────────────────────────────────────────────── */
 export function BillingView() {
   const plan = usePlan();
   const isShared = useIsSharedPlan();
@@ -288,8 +274,6 @@ export function BillingView() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-10 px-1">
-
-      {/* Hero */}
       <div className="text-center space-y-1 pt-3">
         <p className="text-xs font-semibold tracking-[0.18em] uppercase text-primary">
           Plans & Pricing
@@ -298,19 +282,17 @@ export function BillingView() {
           Choose your story
         </h2>
         <p className="text-[13px] text-muted-foreground max-w-xs mx-auto">
-          One plan covers both of you — upgrade together, enjoy together.
+          One plan covers both of you. Pay with UPI and unlock premium together.
         </p>
       </div>
 
-      {/* Shared-plan notice */}
       {isShared && (
         <InfoBanner>
           <Users className="h-4 w-4 text-primary shrink-0" />
-          <span className="text-foreground font-medium">Your partner covers this plan ❤️</span>
+          <span className="text-foreground font-medium">Your partner covers this plan</span>
         </InfoBanner>
       )}
 
-      {/* Active plan notice */}
       {!isShared && plan !== "single" && subscription?.current_period_end && (
         <InfoBanner>
           <PlanIcon planId={plan} active />
@@ -322,7 +304,6 @@ export function BillingView() {
         </InfoBanner>
       )}
 
-      {/* Partner-sharing banner */}
       <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm">
         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
           <Users className="h-4 w-4 text-primary" />
@@ -335,7 +316,13 @@ export function BillingView() {
         </div>
       </div>
 
-      {/* Pricing cards */}
+      <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm">
+        <p className="font-medium text-foreground">UPI checkout</p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          On supported Android mobile browsers, Razorpay can hand off to Google Pay or PhonePe. On desktop it can show a UPI QR that also works with Paytm and other UPI apps.
+        </p>
+      </div>
+
       <div className="relative">
         <div
           ref={scrollRef}
@@ -367,14 +354,12 @@ export function BillingView() {
         />
       </div>
 
-      {/* Full feature comparison — desktop only */}
       <div className="hidden sm:block rounded-2xl border border-border bg-card overflow-hidden">
         <div className="px-6 py-4 border-b border-border flex items-center gap-2">
           <h3 className="text-sm font-semibold font-heading text-foreground">Full feature comparison</h3>
-          <span className="text-xs text-muted-foreground">— applies to both partners</span>
+          <span className="text-xs text-muted-foreground">applies to both partners</span>
         </div>
 
-        {/* Column headers */}
         <div className="grid grid-cols-4 border-b border-border">
           <div className="px-6 py-3" />
           {PLAN_ORDER.map((planId) => (
@@ -389,7 +374,6 @@ export function BillingView() {
           ))}
         </div>
 
-        {/* Feature rows */}
         {FEATURES.map(({ icon: Icon, text, hint, ...vals }, i) => (
           <div
             key={text}
@@ -414,25 +398,23 @@ export function BillingView() {
         ))}
       </div>
 
-      {/* Good to know */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-3">
         <h4 className="text-sm font-semibold text-foreground font-heading">Good to know</h4>
         <ul className="space-y-2 text-xs text-muted-foreground">
           {[
-            "One subscription covers both partners — only one of you needs to pay.",
+            "One subscription covers both partners - only one of you needs to pay.",
             "Free plan gives 50 uploads/month each (You + Partner = 100 total).",
-            "Storage is shared — both partners' uploads count towards the same pool.",
-            "Cancel anytime from this page. No hidden fees.",
+            "Storage is shared - both partners' uploads count towards the same pool.",
+            "UPI checkout supports mobile intent where available and shows QR on desktop.",
           ].map((note) => (
             <li key={note} className="flex items-start gap-2">
               <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-              <span dangerouslySetInnerHTML={{ __html: note }} />
+              <span>{note}</span>
             </li>
           ))}
         </ul>
       </div>
 
-      {/* Footer */}
       <p className="text-center text-xs text-muted-foreground pb-2 flex items-center justify-center gap-1">
         <ShieldCheck className="h-3.5 w-3.5" />
         End-to-end encrypted storage.
