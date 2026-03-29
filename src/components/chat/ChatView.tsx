@@ -663,7 +663,7 @@ export function ChatView({
   return (
     <SwipeBackWrapper onBack={onBack}>
       <div
-        className="flex flex-col h-full"
+        className="flex h-full min-h-0 flex-col overflow-hidden"
         style={{
           ...themeStyle,
           background: "hsl(var(--wa-bg))",
@@ -739,17 +739,17 @@ export function ChatView({
               </p>
             </div>
 
-            <div className="flex items-center gap-1 shrink-0">
-              <button type="button" onClick={() => void startCall("voice")} disabled={callState !== "idle"} className="p-2 rounded-full active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" style={{ color: "hsl(var(--wa-text) / 0.7)" }} title="Voice call" aria-label="Voice call">
+            <div className="flex items-center gap-0.5 shrink-0">
+              <button type="button" onClick={() => void startCall("voice")} disabled={callState !== "idle"} className="rounded-full p-1.5 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed sm:p-2" style={{ color: "hsl(var(--wa-text) / 0.7)" }} title="Voice call" aria-label="Voice call">
                 <Phone className="h-4 w-4" />
               </button>
-              <button type="button" onClick={() => void startCall("video")} disabled={callState !== "idle"} className="p-2 rounded-full active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed" style={{ color: "hsl(var(--wa-text) / 0.7)" }} title="Video call" aria-label="Video call">
+              <button type="button" onClick={() => void startCall("video")} disabled={callState !== "idle"} className="rounded-full p-1.5 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed sm:p-2" style={{ color: "hsl(var(--wa-text) / 0.7)" }} title="Video call" aria-label="Video call">
                 <Video className="h-4 w-4" />
               </button>
               <div className="relative">
                 <button
                   onClick={() => setShowThemePicker(p => !p)}
-                  className="p-2 rounded-full active:scale-95 transition-colors"
+                  className="rounded-full p-1.5 active:scale-95 transition-colors sm:p-2"
                   style={{
                     color: showThemePicker ? "hsl(var(--wa-online))" : "hsl(var(--wa-text) / 0.7)",
                     background: showThemePicker ? "hsl(var(--wa-online) / 0.1)" : "transparent",
@@ -774,7 +774,13 @@ export function ChatView({
         {/* ── Call Modal ── */}
 
         {/* ── Messages ── */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-2" style={{ background: "hsl(var(--wa-bg))" }}>
+        <div
+          className="flex-1 overflow-y-auto overscroll-contain px-3 py-2"
+          style={{
+            background: "hsl(var(--wa-bg))",
+            paddingBottom: kbOffset > 0 ? "0.5rem" : undefined,
+          }}
+        >
           {isLoading ? (
             <div className="flex items-center justify-center h-32">
               <div className="h-5 w-5 border-2 border-border border-t-foreground rounded-full animate-spin" aria-label="Loading messages" />
@@ -1100,7 +1106,7 @@ export function ChatView({
 
         {/* ── Input Bar ── */}
         <div
-          className="px-3 pt-2 pb-3 flex items-end gap-2.5 shrink-0 border-t border-border"
+          className="flex shrink-0 items-end gap-2 border-t border-border px-2.5 pt-2 pb-3 sm:px-3 sm:gap-2.5"
           style={{
             background: "hsl(var(--wa-bg))",
             paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
@@ -1117,14 +1123,14 @@ export function ChatView({
           ) : (
             <>
               <div
-                className="flex items-center flex-1 gap-2 rounded-3xl px-3 py-2 border border-border min-w-0 focus-within:ring-2 focus-within:ring-green-500/20"
+                className="flex min-w-0 flex-1 items-end gap-1.5 rounded-3xl border border-border px-2.5 py-2 focus-within:ring-2 focus-within:ring-green-500/20 sm:gap-2 sm:px-3"
                 style={{ background: "hsl(var(--wa-input-bg))" }}
               >
                 {/* Emoji button */}
                 <div className="relative shrink-0">
                   <button
                     onClick={() => setShowEmojiPicker(p => !p)}
-                    className="p-1"
+                    className="shrink-0 p-1"
                     style={{
                       color: showEmojiPicker
                         ? "hsl(var(--wa-online))"
@@ -1156,9 +1162,10 @@ export function ChatView({
                   onKeyDown={handleKeyDown}
                   placeholder={replyTo ? "Write a reply..." : "Message..."}
                   rows={1}
-                  className="flex-1 bg-transparent border-0 outline-none resize-none text-sm leading-relaxed py-1 max-h-32 overflow-y-auto placeholder:text-muted-foreground"
+                  className="min-w-0 flex-1 bg-transparent border-0 outline-none resize-none py-1 text-sm leading-relaxed max-h-32 overflow-y-auto placeholder:text-muted-foreground"
                   style={{ color: "hsl(var(--wa-text))", minHeight: "24px" }}
                   autoComplete="off"
+                  enterKeyHint="send"
                   aria-label="Message input"
                 />
 

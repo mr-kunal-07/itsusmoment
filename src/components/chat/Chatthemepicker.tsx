@@ -134,12 +134,12 @@ export const ChatThemePicker = memo(function ChatThemePicker({ onClose, onUpgrad
 
     // Close on outside click
     useEffect(() => {
-        const handler = (e: MouseEvent) => {
+        const handler = (e: PointerEvent) => {
             if (panelRef.current && !panelRef.current.contains(e.target as Node)) onClose();
         };
-        // Small delay so the button click that opened us doesn't immediately close
-        const tid = setTimeout(() => document.addEventListener("mousedown", handler), 50);
-        return () => { clearTimeout(tid); document.removeEventListener("mousedown", handler); };
+        // Small delay so the button press that opened us doesn't immediately close
+        const tid = setTimeout(() => document.addEventListener("pointerdown", handler), 50);
+        return () => { clearTimeout(tid); document.removeEventListener("pointerdown", handler); };
     }, [onClose]);
 
     // Close on Escape
@@ -164,8 +164,8 @@ export const ChatThemePicker = memo(function ChatThemePicker({ onClose, onUpgrad
             aria-modal="true"
             aria-label="Chat theme picker"
             className={cn(
-                "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mb-2 z-50",
-                "w-72 sm:w-80",
+                "fixed inset-x-3 bottom-3 z-50 sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2",
+                "w-auto sm:w-80",
                 "rounded-2xl border border-border",
                 "shadow-xl overflow-hidden",
             )}

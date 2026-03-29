@@ -355,7 +355,7 @@ export function useWebRTC({
       }
 
       setCallType(incomingCallType);
-      setCallStateSafe("connected");
+      setCallStateSafe("calling");
     } catch (error) {
       console.error("acceptCall failed:", error);
       cleanup();
@@ -510,7 +510,9 @@ export function useWebRTC({
 
         case "call-accept":
           setCallError(null);
-          setCallStateSafe("connected");
+          if (callStateRef.current !== "idle") {
+            setCallStateSafe("calling");
+          }
           return;
 
         case "call-reject":
@@ -548,7 +550,12 @@ export function useWebRTC({
               if (pcRef.current.signalingState === "have-remote-offer") {
                 const answer = await pcRef.current.createAnswer();
                 await pcRef.current.setLocalDescription(answer);
-                sendSignal({ type: "answer", from: myUserId, sdp: answer, callType: incomingCallType });
+                sendSignal({
+                  type: "answer",
+                  from: myUserId,
+                  sdp: answer,
+                  callType: payload.callType ?? "voice",
+                });
               }
 
               await flushPendingIce(pcRef.current);
@@ -613,7 +620,6 @@ export function useWebRTC({
     enabled,
     flushPendingIce,
     hangUp,
-    incomingCallType,
     myUserId,
     partnerUserId,
     rejectCall,

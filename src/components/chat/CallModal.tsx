@@ -127,6 +127,26 @@ export const CallModal = memo(function CallModal({
   const isCalling = callState === "calling";
   const isRinging = callState === "ringing";
   const canMinimize = !!onMinimize && isVideo && !isRinging;
+  const hasRemoteVideo = !!remoteStream?.getVideoTracks().some((track) => track.readyState === "live");
+  const hasLocalVideo = !!localStream?.getVideoTracks().some((track) => track.readyState === "live");
+
+  const attachStream = useCallback(async (
+    element: HTMLVideoElement | null,
+    stream: MediaStream | null,
+    muted = false,
+  ) => {
+    if (!element) return;
+    element.muted = muted;
+    if (element.srcObject !== stream) {
+      element.srcObject = stream;
+    }
+    if (!stream) return;
+    try {
+      await element.play();
+    } catch {
+      // autoplay can be blocked briefly until the browser is ready
+    }
+  }, []);
 
   const clampMiniPosition = useCallback((x: number, y: number) => {
     if (typeof window === "undefined") return { x, y };
@@ -143,22 +163,14 @@ export const CallModal = memo(function CallModal({
   }, []);
 
   useEffect(() => {
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = remoteStream;
-    }
-    if (miniRemoteVideoRef.current) {
-      miniRemoteVideoRef.current.srcObject = remoteStream;
-    }
-  }, [remoteStream]);
+    void attachStream(remoteVideoRef.current, remoteStream, false);
+    void attachStream(miniRemoteVideoRef.current, remoteStream, false);
+  }, [attachStream, minimized, remoteStream]);
 
   useEffect(() => {
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = localStream;
-    }
-    if (miniLocalVideoRef.current) {
-      miniLocalVideoRef.current.srcObject = localStream;
-    }
-  }, [localStream]);
+    void attachStream(localVideoRef.current, localStream, true);
+    void attachStream(miniLocalVideoRef.current, localStream, true);
+  }, [attachStream, localStream, minimized]);
 
   useEffect(() => {
     if (!minimized) return;
@@ -322,7 +334,7 @@ export const CallModal = memo(function CallModal({
         <audio ref={remoteAudioRef} autoPlay aria-hidden />
 
         <div className="relative h-48 w-32 bg-black sm:h-52 sm:w-36">
-          {remoteStream ? (
+          {hasRemoteVideo ? (
             <video
               ref={miniRemoteVideoRef}
               autoPlay
@@ -330,7 +342,7 @@ export const CallModal = memo(function CallModal({
               className="h-full w-full object-cover"
               aria-hidden
             />
-          ) : localStream ? (
+          ) : hasLocalVideo ? (
             <video
               ref={miniLocalVideoRef}
               autoPlay
@@ -353,7 +365,7 @@ export const CallModal = memo(function CallModal({
             </div>
           )}
 
-          {localStream && remoteStream && (
+          {hasLocalVideo && hasRemoteVideo && (
             <div className="absolute bottom-12 right-2 overflow-hidden rounded-xl border border-white/20 bg-black shadow-lg">
               <video
                 ref={miniLocalVideoRef}
@@ -426,7 +438,7 @@ export const CallModal = memo(function CallModal({
     >
       <audio ref={remoteAudioRef} autoPlay aria-hidden />
 
-      {isVideo && isConnected && remoteStream && (
+      {isVideo && hasRemoteVideo && (
         <video
           ref={remoteVideoRef}
           autoPlay
@@ -437,8 +449,20 @@ export const CallModal = memo(function CallModal({
         />
       )}
 
-      {(!isVideo || !isConnected) && (
+      {(!isVideo || (!hasRemoteVideo && !hasLocalVideo)) && (
         <div className="absolute inset-0 bg-black" aria-hidden />
+      )}
+
+      {isVideo && !hasRemoteVideo && hasLocalVideo && (
+        <video
+          ref={localVideoRef}
+          autoPlay
+          playsInline
+          muted
+          aria-hidden
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ transform: isFrontCamera ? "scaleX(-1)" : "none", filter: "brightness(0.9)" }}
+        />
       )}
 
       <div className="relative z-10 flex h-full flex-col items-center justify-between px-4 py-10 sm:px-6 sm:py-16">
@@ -488,7 +512,7 @@ export const CallModal = memo(function CallModal({
           </div>
         </div>
 
-        {isVideo && isConnected && localStream && (
+        {isVideo && hasLocalVideo && hasRemoteVideo && (
           <video
             ref={localVideoRef}
             autoPlay
